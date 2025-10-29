@@ -1,3 +1,6 @@
+use chess_engine::board::Bitboard;
+
 fn main() {
-    println!("Hello, world!");
+    let bitboard = Bitboard::new(268435456);
+    println!("{}", bitboard);
 }
