@@ -1,7 +1,7 @@
 use bitflags::bitflags;
 
 bitflags! {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
     #[repr(transparent)]
     pub struct CastleFlags: u8 {
         const NONE = 0;
@@ -24,20 +24,21 @@ bitflags! {
 // |:----:|:--:|:--:|:--:|:--:|
 // | 0101 |  1 |  1 |  1 |  1 |
 #[repr(transparent)]
-pub struct Castling(u8);
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Castling(CastleFlags);
 
 impl Castling {
     pub const TOTAL: usize = 16;
 
     pub fn bits(&self) -> u8 {
-        self.0
+        self.0.bits()
     }
 
-    fn empty() -> Self {
-        Self(CastleFlags::NONE.bits())
+    pub fn none() -> Self {
+        Self(CastleFlags::NONE)
     }
 
-    fn all() -> Self {
-        Self(CastleFlags::ALL.bits())
+    pub fn all() -> Self {
+        Self(CastleFlags::ALL)
     }
 }
