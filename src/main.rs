@@ -1,4 +1,4 @@
-use chess_engine::board::Bitboard;
+use chess_engine::primitives::Bitboard;
 
 fn main() {
     let bitboard = Bitboard::new(268435456);

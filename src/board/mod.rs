@@ -1,9 +1,7 @@
 pub mod board;
-pub mod bitboard;
-pub mod types;
 pub mod state;
+pub mod zobrist;
 
 pub use board::*;
-pub use bitboard::*;
-pub use types::*;
 pub use state::*;
+pub use zobrist::*;

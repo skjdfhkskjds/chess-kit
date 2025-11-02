@@ -1,4 +1,4 @@
-use super::{Bitboard, Piece, Pieces, Side, Sides, Squares};
+use crate::primitives::{Bitboard, Piece, Pieces, Side, Sides, Squares};
 
 pub struct Board {
     // sides: occupancy bitboard per side
@@ -15,7 +15,7 @@ impl Board {
     // init_sides initializes the `sides` bitboards by ORing the bitboards of
     // each side
     //
-    // @param self: mutable reference to the board
+    // @param: self - mutable reference to the board
     // @return: void
     // @requires: `bitboards` is initialized
     // @side-effects: modifies the `sides` bitboards
@@ -32,7 +32,7 @@ impl Board {
     // init_pieces initializes the `pieces` array by iterating through the
     // bitboards of each side and setting the piece type on each square
     //
-    // @param self: mutable reference to the board
+    // @param: self - mutable reference to the board
     // @return: void
     // @requires: `bitboards` is initialized
     // @side-effects: modifies the `pieces` array
@@ -62,9 +62,9 @@ impl Board {
 
     // get_piece returns the bitboard of the given side and piece
     //
-    // @param self: immutable reference to the board
-    // @param side: side to get the piece for
-    // @param piece: piece to get the bitboard for
+    // @param: self - immutable reference to the board
+    // @param: side - side to get the piece for
+    // @param: piece - piece to get the bitboard for
     // @return: bitboard of the piece for the given side
     pub fn get_piece(&self, side: Side, piece: Piece) -> Bitboard {
         self.bitboards[side][piece]
@@ -72,7 +72,7 @@ impl Board {
 
     // empty_squares gets the bitboard of all empty squares on the board
     //
-    // @param self: immutable reference to the board
+    // @param: self - immutable reference to the board
     // @return: bitboard of all empty squares on the board
     pub fn empty_squares(&self) -> Bitboard {
         !(self.sides[Sides::WHITE] | self.sides[Sides::BLACK])
