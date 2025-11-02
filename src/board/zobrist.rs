@@ -1,4 +1,4 @@
-use crate::primitives::{Castling, Piece, Pieces, Side, Sides, Square, Squares};
+use crate::primitives::{Bitboard, Castling, Piece, Pieces, Side, Sides, Square, Squares};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
@@ -9,18 +9,14 @@ type EnPassantRandoms = [u64; Squares::TOTAL + 1];
 
 pub type ZobristKey = u64;
 
+// Zobrist is a collection of random values used to generate/apply a zobrist key
+// for a given board position.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Zobrist {
-    // random values for each piece on each square for each side
-    piece_randoms: PieceRandoms,
-
-    // random values for each castling right
-    castling_randoms: CastlingRandoms,
-
-    // random values for each side
-    side_randoms: SideRandoms,
-
-    // random values for each en passant square
-    en_passant_randoms: EnPassantRandoms,
+    piece_randoms: PieceRandoms, // values for each piece on each square for each side
+    castling_randoms: CastlingRandoms, // values for each castling right
+    side_randoms: SideRandoms,   // values for each side
+    en_passant_randoms: EnPassantRandoms, // values for each en passant square
 }
 
 impl Zobrist {
@@ -65,6 +61,34 @@ impl Zobrist {
         });
     }
 
+    // key generates a zobrist key for the given position
+    //
+    // @param: side - side to move
+    // @param: castling - castling rights
+    // @param: en_passant - en passant square
+    // @param: bitboards - bitboards to generate the zobrist key for
+    // @return: zobrist key for the given position
+    pub fn key(
+        &self,
+        side: Side,
+        castling: Castling,
+        en_passant: Option<Square>,
+        bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL],
+    ) -> ZobristKey {
+        let mut key = 0;
+        for (side, bitboards) in bitboards.iter().enumerate() {
+            for (piece, bitboard) in bitboards.iter().enumerate() {
+                for square in bitboard.iter() {
+                    key ^= self.piece(side, piece, square);
+                }
+            }
+        }
+        key ^= self.side(side);
+        key ^= self.castling(castling);
+        key ^= self.en_passant(en_passant);
+        key
+    }
+
     // piece returns the random value for the given side, piece, and square
     //
     // @param: side - side to get the piece for
@@ -101,5 +125,11 @@ impl Zobrist {
             Some(square) => self.en_passant_randoms[square],
             None => self.en_passant_randoms[Squares::TOTAL],
         }
+    }
+}
+
+impl Default for Zobrist {
+    fn default() -> Self {
+        Self::new()
     }
 }

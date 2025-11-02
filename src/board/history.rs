@@ -15,6 +15,15 @@ impl History {
         }
     }
 
+    // init initializes the history with the given state
+    //
+    // @param: state - state to initialize the history with
+    // @side-effects: modifies the history
+    pub fn init(&mut self, state: State) {
+        self.clear();
+        self.push(state);
+    }
+
     // push adds a new state entry to the history
     // 
     // @param: state - state to add to the history

@@ -1,17 +1,58 @@
-use crate::primitives::{Bitboard, Piece, Pieces, Side, Sides, Squares};
+use crate::board::history::History;
+use crate::board::state::State;
+use crate::board::zobrist::Zobrist;
+use crate::primitives::{Bitboard, Castling, Piece, Pieces, Side, Sides, Squares};
+use rand::prelude::*;
+use rand::rngs::StdRng;
 
 pub struct Board {
-    // sides: occupancy bitboard per side
-    sides: [Bitboard; Sides::TOTAL],
+    pub state: State,     // current state of the board
+    pub history: History, // history of the board state
 
-    // bitboards: bitboard per piece per side
-    bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL],
+    sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
+    bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
+    pieces: [Piece; Squares::TOTAL], // piece type on each square
 
-    // pieces: piece type on each square
-    pieces: [Piece; Squares::TOTAL],
+    zobrist: Zobrist, // zobrist random values for the board
 }
 
 impl Board {
+    // new creates a new board with all bitboards and pieces initialized to 0
+    // and the zobrist random values set to 0
+    //
+    // @return: new board
+    pub fn new() -> Self {
+        Self {
+            state: State::new(),
+            history: History::new(),
+            sides: [Bitboard::new(0); Sides::TOTAL],
+            bitboards: [[Bitboard::new(0); Pieces::TOTAL]; Sides::TOTAL],
+            pieces: [Pieces::NONE; Squares::TOTAL],
+            zobrist: Zobrist::new(),
+        }
+    }
+
+    // init initializes the board with the given rng
+    //
+    // @param: rng - an optional, mutable reference to the rng, useful for seeding
+    pub fn init(&mut self, rng: Option<&mut StdRng>) {
+        match rng {
+            Some(rng) => self.zobrist.init(rng),
+            None => self.zobrist.init(&mut StdRng::from_rng(&mut rand::rng())),
+        }
+
+        self.init_sides();
+        self.init_pieces();
+        self.state.init(
+            Sides::WHITE,
+            Castling::all(),
+            None,
+            self.bitboards,
+            self.zobrist,
+        );
+        self.history.init(self.state);
+    }
+
     // init_sides initializes the `sides` bitboards by ORing the bitboards of
     // each side
     //

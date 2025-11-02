@@ -1,3 +1,4 @@
+use crate::primitives::Square;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 
@@ -12,6 +13,10 @@ impl Bitboard {
 
     pub fn bits(&self) -> u64 {
         self.0
+    }
+
+    pub fn iter(&self) -> BitboardIter {
+        BitboardIter(self.0)
     }
 }
 
@@ -88,5 +93,35 @@ impl fmt::Display for Bitboard {
             writeln!(f)?;
         }
         Ok(())
+    }
+}
+
+// ================================================
+//                    iteration
+// ================================================
+
+pub struct BitboardIter(u64);
+
+impl Iterator for BitboardIter {
+    type Item = Square;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.0 {
+            0 => None,
+            _ => {
+                let square = self.0.trailing_zeros() as Square;
+                self.0 ^= 1u64 << square;
+                Some(square)
+            }
+        }
+    }
+}
+
+impl IntoIterator for Bitboard {
+    type Item = Square;
+    type IntoIter = BitboardIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
