@@ -28,7 +28,12 @@ impl fmt::Display for Board {
 
         // print the board
         for rank in (Ranks::R1..=Ranks::R8).rev() {
-            writeln!(f, "{} {}", rank, board[rank as usize].iter().collect::<String>())?;
+            writeln!(
+                f,
+                "{} {}",
+                rank + 1,
+                board[rank as usize].iter().collect::<String>()
+            )?;
         }
         writeln!(f, "  a b c d e f g h")?;
 
