@@ -5,6 +5,8 @@ pub mod history;
 pub mod pieces;
 pub mod fen;
 pub mod display;
+pub mod sides;
+pub mod castling;
 
 pub use board::*;
 pub use state::*;

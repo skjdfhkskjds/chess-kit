@@ -14,7 +14,7 @@ pub struct Board {
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
     pub pieces: [Piece; Squares::TOTAL], // piece type on each square
 
-    zobrist: Zobrist, // zobrist random values for the board
+    pub zobrist: Zobrist, // zobrist random values for the board
 }
 
 impl Board {

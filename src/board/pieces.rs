@@ -1,5 +1,5 @@
 use crate::board::board::Board;
-use crate::primitives::{Bitboard, Piece, Pieces, Side, Square};
+use crate::primitives::{BITBOARD_SQUARES, Bitboard, Piece, Pieces, Side, Square};
 
 impl Board {
     // get_piece returns the bitboard of the given side and piece
@@ -11,6 +11,77 @@ impl Board {
     #[inline(always)]
     pub fn get_piece(&self, side: Side, piece: Piece) -> Bitboard {
         self.bitboards[side][piece.unwrap()]
+    }
+
+    // remove_piece removes the piece from the given side and square
+    //
+    // @param: self - mutable reference to the board
+    // @param: side - side to remove the piece from
+    // @param: piece - piece to remove
+    // @param: square - square to remove the piece from
+    // @return: void
+    // @side-effects: modifies the `board`
+    pub fn remove_piece(&mut self, side: Side, piece: Piece, square: Square) {
+        self.bitboards[side][piece.unwrap()] ^= BITBOARD_SQUARES[square.unwrap()];
+        self.sides[side] ^= BITBOARD_SQUARES[square.unwrap()];
+        self.pieces[square.unwrap()] = Pieces::NONE;
+        self.state.zobrist_key ^= self.zobrist.piece(side, piece, square);
+
+        // TODO: make updates to game state for things like phase, turn, piece square valuation
+    }
+
+    // put_piece puts the piece on the given side and square
+    //
+    // @param: self - mutable reference to the board
+    // @param: side - side to put the piece on
+    // @param: piece - piece to put on the board
+    // @param: square - square to put the piece on
+    // @return: void
+    // @side-effects: modifies the `board`
+    pub fn put_piece(&mut self, side: Side, piece: Piece, square: Square) {
+        self.bitboards[side][piece.unwrap()] |= BITBOARD_SQUARES[square.unwrap()];
+        self.sides[side] |= BITBOARD_SQUARES[square.unwrap()];
+        self.pieces[square.unwrap()] = piece;
+        self.state.zobrist_key ^= self.zobrist.piece(side, piece, square);
+
+        // TODO: make updates to game state for things like phase, turn, piece square valuation
+    }
+
+    // move_piece moves the piece from the given square to the given square
+    //
+    // @param: self - mutable reference to the board
+    // @param: side - side to move the piece for
+    // @param: piece - piece to move
+    // @param: from - square to move the piece from
+    // @param: to - square to move the piece to
+    // @return: void
+    // @side-effects: modifies the `board`
+    pub fn move_piece(&mut self, side: Side, piece: Piece, from: Square, to: Square) {
+        self.remove_piece(side, piece, from);
+        self.put_piece(side, piece, to);
+    }
+
+    // set_en_passant sets the en passant square for the given side
+    //
+    // @param: self - mutable reference to the board
+    // @param: square - square to set the en passant square for
+    // @return: void
+    // @side-effects: modifies the `board`
+    pub fn set_en_passant(&mut self, square: Square) {
+        self.state.zobrist_key ^= self.zobrist.en_passant(self.state.en_passant);
+        self.state.en_passant = Some(square);
+        self.state.zobrist_key ^= self.zobrist.en_passant(self.state.en_passant);
+    }
+
+    // clear_en_passant clears the en passant square for the given side
+    //
+    // @param: self - mutable reference to the board
+    // @return: void
+    // @side-effects: modifies the `board`
+    pub fn clear_en_passant(&mut self) {
+        self.state.zobrist_key ^= self.zobrist.en_passant(self.state.en_passant);
+        self.state.en_passant = None;
+        self.state.zobrist_key ^= self.zobrist.en_passant(self.state.en_passant);
     }
 
     // king_square gets the square of the king for the given side
