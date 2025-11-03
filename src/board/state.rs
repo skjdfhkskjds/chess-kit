@@ -8,7 +8,7 @@ pub struct State {
     pub en_passant: Option<Square>, // active en passant square, if any
     pub zobrist_key: ZobristKey,    // zobrist key for the current position
 
-    pub halfmoves: u8, // halfmove clock
+    pub halfmoves: u16, // halfmove clock
     pub fullmoves: u8, // fullmove clock
 }
 
@@ -45,5 +45,17 @@ impl State {
         self.castling = castling;
         self.en_passant = en_passant;
         self.zobrist_key = zobrist.key(side, castling, en_passant, bitboards);
+    }
+
+    // reset resets the state to a new initial state
+    //
+    // @side-effects: modifies the `state`
+    pub fn reset(&mut self) {
+        self.turn = Sides::WHITE;
+        self.castling = Castling::all();
+        self.en_passant = None;
+        self.zobrist_key = 0;
+        self.halfmoves = 0;
+        self.fullmoves = 0;
     }
 }

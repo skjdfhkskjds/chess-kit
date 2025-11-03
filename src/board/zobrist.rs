@@ -96,7 +96,7 @@ impl Zobrist {
     // @param: square - square to get the random value for
     // @return: random value for the given side, piece, and square
     pub fn piece(&self, side: Side, piece: Piece, square: Square) -> ZobristKey {
-        self.piece_randoms[side][piece][square]
+        self.piece_randoms[side][piece][square.unwrap()]
     }
 
     // castling returns the random value for the given castling rights
@@ -122,7 +122,7 @@ impl Zobrist {
     // @return: random value for the given en passant square
     pub fn en_passant(&self, en_passant: Option<Square>) -> ZobristKey {
         match en_passant {
-            Some(square) => self.en_passant_randoms[square],
+            Some(square) => self.en_passant_randoms[square.unwrap()],
             None => self.en_passant_randoms[Squares::TOTAL],
         }
     }

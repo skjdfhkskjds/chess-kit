@@ -9,9 +9,9 @@ pub struct Board {
     pub state: State,     // current state of the board
     pub history: History, // history of the board state
 
-    sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
-    bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
-    pieces: [Piece; Squares::TOTAL], // piece type on each square
+    pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
+    pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
+    pub pieces: [Piece; Squares::TOTAL], // piece type on each square
 
     zobrist: Zobrist, // zobrist random values for the board
 }
@@ -25,8 +25,8 @@ impl Board {
         Self {
             state: State::new(),
             history: History::new(),
-            sides: [Bitboard::new(0); Sides::TOTAL],
-            bitboards: [[Bitboard::new(0); Pieces::TOTAL]; Sides::TOTAL],
+            sides: [Bitboard::empty(); Sides::TOTAL],
+            bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
             pieces: [Pieces::NONE; Squares::TOTAL],
             zobrist: Zobrist::new(),
         }
@@ -101,21 +101,52 @@ impl Board {
         }
     }
 
-    // get_piece returns the bitboard of the given side and piece
+    // reset resets the board to a new initial state
+    //
+    // @side-effects: modifies the `board`
+    pub fn reset(&mut self) {
+        self.state.reset();
+        self.history.clear();
+        self.sides = [Bitboard::empty(); Sides::TOTAL];
+        self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
+        self.pieces = [Pieces::NONE; Squares::TOTAL];
+    }
+
+    // occupancy gets the bitboard of all pieces on the board
     //
     // @param: self - immutable reference to the board
-    // @param: side - side to get the piece for
-    // @param: piece - piece to get the bitboard for
-    // @return: bitboard of the piece for the given side
-    pub fn get_piece(&self, side: Side, piece: Piece) -> Bitboard {
-        self.bitboards[side][piece]
+    // @return: bitboard of all pieces on the board
+    #[inline(always)]
+    pub fn occupancy(&self) -> Bitboard {
+        self.sides[Sides::WHITE] | self.sides[Sides::BLACK]
     }
 
     // empty_squares gets the bitboard of all empty squares on the board
+    // 
+    // @note: logically equivalent to `!(self.occupancy())`
     //
     // @param: self - immutable reference to the board
     // @return: bitboard of all empty squares on the board
+    #[inline(always)]
     pub fn empty_squares(&self) -> Bitboard {
-        !(self.sides[Sides::WHITE] | self.sides[Sides::BLACK])
+        !self.occupancy()
+    }
+
+    // turn gets the side to move
+    //
+    // @param: self - immutable reference to the board
+    // @return: side to move
+    #[inline(always)]
+    pub fn turn(&self) -> Side {
+        self.state.turn
+    }
+
+    // opponent gets the opponent side
+    //
+    // @param: self - immutable reference to the board
+    // @return: opponent side
+    #[inline(always)]
+    pub fn opponent(&self) -> Side {
+        self.turn() ^ 1
     }
 }
