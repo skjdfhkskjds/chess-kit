@@ -35,7 +35,7 @@ impl fmt::Display for Board {
                 board[rank as usize].iter().collect::<String>()
             )?;
         }
-        writeln!(f, "  a b c d e f g h")?;
+        writeln!(f, "  ABCDEFGH")?;
 
         // print the game state metadata
         writeln!(f, "{}", self.state)?;
