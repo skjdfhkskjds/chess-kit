@@ -1,7 +1,8 @@
+use crate::board::fen::{FENParser, Parser};
 use crate::board::history::History;
 use crate::board::state::State;
 use crate::board::zobrist::Zobrist;
-use crate::primitives::{Bitboard, Castling, Piece, Pieces, Side, Sides, Squares};
+use crate::primitives::{Bitboard, Piece, Pieces, Side, Sides, Squares};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
@@ -43,12 +44,11 @@ impl Board {
 
         self.init_sides();
         self.init_pieces();
-        self.state.init(
-            Sides::WHITE,
-            Castling::all(),
-            None,
+        self.state.zobrist_key = self.zobrist.key(
+            self.state.turn,
+            self.state.castling,
+            self.state.en_passant,
             self.bitboards,
-            self.zobrist,
         );
         self.history.init(self.state);
     }
@@ -88,11 +88,11 @@ impl Board {
             let mask = 1u64 << square; // bitmask for the square
             for (piece, (w, b)) in white.iter().zip(black.iter()).enumerate() {
                 if w.bits() & mask != 0 {
-                    on_square = piece;
+                    on_square = Piece::new(piece);
                     break; // enforce exclusivity
                 }
                 if b.bits() & mask != 0 {
-                    on_square = piece;
+                    on_square = Piece::new(piece);
                     break; // enforce exclusivity
                 }
             }
@@ -122,7 +122,7 @@ impl Board {
     }
 
     // empty_squares gets the bitboard of all empty squares on the board
-    // 
+    //
     // @note: logically equivalent to `!(self.occupancy())`
     //
     // @param: self - immutable reference to the board
@@ -148,5 +148,31 @@ impl Board {
     #[inline(always)]
     pub fn opponent(&self) -> Side {
         self.turn() ^ 1
+    }
+}
+
+impl From<&str> for Board {
+    // from creates a new board from the given FEN string
+    //
+    // @param: fen - FEN string to create the board from
+    // @return: new board
+    // @panic: if the FEN string is invalid
+    fn from(fen: &str) -> Self {
+        let fen_parser = FENParser::parse(fen);
+        match fen_parser {
+            Ok(fen_parser) => {
+                let mut board = Self::new();
+                board.bitboards = fen_parser.pieces.bitboards;
+                board.state.turn = fen_parser.turn.turn;
+                board.state.castling = fen_parser.castling.castling;
+                board.state.en_passant = fen_parser.en_passant.square;
+                board.state.halfmoves = fen_parser.halfmove_count.halfmove_count;
+                board.state.fullmoves = fen_parser.fullmove_count.fullmove_count;
+                board
+            }
+            Err(e) => {
+                panic!("Failed to parse FEN: {}", e);
+            }
+        }
     }
 }

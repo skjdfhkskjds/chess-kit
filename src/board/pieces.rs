@@ -10,7 +10,7 @@ impl Board {
     // @return: bitboard of the piece for the given side
     #[inline(always)]
     pub fn get_piece(&self, side: Side, piece: Piece) -> Bitboard {
-        self.bitboards[side][piece]
+        self.bitboards[side][piece.unwrap()]
     }
 
     // king_square gets the square of the king for the given side

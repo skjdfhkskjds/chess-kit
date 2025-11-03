@@ -79,7 +79,7 @@ impl Zobrist {
         for (side, bitboards) in bitboards.iter().enumerate() {
             for (piece, bitboard) in bitboards.iter().enumerate() {
                 for square in bitboard.iter() {
-                    key ^= self.piece(side, piece, square);
+                    key ^= self.piece(side, Piece::new(piece), square);
                 }
             }
         }
@@ -96,7 +96,7 @@ impl Zobrist {
     // @param: square - square to get the random value for
     // @return: random value for the given side, piece, and square
     pub fn piece(&self, side: Side, piece: Piece, square: Square) -> ZobristKey {
-        self.piece_randoms[side][piece][square.unwrap()]
+        self.piece_randoms[side][piece.unwrap()][square.unwrap()]
     }
 
     // castling returns the random value for the given castling rights

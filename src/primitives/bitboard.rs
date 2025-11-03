@@ -1,4 +1,4 @@
-use crate::primitives::Square;
+use crate::primitives::{Ranks, Files, Square, Squares};
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 
@@ -12,7 +12,7 @@ impl Bitboard {
     // @param: bits - u64 value to create the bitboard from
     // @return: new bitboard
     #[inline(always)]
-    pub fn new(bits: u64) -> Self {
+    pub const fn new(bits: u64) -> Self {
         Self(bits)
     }
 
@@ -20,7 +20,7 @@ impl Bitboard {
     //
     // @return: new bitboard
     #[inline(always)]
-    pub fn empty() -> Self {
+    pub const fn empty() -> Self {
         Self(0)
     }
 
@@ -29,7 +29,7 @@ impl Bitboard {
     // @param: self - immutable reference to the bitboard
     // @return: underlying u64 value of the bitboard
     #[inline(always)]
-    pub fn bits(&self) -> u64 {
+    pub const fn bits(&self) -> u64 {
         self.0
     }
 
@@ -147,3 +147,48 @@ impl IntoIterator for Bitboard {
         self.iter()
     }
 }
+
+// ================================================
+//                    constants
+// ================================================
+
+pub const BITBOARD_RANKS: [Bitboard; Ranks::TOTAL] = {
+    const RANK_1: u64 = 0xFF;
+    let mut ranks = [Bitboard::empty(); Ranks::TOTAL];
+    let mut i = 0;
+
+    // Note: while loop hack to get around const fn loop limitations
+    while i < Ranks::TOTAL {
+        ranks[i] = Bitboard::new(RANK_1 << (i * 8));
+        i += 1;
+    }
+
+    ranks
+};
+
+pub const BITBOARD_FILES: [Bitboard; Files::TOTAL] = {
+    const FILE_A: u64 = 0x0101_0101_0101_0101;
+    let mut files = [Bitboard::empty(); Files::TOTAL];
+    let mut i = 0;
+
+    // Note: while loop hack to get around const fn loop limitations
+    while i < Files::TOTAL {
+        files[i] = Bitboard::new(FILE_A << i);
+        i += 1;
+    }
+
+    files
+};
+
+pub const BITBOARD_SQUARES: [Bitboard; Squares::TOTAL] = {
+    let mut squares = [Bitboard::empty(); Squares::TOTAL];
+    let mut i = 0;
+
+    // Note: while loop hack to get around const fn loop limitations
+    while i < Squares::TOTAL {
+        squares[i] = Bitboard::new(1 << i);
+        i += 1;
+    }
+
+    squares
+};

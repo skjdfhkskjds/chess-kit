@@ -1,6 +1,8 @@
-use chess_kit::primitives::Bitboard;
+use chess_kit::board::Board;
+
+const DEFAULT_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 fn main() {
-    let bitboard = Bitboard::new(268435456);
-    println!("{}", bitboard);
+    let board = Board::from(DEFAULT_FEN);
+    println!("{}", board);
 }
