@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 
 #[repr(transparent)]
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, Hash)]
@@ -23,10 +24,20 @@ impl Square {
         self.0
     }
 
+    // rank returns the rank of the square
+    //
+    // @param: self - immutable reference to the square
+    // @return: rank of the square
+    #[inline(always)]
     pub const fn rank(&self) -> Rank {
         (self.0 / 8) as Rank
     }
 
+    // file returns the file of the square
+    //
+    // @param: self - immutable reference to the square
+    // @return: file of the square
+    #[inline(always)]
     pub const fn file(&self) -> File {
         (self.0 % 8) as File
     }
@@ -79,6 +90,56 @@ impl TryFrom<&str> for Square {
         };
 
         Ok(Square::new(((rank as usize) * 8) + (file as usize)))
+    }
+}
+
+// ================================================
+//               bitwise operations
+// ================================================
+
+impl BitOr for Square {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl BitOrAssign for Square {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
+
+impl BitAnd for Square {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+    }
+}
+
+impl BitAndAssign for Square {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0 &= rhs.0;
+    }
+}
+
+impl BitXor for Square {
+    type Output = Self;
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self(self.0 ^ rhs.0)
+    }
+}
+
+impl BitXorAssign for Square {
+    fn bitxor_assign(&mut self, rhs: Self) {
+        self.0 ^= rhs.0;
+    }
+}
+
+impl Not for Square {
+    type Output = Self;
+    fn not(self) -> Self::Output {
+        Self(!self.0)
     }
 }
 
