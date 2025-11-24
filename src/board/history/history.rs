@@ -79,3 +79,46 @@ impl History {
         self.current = 0;
     }
 }
+
+// HistoryIter is a double-ended iterator over the history
+pub struct HistoryIter<'a> {
+    history: &'a History,
+    front: usize,
+    back: usize,
+}
+
+impl<'a> Iterator for HistoryIter<'a> {
+    type Item = &'a State;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.front >= self.back {
+            return None;
+        }
+
+        let item = &self.history.states[self.front];
+        self.front += 1;
+        Some(item)
+    }
+}
+
+impl<'a> DoubleEndedIterator for HistoryIter<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.front > self.back {
+            return None;
+        }
+
+        let item = &self.history.states[self.back - 1];
+        self.back -= 1;
+        Some(item)
+    }
+}
+
+impl History {
+    pub fn iter(&self) -> HistoryIter<'_> {
+        HistoryIter {
+            history: self,
+            front: 0,
+            back: self.current,
+        }
+    }
+}
