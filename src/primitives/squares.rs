@@ -247,9 +247,20 @@ impl Squares {
     pub const H6: Square = Square::new(61);
     pub const H7: Square = Square::new(62);
     pub const H8: Square = Square::new(63);
+
+    pub const ALL: [Square; Self::TOTAL] = [
+        Self::A1, Self::A2, Self::A3, Self::A4, Self::A5, Self::A6, Self::A7, Self::A8,
+        Self::B1, Self::B2, Self::B3, Self::B4, Self::B5, Self::B6, Self::B7, Self::B8,
+        Self::C1, Self::C2, Self::C3, Self::C4, Self::C5, Self::C6, Self::C7, Self::C8,
+        Self::D1, Self::D2, Self::D3, Self::D4, Self::D5, Self::D6, Self::D7, Self::D8,
+        Self::E1, Self::E2, Self::E3, Self::E4, Self::E5, Self::E6, Self::E7, Self::E8,
+        Self::F1, Self::F2, Self::F3, Self::F4, Self::F5, Self::F6, Self::F7, Self::F8,
+        Self::G1, Self::G2, Self::G3, Self::G4, Self::G5, Self::G6, Self::G7, Self::G8,
+        Self::H1, Self::H2, Self::H3, Self::H4, Self::H5, Self::H6, Self::H7, Self::H8,
+    ];
 }
 
-pub type File = u8;
+pub type File = usize;
 
 pub struct Files;
 
@@ -266,7 +277,7 @@ impl Files {
     pub const H: File = 7;
 }
 
-pub type Rank = u8;
+pub type Rank = usize;
 
 pub struct Ranks;
 

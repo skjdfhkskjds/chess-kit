@@ -31,6 +31,33 @@ impl Bitboard {
         self.0
     }
 
+    // is_empty checks if the bitboard is empty
+    //
+    // @param: self - immutable reference to the bitboard
+    // @return: true if the bitboard is empty, false otherwise
+    #[inline(always)]
+    pub const fn is_empty(&self) -> bool {
+        self.0 == 0
+    }
+
+    // count counts the number of bits set in the bitboard
+    //
+    // @param: self - immutable reference to the bitboard
+    // @return: number of bits set in the bitboard
+    #[inline(always)]
+    pub const fn count(&self) -> u32 {
+        self.0.count_ones()
+    }
+
+    // trailing_zeros counts the number of trailing zeros in the bitboard
+    //
+    // @param: self - immutable reference to the bitboard
+    // @return: number of trailing zeros in the bitboard
+    #[inline(always)]
+    pub const fn trailing_zeros(&self) -> u32 {
+        self.0.trailing_zeros()
+    }
+
     // iter iterates over the squares in the bitboard
     //
     // @param: self - immutable reference to the bitboard

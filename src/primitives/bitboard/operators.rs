@@ -1,5 +1,5 @@
 use crate::primitives::bitboard::Bitboard;
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
+use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Shl, Shr, BitXor, BitXorAssign, Not};
 
 impl BitOr for Bitboard {
     type Output = Self;
@@ -51,5 +51,21 @@ impl BitXorAssign for Bitboard {
     #[inline(always)]
     fn bitxor_assign(&mut self, rhs: Self) {
         self.0 ^= rhs.0;
+    }
+}
+
+impl Shl<u32> for Bitboard {
+    type Output = Self;
+    #[inline(always)]
+    fn shl(self, rhs: u32) -> Self::Output {
+        Self(self.0 << rhs)
+    }
+}
+
+impl Shr<u32> for Bitboard {
+    type Output = Self;
+    #[inline(always)]
+    fn shr(self, rhs: u32) -> Self::Output {
+        Self(self.0 >> rhs)
     }
 }

@@ -9,6 +9,7 @@ impl Piece {
         Self(piece)
     }
 
+    #[inline(always)]
     pub const fn unwrap(&self) -> usize {
         self.0
     }
