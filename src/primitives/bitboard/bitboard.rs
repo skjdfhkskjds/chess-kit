@@ -1,7 +1,7 @@
 use crate::primitives::Square;
 
 #[repr(transparent)]
-#[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Debug, Default, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, Hash)]
 pub struct Bitboard(pub(crate) u64);
 
 impl Bitboard {
