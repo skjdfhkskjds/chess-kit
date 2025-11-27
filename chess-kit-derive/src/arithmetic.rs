@@ -11,7 +11,7 @@ pub fn expand_arithmetic(input: &DeriveInput) -> Result<proc_macro2::TokenStream
         ));
     }
 
-    let (inner_ty, vis) = match &input.data {
+    let (inner_ty, _vis) = match &input.data {
         Data::Struct(data) => match &data.fields {
             Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
                 let ty = &fields.unnamed.first().unwrap().ty;

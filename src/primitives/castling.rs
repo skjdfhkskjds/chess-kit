@@ -1,23 +1,22 @@
-use bitflags::bitflags;
+use chess_kit_derive::{Arithmetic, BitOps};
 use std::fmt;
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 
-bitflags! {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-    #[repr(transparent)]
-    pub struct CastleFlags: u8 {
-        const NONE = 0;
-        const WHITE_KING = 0b00000001;
-        const WHITE_QUEEN = 0b00000010;
-        const BLACK_KING = 0b00000100;
-        const BLACK_QUEEN = 0b00001000;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, BitOps, Arithmetic)]
+#[repr(transparent)]
+pub struct CastleFlags(u8);
 
-        const KING  = Self::WHITE_KING.bits()  | Self::BLACK_KING.bits();
-        const QUEEN = Self::WHITE_QUEEN.bits() | Self::BLACK_QUEEN.bits();
-        const WHITE = Self::WHITE_KING.bits()  | Self::WHITE_QUEEN.bits();
-        const BLACK = Self::BLACK_KING.bits()  | Self::BLACK_QUEEN.bits();
-        const ALL   = Self::WHITE.bits() | Self::BLACK.bits();
-    }
+impl CastleFlags {
+    pub const NONE: CastleFlags = CastleFlags(0);
+    pub const WHITE_KING: CastleFlags = CastleFlags(0b00000001);
+    pub const WHITE_QUEEN: CastleFlags = CastleFlags(0b00000010);
+    pub const BLACK_KING: CastleFlags = CastleFlags(0b00000100);
+    pub const BLACK_QUEEN: CastleFlags = CastleFlags(0b00001000);
+
+    pub const KING: CastleFlags = CastleFlags(Self::WHITE_KING.0 | Self::BLACK_KING.0);
+    pub const QUEEN: CastleFlags = CastleFlags(Self::WHITE_QUEEN.0 | Self::BLACK_QUEEN.0);
+    pub const WHITE: CastleFlags = CastleFlags(Self::WHITE_KING.0 | Self::WHITE_QUEEN.0);
+    pub const BLACK: CastleFlags = CastleFlags(Self::BLACK_KING.0 | Self::BLACK_QUEEN.0);
+    pub const ALL: CastleFlags = CastleFlags(Self::WHITE.0 | Self::BLACK.0);
 }
 
 // Castling rights are stored in a u8 containing the following bits:
@@ -26,14 +25,14 @@ bitflags! {
 // |:----:|:--:|:--:|:--:|:--:|
 // | 0101 |  1 |  1 |  1 |  1 |
 #[repr(transparent)]
-#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, BitOps)]
 pub struct Castling(CastleFlags);
 
 impl Castling {
     pub const TOTAL: usize = 16;
 
     pub fn bits(&self) -> u8 {
-        self.0.bits()
+        self.0.0
     }
 
     pub const fn none() -> Self {
@@ -48,56 +47,6 @@ impl Castling {
 impl From<CastleFlags> for Castling {
     fn from(flags: CastleFlags) -> Self {
         Self(flags)
-    }
-}
-
-// ================================================
-//               bitwise operations
-// ================================================
-
-impl BitOr for Castling {
-    type Output = Self;
-    fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
-    }
-}
-
-impl BitOrAssign for Castling {
-    fn bitor_assign(&mut self, rhs: Self) {
-        self.0 |= rhs.0;
-    }
-}
-
-impl BitAnd for Castling {
-    type Output = Self;
-    fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 & rhs.0)
-    }
-}
-
-impl BitAndAssign for Castling {
-    fn bitand_assign(&mut self, rhs: Self) {
-        self.0 &= rhs.0;
-    }
-}
-
-impl BitXor for Castling {
-    type Output = Self;
-    fn bitxor(self, rhs: Self) -> Self::Output {
-        Self(self.0 ^ rhs.0)
-    }
-}
-
-impl BitXorAssign for Castling {
-    fn bitxor_assign(&mut self, rhs: Self) {
-        self.0 ^= rhs.0;
-    }
-}
-
-impl Not for Castling {
-    type Output = Self;
-    fn not(self) -> Self::Output {
-        Self(!self.0)
     }
 }
 

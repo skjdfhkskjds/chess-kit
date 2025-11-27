@@ -11,10 +11,10 @@ impl Parser for CastlingParser {
         if (1..=4).contains(&segment.len()) {
             for c in segment.chars() {
                 match c {
-                    'K' => castling |= Castling::from(CastleFlags::WHITE_KING),
-                    'Q' => castling |= Castling::from(CastleFlags::WHITE_QUEEN),
-                    'k' => castling |= Castling::from(CastleFlags::BLACK_KING),
-                    'q' => castling |= Castling::from(CastleFlags::BLACK_QUEEN),
+                    'K' => castling |= CastleFlags::WHITE_KING,
+                    'Q' => castling |= CastleFlags::WHITE_QUEEN,
+                    'k' => castling |= CastleFlags::BLACK_KING,
+                    'q' => castling |= CastleFlags::BLACK_QUEEN,
                     '-' => (),
                     _ => return Err(FENError::InvalidCastling),
                 }

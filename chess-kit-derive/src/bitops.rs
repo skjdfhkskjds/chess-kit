@@ -1,5 +1,5 @@
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, Result, spanned::Spanned};
+use syn::{spanned::Spanned, Data, DeriveInput, Fields, Result, Type, TypePath};
 
 pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
     let struct_ident = &input.ident;
@@ -11,7 +11,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         ));
     }
 
-    let (inner_ty, vis) = match &input.data {
+    let (inner_ty, _vis) = match &input.data {
         Data::Struct(data) => match &data.fields {
             Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
                 let ty = &fields.unnamed.first().unwrap().ty;
@@ -34,6 +34,133 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
 
     let name = struct_ident;
     let inner = inner_ty;
+
+    let inner_is_u32 = is_primitive_type(inner_ty, "u32");
+    let inner_is_u8 = is_primitive_type(inner_ty, "u8");
+
+    let shl_u32_impls = if !inner_is_u32 {
+        quote! {
+            impl ::core::ops::Shl<u32> for #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shl(self, rhs: u32) -> Self::Output {
+                    #name(self.0 << rhs)
+                }
+            }
+
+            impl<'a> ::core::ops::Shl<u32> for &'a #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shl(self, rhs: u32) -> Self::Output {
+                    #name(self.0 << rhs)
+                }
+            }
+
+            impl ::core::ops::ShlAssign<u32> for #name {
+                #[inline(always)]
+                fn shl_assign(&mut self, rhs: u32) {
+                    self.0 <<= rhs;
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let shl_u8_impls = if !inner_is_u8 {
+        quote! {
+            impl ::core::ops::Shl<u8> for #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shl(self, rhs: u8) -> Self::Output {
+                    #name(self.0 << rhs)
+                }
+            }
+
+            impl<'a> ::core::ops::Shl<u8> for &'a #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shl(self, rhs: u8) -> Self::Output {
+                    #name(self.0 << rhs)
+                }
+            }
+
+            impl ::core::ops::ShlAssign<u8> for #name {
+                #[inline(always)]
+                fn shl_assign(&mut self, rhs: u8) {
+                    self.0 <<= rhs;
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let shr_u32_impls = if !inner_is_u32 {
+        quote! {
+            impl ::core::ops::Shr<u32> for #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shr(self, rhs: u32) -> Self::Output {
+                    #name(self.0 >> rhs)
+                }
+            }
+
+            impl<'a> ::core::ops::Shr<u32> for &'a #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shr(self, rhs: u32) -> Self::Output {
+                    #name(self.0 >> rhs)
+                }
+            }
+
+            impl ::core::ops::ShrAssign<u32> for #name {
+                #[inline(always)]
+                fn shr_assign(&mut self, rhs: u32) {
+                    self.0 >>= rhs;
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let shr_u8_impls = if !inner_is_u8 {
+        quote! {
+            impl ::core::ops::Shr<u8> for #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shr(self, rhs: u8) -> Self::Output {
+                    #name(self.0 >> rhs)
+                }
+            }
+
+            impl<'a> ::core::ops::Shr<u8> for &'a #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shr(self, rhs: u8) -> Self::Output {
+                    #name(self.0 >> rhs)
+                }
+            }
+
+            impl ::core::ops::ShrAssign<u8> for #name {
+                #[inline(always)]
+                fn shr_assign(&mut self, rhs: u8) {
+                    self.0 >>= rhs;
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
 
     let output = quote! {
         // ================================================
@@ -262,6 +389,31 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         //                   BITSHIFT LEFT
         // ================================================
 
+        impl ::core::ops::Shl for #name {
+            type Output = #name;
+
+            #[inline(always)]
+            fn shl(self, rhs: #name) -> Self::Output {
+                #name(self.0 << rhs.0)
+            }
+        }
+
+        impl<'a> ::core::ops::Shl for &'a #name {
+            type Output = #name;
+
+            #[inline(always)]
+            fn shl(self, rhs: &'a #name) -> Self::Output {
+                #name(self.0 << rhs.0)
+            }
+        }
+
+        impl ::core::ops::ShlAssign for #name {
+            #[inline(always)]
+            fn shl_assign(&mut self, rhs: #name) {
+                self.0 <<= rhs.0;
+            }
+        }
+
         impl ::core::ops::Shl<#inner> for #name {
             type Output = #name;
 
@@ -287,59 +439,37 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             }
         }
 
-        impl ::core::ops::Shl<u32> for #name {
-            type Output = #name;
-
-            #[inline(always)]
-            fn shl(self, rhs: u32) -> Self::Output {
-                #name(self.0 << rhs)
-            }
-        }
-
-        impl<'a> ::core::ops::Shl<u32> for &'a #name {
-            type Output = #name;
-
-            #[inline(always)]
-            fn shl(self, rhs: u32) -> Self::Output {
-                #name(self.0 << rhs)
-            }
-        }
-
-        impl ::core::ops::ShlAssign<u32> for #name {
-            #[inline(always)]
-            fn shl_assign(&mut self, rhs: u32) {
-                self.0 <<= rhs;
-            }
-        }
-
-        impl ::core::ops::Shl<u8> for #name {
-            type Output = #name;
-
-            #[inline(always)]
-            fn shl(self, rhs: u8) -> Self::Output {
-                #name(self.0 << rhs)
-            }
-        }
-
-        impl<'a> ::core::ops::Shl<u8> for &'a #name {
-            type Output = #name;
-
-            #[inline(always)]
-            fn shl(self, rhs: u8) -> Self::Output {
-                #name(self.0 << rhs)
-            }
-        }
-
-        impl ::core::ops::ShlAssign<u8> for #name {
-            #[inline(always)]
-            fn shl_assign(&mut self, rhs: u8) {
-                self.0 <<= rhs;
-            }
-        }
+        #shl_u32_impls
+        #shl_u8_impls
 
         // ================================================
         //                   BITSHIFT RIGHT
         // ================================================
+
+        impl ::core::ops::Shr for #name {
+            type Output = #name;
+
+            #[inline(always)]
+            fn shr(self, rhs: #name) -> Self::Output {
+                #name(self.0 >> rhs.0)
+            }
+        }
+
+        impl<'a> ::core::ops::Shr for &'a #name {
+            type Output = #name;
+
+            #[inline(always)]
+            fn shr(self, rhs: &'a #name) -> Self::Output {
+                #name(self.0 >> rhs.0)
+            }
+        }
+
+        impl ::core::ops::ShrAssign for #name {
+            #[inline(always)]
+            fn shr_assign(&mut self, rhs: #name) {
+                self.0 >>= rhs.0;
+            }
+        }
 
         impl ::core::ops::Shr<#inner> for #name {
             type Output = #name;
@@ -366,56 +496,18 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             }
         }
 
-        impl ::core::ops::Shr<u32> for #name {
-            type Output = #name;
-
-            #[inline(always)]
-            fn shr(self, rhs: u32) -> Self::Output {
-                #name(self.0 >> rhs)
-            }
-        }
-
-        impl<'a> ::core::ops::Shr<u32> for &'a #name {
-            type Output = #name;
-
-            #[inline(always)]
-            fn shr(self, rhs: u32) -> Self::Output {
-                #name(self.0 >> rhs)
-            }
-        }
-
-        impl ::core::ops::ShrAssign<u32> for #name {
-            #[inline(always)]
-            fn shr_assign(&mut self, rhs: u32) {
-                self.0 >>= rhs;
-            }
-        }
-
-        impl ::core::ops::Shr<u8> for #name {
-            type Output = #name;
-
-            #[inline(always)]
-            fn shr(self, rhs: u8) -> Self::Output {
-                #name(self.0 >> rhs)
-            }
-        }
-
-        impl<'a> ::core::ops::Shr<u8> for &'a #name {
-            type Output = #name;
-
-            #[inline(always)]
-            fn shr(self, rhs: u8) -> Self::Output {
-                #name(self.0 >> rhs)
-            }
-        }
-
-        impl ::core::ops::ShrAssign<u8> for #name {
-            #[inline(always)]
-            fn shr_assign(&mut self, rhs: u8) {
-                self.0 >>= rhs;
-            }
-        }
+        #shr_u32_impls
+        #shr_u8_impls
     };
 
     Ok(output)
+}
+
+fn is_primitive_type(ty: &Type, name: &str) -> bool {
+    if let Type::Path(TypePath { path, .. }) = ty {
+        if let Some(ident) = path.get_ident() {
+            return ident == name;
+        }
+    }
+    false
 }
