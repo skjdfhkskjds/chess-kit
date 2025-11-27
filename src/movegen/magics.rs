@@ -1,10 +1,11 @@
+use crate::movegen::MoveGenerator;
 /**
  * The magics as used by Rustic can be found just below. If you want to see the function used to
  * generate them, look for the "find_magics()" function. This function can be found in the module
  * extra::wizardry. It's not even compiled into the engine when not called; it's there for
  * didactic purposes, and to be used/called if the magics in this file ever get corrupted.
 */
-use crate::primitives::{Bitboard, Squares};
+use crate::primitives::{Bitboard, Piece, Pieces, Square, Squares};
 
 // These are the exact sizes needed for the rook and bishop moves. These
 // can be calculated by adding all the possible blocker boards for a rook
@@ -102,8 +103,131 @@ pub struct Magic {
  *   find_magics().
  */
 impl Magic {
-    pub fn get_index(&self, occupancy: Bitboard) -> usize {
+    pub fn index_of(&self, occupancy: Bitboard) -> usize {
         let blockerboard = occupancy & self.mask;
         u64::from((blockerboard.wrapping_mul(self.num) >> self.shift) + self.offset) as usize
+    }
+}
+
+impl MoveGenerator {
+    // assert_table_initialized asserts that the table is initialized to the
+    // expected size for the given piece
+    //
+    // @param: size - actual size of the table
+    // @param: piece - piece to assert the table size for
+    // @return: void
+    // @panic: if the table size is not the expected size
+    fn assert_table_initialized(&self, size: usize, piece: Piece) {
+        let expected_size = match piece {
+            Pieces::ROOK => ROOK_TABLE_SIZE,
+            Pieces::BISHOP => BISHOP_TABLE_SIZE,
+            _ => panic!("Illegal piece type for magics: {piece}"),
+        };
+
+        assert!(
+            size == expected_size,
+            "Table size mismatch for {piece}, expected {expected_size} but got {size}",
+        );
+    }
+
+    // init_square_magics initializes the magics for the given piece and square
+    //
+    // @param: offset - offset for the attack table
+    // @param: square - square to initialize the magics for
+    // @param: piece - piece to initialize the magics for
+    // @return: void
+    // @panic: if the piece is illegal
+    // @panic: if the magic at the computed index is invalid or not empty
+    fn init_square_magics(&mut self, offset: &mut u64, square: Square, piece: Piece) {
+        // get the mask for the given piece and square
+        let mask = match piece {
+            Pieces::ROOK => MoveGenerator::rook_mask(square),
+            Pieces::BISHOP => MoveGenerator::bishop_mask(square),
+            _ => panic!("Illegal piece type for magics: {piece}"),
+        };
+
+        let bits = mask.count_ones(); // number of set bits in the mask
+        let permutations = 2u64.pow(bits); // number of blocker boards to be indexed
+        let end = *offset + permutations - 1; // end point in the attack table
+        let blocker_boards = MoveGenerator::blocker_boards(mask);
+
+        // get the attack boards for the given piece and square
+        let attack_boards = match piece {
+            Pieces::ROOK => MoveGenerator::rook_attack_boards(square, &blocker_boards),
+            Pieces::BISHOP => MoveGenerator::bishop_attack_boards(square, &blocker_boards),
+            _ => panic!("Illegal piece type for magics: {piece}"),
+        };
+
+        // create the magic for the given piece and square
+        let mut magic: Magic = Default::default();
+        magic.mask = mask;
+        magic.shift = (64 - bits) as u8;
+        magic.offset = *offset;
+        magic.num = match piece {
+            Pieces::ROOK => ROOK_MAGIC_NUMS[square.unwrap()],
+            Pieces::BISHOP => BISHOP_MAGIC_NUMS[square.unwrap()],
+            _ => panic!("Illegal piece type for magics: {piece}"),
+        };
+
+        // get a mutable reference to the table for the given piece
+        let table = match piece {
+            Pieces::ROOK => &mut self.rook_table[..],
+            Pieces::BISHOP => &mut self.bishop_table[..],
+            _ => panic!("Illegal piece type for magics: {piece}"),
+        };
+
+        // index the attack boards for the given piece and square
+        for i in 0..permutations {
+            let next = i as usize;
+            let index = magic.index_of(blocker_boards[next]);
+
+            // assert that the attack table index is currently empty
+            assert!(
+                table[index].is_empty(),
+                "Attack table index not empty for square {square}. Error in Magics."
+            );
+
+            // assert that the attack table index is within the valid range
+            assert!(
+                index >= *offset as usize && index <= end as usize,
+                "Invalid index for square {square}. Error in Magics."
+            );
+
+            // store the attack board in the attack table
+            table[index] = attack_boards[next];
+        }
+
+        // store the magic for the given piece and square
+        match piece {
+            Pieces::ROOK => self.rook_magics[square.unwrap()] = magic,
+            Pieces::BISHOP => self.bishop_magics[square.unwrap()] = magic,
+            _ => panic!("Illegal piece type for magics: {piece}"),
+        }
+
+        // increment the offset for the next magic
+        *offset += permutations;
+    }
+
+    // init_magics initializes the magics for the given piece
+    //
+    // @param: piece - piece to initialize the magics for
+    // @return: void
+    // @panic: if the piece is illegal
+    // @panic: if the table is successfully initialized
+    // @panic: if the table size is not the expected size
+    pub fn init_magics(&mut self, piece: Piece) {
+        assert!(
+            piece == Pieces::ROOK || piece == Pieces::BISHOP,
+            "Illegal piece: {piece}"
+        );
+
+        // initialize the magics for the given piece
+        let mut offset = 0;
+        for square in Squares::ALL {
+            self.init_square_magics(&mut offset, square, piece);
+        }
+
+        // assert that all permutations (blocker boards) have been indexed
+        self.assert_table_initialized(offset as usize, piece);
     }
 }

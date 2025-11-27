@@ -5,8 +5,8 @@ pub struct MoveGenerator {
     pub(crate) king_table: [Bitboard; Squares::TOTAL],
     pub(crate) knight_table: [Bitboard; Squares::TOTAL],
     pub(crate) pawn_table: [[Bitboard; Squares::TOTAL]; Sides::TOTAL],
-    pub(crate) bishop_moves: Vec<Bitboard>,
-    pub(crate) rook_moves: Vec<Bitboard>,
+    pub(crate) bishop_table: Vec<Bitboard>,
+    pub(crate) rook_table: Vec<Bitboard>,
     pub(crate) bishop_magics: [Magic; Squares::TOTAL],
     pub(crate) rook_magics: [Magic; Squares::TOTAL],
 }
@@ -24,8 +24,8 @@ impl MoveGenerator {
             king_table: [Bitboard::empty(); Squares::TOTAL],
             knight_table: [Bitboard::empty(); Squares::TOTAL],
             pawn_table: [[Bitboard::empty(); Squares::TOTAL]; Sides::TOTAL],
-            bishop_moves: vec![Bitboard::empty(); BISHOP_TABLE_SIZE],
-            rook_moves: vec![Bitboard::empty(); ROOK_TABLE_SIZE],
+            bishop_table: vec![Bitboard::empty(); BISHOP_TABLE_SIZE],
+            rook_table: vec![Bitboard::empty(); ROOK_TABLE_SIZE],
             rook_magics: [magics; Squares::TOTAL],
             bishop_magics: [magics; Squares::TOTAL],
         };
