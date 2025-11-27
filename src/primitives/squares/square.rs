@@ -1,9 +1,9 @@
 use crate::primitives::{File, Files, Rank, Ranks};
+use chess_kit_derive::{Arithmetic, BitOps};
 use std::fmt;
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 
 #[repr(transparent)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, Hash, BitOps, Arithmetic)]
 pub struct Square(usize);
 
 impl Square {
@@ -91,56 +91,6 @@ impl TryFrom<&str> for Square {
         };
 
         Ok(Square::new((rank * 8) + file))
-    }
-}
-
-// ================================================
-//               bitwise operations
-// ================================================
-
-impl BitOr for Square {
-    type Output = Self;
-    fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
-    }
-}
-
-impl BitOrAssign for Square {
-    fn bitor_assign(&mut self, rhs: Self) {
-        self.0 |= rhs.0;
-    }
-}
-
-impl BitAnd for Square {
-    type Output = Self;
-    fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 & rhs.0)
-    }
-}
-
-impl BitAndAssign for Square {
-    fn bitand_assign(&mut self, rhs: Self) {
-        self.0 &= rhs.0;
-    }
-}
-
-impl BitXor for Square {
-    type Output = Self;
-    fn bitxor(self, rhs: Self) -> Self::Output {
-        Self(self.0 ^ rhs.0)
-    }
-}
-
-impl BitXorAssign for Square {
-    fn bitxor_assign(&mut self, rhs: Self) {
-        self.0 ^= rhs.0;
-    }
-}
-
-impl Not for Square {
-    type Output = Self;
-    fn not(self) -> Self::Output {
-        Self(!self.0)
     }
 }
 
