@@ -32,8 +32,8 @@ impl MoveGenerator {
         mg.init_king_moves();
         mg.init_knight_moves();
         mg.init_pawn_moves();
-        // mg.init_magics(Pieces::ROOK);
-        // mg.init_magics(Pieces::BISHOP);
+        mg.init_magics(Pieces::ROOK);
+        mg.init_magics(Pieces::BISHOP);
         mg
     }
 }
