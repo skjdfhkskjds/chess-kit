@@ -17,6 +17,36 @@ pub enum Direction {
 }
 
 impl MoveGenerator {
+    // get_rook_attacks returns the attacks for the given square and bitboard.
+    //
+    // @param: square - square to get the attacks for
+    // @param: bitboard - current occupancy state of the board
+    // @return: bitboard representing the rook targets
+    #[inline(always)]
+    pub fn get_rook_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+        self.rook_table[self.rook_magics[square.unwrap()].index_of(bitboard)]
+    }
+
+    // get_bishop_attacks returns the attacks for the given square and bitboard.
+    //
+    // @param: square - square to get the attacks for
+    // @param: bitboard - current occupancy state of the board
+    // @return: bitboard representing the bishop targets
+    #[inline(always)]
+    pub fn get_bishop_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+        self.bishop_table[self.bishop_magics[square.unwrap()].index_of(bitboard)]
+    }
+
+    // get_queen_attacks returns the attacks for the given square and bitboard.
+    //
+    // @param: square - square to get the attacks for
+    // @param: bitboard - current occupancy state of the board
+    // @return: bitboard representing the queen targets
+    #[inline(always)]
+    pub fn get_queen_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+        self.get_rook_attacks(square, bitboard) | self.get_bishop_attacks(square, bitboard)
+    }
+
     // rook_mask returns the rook mask for the given square
     //
     // @param: square - square to get the mask for
@@ -24,9 +54,9 @@ impl MoveGenerator {
     pub fn rook_mask(square: Square) -> Bitboard {
         let rook_at = BITBOARD_SQUARES[square.unwrap()];
         let edges = MoveGenerator::get_edges(square);
-        let mask = BITBOARD_FILES[square.file()] | BITBOARD_RANKS[square.rank()];
+        let line_of_sight = BITBOARD_FILES[square.file()] | BITBOARD_RANKS[square.rank()];
 
-        mask & !edges & !rook_at
+        line_of_sight & !edges & !rook_at
     }
 
     // bishop_mask returns the bishop mask for the given square
@@ -38,17 +68,17 @@ impl MoveGenerator {
         let bitboard = Bitboard::empty();
         let bishop_at = BITBOARD_SQUARES[square.unwrap()];
         let edges = MoveGenerator::get_edges(square);
-        let attacking = MoveGenerator::attack_ray(&bitboard, square, Direction::UpLeft)
+        let line_of_sight = MoveGenerator::attack_ray(&bitboard, square, Direction::UpLeft)
             | MoveGenerator::attack_ray(&bitboard, square, Direction::UpRight)
             | MoveGenerator::attack_ray(&bitboard, square, Direction::DownRight)
             | MoveGenerator::attack_ray(&bitboard, square, Direction::DownLeft);
 
-        attacking & !edges & !bishop_at
+        line_of_sight & !edges & !bishop_at
     }
 
     // rook_attack_boards returns the attack boards for the given square and
     // blockers.
-    // 
+    //
     // @param: square - square to get the attack boards for
     // @param: blockers - blockers to use to generate the attack boards
     // @return: attack boards for the given square and blockers
@@ -68,7 +98,7 @@ impl MoveGenerator {
 
     // bishop_attack_boards returns the attack boards for the given square and
     // blockers.
-    // 
+    //
     // @param: square - square to get the attack boards for
     // @param: blockers - blockers to use to generate the attack boards
     // @return: attack boards for the given square and blockers

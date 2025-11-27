@@ -23,6 +23,17 @@ impl Bitboard {
         Self(self.0.wrapping_mul(rhs.into()))
     }
 
+    // rotate_left performs a left rotation of a bitboard by a given number of
+    // bits
+    //
+    // @param: self - immutable reference to the bitboard
+    // @param: rhs - number of bits to rotate the bitboard by
+    // @return: result of the left rotation
+    #[inline(always)]
+    pub fn rotate_left(self, rhs: u32) -> Self {
+        Self(self.0.rotate_left(rhs))
+    }
+
     // count_ones counts the number of bits set in the bitboard
     //
     // @param: self - immutable reference to the bitboard

@@ -13,7 +13,7 @@ impl MoveGenerator {
     pub fn init_king_table(&mut self) {
         for sq in Squares::ALL {
             let bitboard = BITBOARD_SQUARES[sq.unwrap()];
-            let bb_moves = ((bitboard & !BITBOARD_FILES[Files::A] & !BITBOARD_RANKS[Ranks::R8]) << 7u8)
+            let moves = ((bitboard & !BITBOARD_FILES[Files::A] & !BITBOARD_RANKS[Ranks::R8]) << 7u8)
                 | ((bitboard & !BITBOARD_RANKS[Ranks::R8]) << 8u8)
                 | ((bitboard & !BITBOARD_FILES[Files::H] & !BITBOARD_RANKS[Ranks::R8]) << 9u8)
                 | ((bitboard & !BITBOARD_FILES[Files::H]) << 1u8)
@@ -21,7 +21,7 @@ impl MoveGenerator {
                 | ((bitboard & !BITBOARD_RANKS[Ranks::R1]) >> 8u8)
                 | ((bitboard & !BITBOARD_FILES[Files::A] & !BITBOARD_RANKS[Ranks::R1]) >> 9u8)
                 | ((bitboard & !BITBOARD_FILES[Files::A]) >> 1u8);
-            self.king_table[sq.unwrap()] = bb_moves;
+            self.king_table[sq.unwrap()] = moves;
         }
     }
 
@@ -33,7 +33,7 @@ impl MoveGenerator {
     pub fn init_knight_table(&mut self) {
         for sq in Squares::ALL {
             let bitboard = BITBOARD_SQUARES[sq.unwrap()];
-            let bb_moves =
+            let moves =
                 ((bitboard & !BITBOARD_RANKS[Ranks::R8] & !BITBOARD_RANKS[Ranks::R7] & !BITBOARD_FILES[Files::A]) << 15u8)
                 | ((bitboard & !BITBOARD_RANKS[Ranks::R8] & !BITBOARD_RANKS[Ranks::R7] & !BITBOARD_FILES[Files::H]) << 17u8)
                 | ((bitboard & !BITBOARD_FILES[Files::A] & !BITBOARD_FILES[Files::B] & !BITBOARD_RANKS[Ranks::R8]) << 6u8)
@@ -42,7 +42,7 @@ impl MoveGenerator {
                 | ((bitboard & !BITBOARD_RANKS[Ranks::R1] & !BITBOARD_RANKS[Ranks::R2] & !BITBOARD_FILES[Files::H]) >> 15u8)
                 | ((bitboard & !BITBOARD_FILES[Files::A] & !BITBOARD_FILES[Files::B] & !BITBOARD_RANKS[Ranks::R1]) >> 10u8)
                 | ((bitboard & !BITBOARD_FILES[Files::G] & !BITBOARD_FILES[Files::H] & !BITBOARD_RANKS[Ranks::R1]) >> 6u8);
-            self.knight_table[sq.unwrap()] = bb_moves;
+            self.knight_table[sq.unwrap()] = moves;
         }
     }
 
@@ -61,35 +61,37 @@ impl MoveGenerator {
         }
     }
 
-    // get_king_moves returns the king moves for the given square
+    // get_king_attacks returns the squares that the king attacks from the given
+    // square
     //
     // @param: self - immutable reference to the move generator
     // @param: sq - square that the king is on
     // @return: king moves for the given square
     #[inline(always)]
-    pub fn get_king_moves(&self, sq: Square) -> Bitboard {
+    pub fn get_king_attacks(&self, sq: Square) -> Bitboard {
         self.king_table[sq.unwrap()]
     }
 
-    // get_knight_moves returns the knight moves for the given square
+    // get_knight_attacks returns the squares that the knight attacks from the
+    // given square
     //
     // @param: self - immutable reference to the move generator
     // @param: sq - square that the knight is on
     // @return: knight moves for the given square
     #[inline(always)]
-    pub fn get_knight_moves(&self, sq: Square) -> Bitboard {
+    pub fn get_knight_attacks(&self, sq: Square) -> Bitboard {
         self.knight_table[sq.unwrap()]
     }
 
-    // get_pawn_moves returns the pawn moves for the given square for the given
-    // side
+    // get_pawn_attacks returns the squares that the pawn attacks from the given
+    // square for the given side
     //
     // @param: self - immutable reference to the move generator
     // @param: sq - square that the pawn is on
     // @param: side - side to get the pawn moves for
     // @return: pawn moves for the given square
     #[inline(always)]
-    pub fn get_pawn_moves(&self, sq: Square, side: Side) -> Bitboard {
+    pub fn get_pawn_attacks(&self, sq: Square, side: Side) -> Bitboard {
         self.pawn_table[side][sq.unwrap()]
     }
 }

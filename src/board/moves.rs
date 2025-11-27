@@ -50,11 +50,11 @@ impl Board {
             // Change castling permissions on rook capture in the corner.
             if captured == Pieces::ROOK && has_permissions {
                 let revoked_perms = match to {
-                    Squares::A1 => Castling::from(CastleFlags::WHITE_QUEEN),
-                    Squares::H1 => Castling::from(CastleFlags::WHITE_KING),
-                    Squares::A8 => Castling::from(CastleFlags::BLACK_QUEEN),
-                    Squares::H8 => Castling::from(CastleFlags::BLACK_KING),
-                    _ => Castling::none(),
+                    Squares::A1 => CastleFlags::WHITE_QUEEN,
+                    Squares::H1 => CastleFlags::WHITE_KING,
+                    Squares::A8 => CastleFlags::BLACK_QUEEN,
+                    Squares::H8 => CastleFlags::BLACK_KING,
+                    _ => CastleFlags::NONE,
                 };
                 self.set_castling(self.state.castling ^ revoked_perms);
             }
@@ -84,13 +84,13 @@ impl Board {
         // (This will also adjust permissions when castling, because the king moves.)
         if (piece == Pieces::KING || piece == Pieces::ROOK) && has_permissions {
             let revoked_perms = match to {
-                Squares::A1 => Castling::from(CastleFlags::WHITE_QUEEN),
-                Squares::E1 => Castling::from(CastleFlags::WHITE),
-                Squares::H1 => Castling::from(CastleFlags::WHITE_KING),
-                Squares::A8 => Castling::from(CastleFlags::BLACK_QUEEN),
-                Squares::E8 => Castling::from(CastleFlags::BLACK),
-                Squares::H8 => Castling::from(CastleFlags::BLACK_KING),
-                _ => Castling::none(),
+                Squares::A1 => CastleFlags::WHITE_QUEEN,
+                Squares::E1 => CastleFlags::WHITE,
+                Squares::H1 => CastleFlags::WHITE_KING,
+                Squares::A8 => CastleFlags::BLACK_QUEEN,
+                Squares::E8 => CastleFlags::BLACK,
+                Squares::H8 => CastleFlags::BLACK_KING,
+                _ => CastleFlags::NONE,
             };
             self.set_castling(self.state.castling ^ revoked_perms);
         }

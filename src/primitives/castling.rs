@@ -1,4 +1,5 @@
 use chess_kit_derive::{Arithmetic, BitOps};
+use crate::primitives::{Side, Sides};
 use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, BitOps, Arithmetic)]
@@ -41,6 +42,30 @@ impl Castling {
 
     pub const fn all() -> Self {
         Self(CastleFlags::ALL)
+    }
+
+    pub fn can_castle(&self, side: Side) -> bool {
+        match side {
+            Sides::WHITE => self.0 & CastleFlags::WHITE != CastleFlags::NONE,
+            Sides::BLACK => self.0 & CastleFlags::BLACK != CastleFlags::NONE,
+            _ => false,
+        }
+    }
+
+    pub fn kingside(&self, side: Side) -> bool {
+        match side {
+            Sides::WHITE => self.0 & CastleFlags::WHITE_KING != CastleFlags::NONE,
+            Sides::BLACK => self.0 & CastleFlags::BLACK_KING != CastleFlags::NONE,
+            _ => false,
+        }
+    }
+
+    pub fn queenside(&self, side: Side) -> bool {
+        match side {
+            Sides::WHITE => self.0 & CastleFlags::WHITE_QUEEN != CastleFlags::NONE,
+            Sides::BLACK => self.0 & CastleFlags::BLACK_QUEEN != CastleFlags::NONE,
+            _ => false,
+        }
     }
 }
 

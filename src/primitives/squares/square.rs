@@ -53,6 +53,36 @@ impl Square {
         let even_square = (self.0 & 1) == 0;
         even_rank ^ even_square
     }
+
+    // distance returns the distance between two squares
+    //
+    // @param: self - immutable reference to the square
+    // @param: other - square to calculate the distance to
+    // @return: distance between the two squares
+    #[inline(always)]
+    pub const fn distance(&self, other: Square) -> u8 {
+        (self.0 as i8 - other.0 as i8).abs() as u8
+    }
+
+    // on_rank returns true if the square is on the given rank
+    //
+    // @param: self - immutable reference to the square
+    // @param: rank - rank to check
+    // @return: true if the square is on the given rank, false otherwise
+    #[inline(always)]
+    pub const fn on_rank(&self, rank: Rank) -> bool {
+        self.rank() == rank
+    }
+
+    // on_file returns true if the square is on the given file
+    //
+    // @param: self - immutable reference to the square
+    // @param: file - file to check
+    // @return: true if the square is on the given file, false otherwise
+    #[inline(always)]
+    pub const fn on_file(&self, file: File) -> bool {
+        self.file() == file
+    }
 }
 
 impl TryFrom<&str> for Square {

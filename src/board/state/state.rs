@@ -23,7 +23,7 @@ impl State {
             zobrist_key: 0,
             halfmoves: 0,
             fullmoves: 0,
-            next_move: Move::new(0),
+            next_move: Move::default(),
         }
     }
 
@@ -37,6 +37,6 @@ impl State {
         self.zobrist_key = 0;
         self.halfmoves = 0;
         self.fullmoves = 0;
-        self.next_move = Move::new(0);
+        self.next_move = Move::default();
     }
 }

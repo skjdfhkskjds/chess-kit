@@ -68,7 +68,30 @@ const MOVE_ONLY: usize = 0x00_00_00_00_00_FF_FF_FF;
 
 // These functions decode the move data.
 impl Move {
-    pub fn new(data: usize) -> Self {
+    pub fn new(
+        piece: Piece,
+        from: Square,
+        to: Square,
+        capture: Piece,
+        promotion: Piece,
+        en_passant: bool,
+        double_step: bool,
+        castling: bool,
+    ) -> Self {
+        let data = piece.unwrap()
+            | from.unwrap() << Shift::FromSquare as usize
+            | to.unwrap() << Shift::ToSquare as usize
+            | capture.unwrap() << Shift::Capture as usize
+            | promotion.unwrap() << Shift::Promotion as usize
+            | (en_passant as usize) << Shift::EnPassant as usize
+            | (double_step as usize) << Shift::DoubleStep as usize
+            | (castling as usize) << Shift::Castling as usize;
+
+        Self { data }
+    }
+
+    pub fn with_promotion(self, promotion: Piece) -> Self {
+        let data = self.data | promotion.unwrap() << Shift::Promotion as usize;
         Self { data }
     }
 
