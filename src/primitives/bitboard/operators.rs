@@ -1,10 +1,23 @@
 use crate::primitives::bitboard::Bitboard;
 use std::ops::{
-    BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr,
-    ShrAssign, Add
+    Add, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr,
+    ShrAssign,
 };
 
+// ================================================
+//                      BITOR
+// ================================================
+
 impl BitOr for Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn bitor(self, rhs: Bitboard) -> Self::Output {
+        Bitboard(self.0 | rhs.0)
+    }
+}
+
+impl<'a> BitOr<Bitboard> for &'a Bitboard {
     type Output = Bitboard;
 
     #[inline(always)]
@@ -22,12 +35,21 @@ impl<'a> BitOr<&'a Bitboard> for Bitboard {
     }
 }
 
-impl<'a> BitOr<Bitboard> for &'a Bitboard {
+impl BitOr<u64> for Bitboard {
     type Output = Bitboard;
 
     #[inline(always)]
-    fn bitor(self, rhs: Bitboard) -> Self::Output {
-        Bitboard(self.0 | rhs.0)
+    fn bitor(self, rhs: u64) -> Self::Output {
+        Bitboard(self.0 | rhs)
+    }
+}
+
+impl<'a> BitOr<u64> for &'a Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn bitor(self, rhs: u64) -> Self::Output {
+        Bitboard(self.0 | rhs)
     }
 }
 
@@ -44,6 +66,17 @@ impl<'a> BitOrAssign<&'a Bitboard> for Bitboard {
         self.0 |= rhs.0;
     }
 }
+
+impl BitOrAssign<u64> for Bitboard {
+    #[inline(always)]
+    fn bitor_assign(&mut self, rhs: u64) {
+        self.0 |= rhs;
+    }
+}
+
+// ================================================
+//                     BITAND
+// ================================================
 
 impl BitAnd for Bitboard {
     type Output = Bitboard;
@@ -71,6 +104,23 @@ impl<'a> BitAnd<&'a Bitboard> for Bitboard {
     }
 }
 
+impl<'a> BitAnd<u64> for &'a Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn bitand(self, rhs: u64) -> Self::Output {
+        Bitboard(self.0 & rhs)
+    }
+}
+
+impl BitAnd<u64> for Bitboard {
+    type Output = Bitboard;
+    #[inline(always)]
+    fn bitand(self, rhs: u64) -> Self::Output {
+        Bitboard(self.0 & rhs)
+    }
+}
+
 impl BitAndAssign for Bitboard {
     #[inline(always)]
     fn bitand_assign(&mut self, rhs: Self) {
@@ -85,6 +135,17 @@ impl<'a> BitAndAssign<&'a Bitboard> for Bitboard {
     }
 }
 
+impl BitAndAssign<u64> for Bitboard {
+    #[inline(always)]
+    fn bitand_assign(&mut self, rhs: u64) {
+        self.0 &= rhs;
+    }
+}
+
+// ================================================
+//                     BITNOT
+// ================================================
+
 impl Not for Bitboard {
     type Output = Bitboard;
 
@@ -93,6 +154,10 @@ impl Not for Bitboard {
         Bitboard(!self.0)
     }
 }
+
+// ================================================
+//                     BITXOR
+// ================================================
 
 impl BitXor for Bitboard {
     type Output = Bitboard;
@@ -105,6 +170,7 @@ impl BitXor for Bitboard {
 
 impl<'a> BitXor<Bitboard> for &'a Bitboard {
     type Output = Bitboard;
+
     #[inline(always)]
     fn bitxor(self, rhs: Bitboard) -> Self::Output {
         Bitboard(self.0 ^ rhs.0)
@@ -113,9 +179,28 @@ impl<'a> BitXor<Bitboard> for &'a Bitboard {
 
 impl<'a> BitXor<&'a Bitboard> for Bitboard {
     type Output = Bitboard;
+
     #[inline(always)]
     fn bitxor(self, rhs: &'a Bitboard) -> Self::Output {
         Bitboard(self.0 ^ rhs.0)
+    }
+}
+
+impl BitXor<u64> for Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn bitxor(self, rhs: u64) -> Self::Output {
+        Bitboard(self.0 ^ rhs)
+    }
+}
+
+impl<'a> BitXor<u64> for &'a Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn bitxor(self, rhs: u64) -> Self::Output {
+        Bitboard(self.0 ^ rhs)
     }
 }
 
@@ -133,6 +218,17 @@ impl<'a> BitXorAssign<&'a Bitboard> for Bitboard {
     }
 }
 
+impl BitXorAssign<u64> for Bitboard {
+    #[inline(always)]
+    fn bitxor_assign(&mut self, rhs: u64) {
+        self.0 ^= rhs;
+    }
+}
+
+// ================================================
+//                  BITSHIFT LEFT
+// ================================================
+
 impl Shl<u32> for Bitboard {
     type Output = Bitboard;
 
@@ -142,7 +238,67 @@ impl Shl<u32> for Bitboard {
     }
 }
 
+impl<'a> Shl<u32> for &'a Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn shl(self, rhs: u32) -> Self::Output {
+        Bitboard(self.0 << rhs)
+    }
+}
+
+impl ShlAssign<u32> for Bitboard {
+    #[inline(always)]
+    fn shl_assign(&mut self, rhs: u32) {
+        self.0 <<= rhs;
+    }
+}
+
+// TODO: figure out how to deduplicate operator defs for different bitsize
+//       support that resolve at compile time
+impl Shl<u8> for Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn shl(self, rhs: u8) -> Self::Output {
+        Bitboard(self.0 << rhs)
+    }
+}
+
+// TODO: figure out how to deduplicate operator defs for different bitsize
+//       support that resolve at compile time
+impl<'a> Shl<u8> for &'a Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn shl(self, rhs: u8) -> Self::Output {
+        Bitboard(self.0 << rhs)
+    }
+}
+
+// TODO: figure out how to deduplicate operator defs for different bitsize
+//       support that resolve at compile time
+impl ShlAssign<u8> for Bitboard {
+    #[inline(always)]
+    fn shl_assign(&mut self, rhs: u8) {
+        self.0 <<= rhs;
+    }
+}
+
+// ================================================
+//                 BITSHIFT RIGHT
+// ================================================
+
 impl Shr<u32> for Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn shr(self, rhs: u32) -> Self::Output {
+        Bitboard(self.0 >> rhs)
+    }
+}
+
+impl<'a> Shr<u32> for &'a Bitboard {
     type Output = Bitboard;
 
     #[inline(always)]
@@ -158,12 +314,40 @@ impl ShrAssign<u32> for Bitboard {
     }
 }
 
-impl ShlAssign<u32> for Bitboard {
+// TODO: figure out how to deduplicate operator defs for different bitsize
+//       support that resolve at compile time
+impl Shr<u8> for Bitboard {
+    type Output = Bitboard;
+
     #[inline(always)]
-    fn shl_assign(&mut self, rhs: u32) {
-        self.0 <<= rhs;
+    fn shr(self, rhs: u8) -> Self::Output {
+        Bitboard(self.0 >> rhs)
     }
 }
+
+// TODO: figure out how to deduplicate operator defs for different bitsize
+//       support that resolve at compile time
+impl<'a> Shr<u8> for &'a Bitboard {
+    type Output = Bitboard;
+
+    #[inline(always)]
+    fn shr(self, rhs: u8) -> Self::Output {
+        Bitboard(self.0 >> rhs)
+    }
+}
+
+// TODO: figure out how to deduplicate operator defs for different bitsize
+//       support that resolve at compile time
+impl ShrAssign<u8> for Bitboard {
+    #[inline(always)]
+    fn shr_assign(&mut self, rhs: u8) {
+        self.0 >>= rhs;
+    }
+}
+
+// ================================================
+//                    ADDITION
+// ================================================
 
 impl Add<u64> for Bitboard {
     type Output = Bitboard;
@@ -174,47 +358,21 @@ impl Add<u64> for Bitboard {
     }
 }
 
-// TODO: figure out how to deduplicate operator defs for different bitsize
-//       support that resolve at compile time
-impl Shl<u8> for Bitboard {
-    type Output = Bitboard;
-
-    #[inline(always)]
-    fn shl(self, rhs: u8) -> Self::Output {
-        Bitboard(self.0 << rhs)
-    }
-}
-
-impl Shr<u8> for Bitboard {
-    type Output = Bitboard;
-
-    #[inline(always)]
-    fn shr(self, rhs: u8) -> Self::Output {
-        Bitboard(self.0 >> rhs)
-    }
-}
-
-impl ShrAssign<u8> for Bitboard {
-    #[inline(always)]
-    fn shr_assign(&mut self, rhs: u8) {
-        self.0 >>= rhs;
-    }
-}
-
-impl ShlAssign<u8> for Bitboard {
-    #[inline(always)]
-    fn shl_assign(&mut self, rhs: u8) {
-        self.0 <<= rhs;
-    }
-}
-
 // ================================================
 //                  u64 operations
 // ================================================
 
-impl Into<u64> for Bitboard {
-    fn into(self) -> u64 {
-        self.0
+impl From<u64> for Bitboard {
+    #[inline(always)]
+    fn from(v: u64) -> Self {
+        Bitboard(v)
+    }
+}
+
+impl From<Bitboard> for u64 {
+    #[inline(always)]
+    fn from(bitboard: Bitboard) -> Self {
+        bitboard.0
     }
 }
 

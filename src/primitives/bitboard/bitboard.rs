@@ -22,15 +22,6 @@ impl Bitboard {
         Self(0)
     }
 
-    // bits gets the underlying u64 value of the bitboard
-    //
-    // @param: self - immutable reference to the bitboard
-    // @return: underlying u64 value of the bitboard
-    #[inline(always)]
-    pub const fn bits(&self) -> u64 {
-        self.0
-    }
-
     // is_empty checks if the bitboard is empty
     //
     // @param: self - immutable reference to the bitboard

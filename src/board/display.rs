@@ -11,7 +11,7 @@ impl fmt::Display for Board {
             for (piece, bitboard) in bitboards.iter().enumerate() {
                 for file in (Files::A..=Files::H).rev() {
                     for rank in (Ranks::R1..=Ranks::R8).rev() {
-                        if (bitboard.bits() >> (rank * 8) + file) & 1 != 0 {
+                        if !((bitboard >> ((rank * 8) as u32) + (file as u32)) & 1).is_empty() {
                             let piece_str = format!("{}", Piece::new(piece));
                             board[rank][file] = match side {
                                 Sides::WHITE => piece_str.chars().next().unwrap(),

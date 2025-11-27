@@ -87,11 +87,11 @@ impl Board {
 
             let mask = 1u64 << square; // bitmask for the square
             for (piece, (w, b)) in white.iter().zip(black.iter()).enumerate() {
-                if w.bits() & mask != 0 {
+                if !(w & mask).is_empty() {
                     on_square = Piece::new(piece);
                     break; // enforce exclusivity
                 }
-                if b.bits() & mask != 0 {
+                if !(b & mask).is_empty() {
                     on_square = Piece::new(piece);
                     break; // enforce exclusivity
                 }
