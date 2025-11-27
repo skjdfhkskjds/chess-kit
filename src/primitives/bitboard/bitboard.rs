@@ -1,7 +1,9 @@
+use chess_kit_derive::{Arithmetic, BitOps};
+
 pub type BitboardVec = Vec<Bitboard>;
 
 #[repr(transparent)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, Hash, BitOps, Arithmetic)]
 pub struct Bitboard(pub(crate) u64);
 
 impl Bitboard {
@@ -31,12 +33,12 @@ impl Bitboard {
         self.0 == 0
     }
 
-    // count counts the number of bits set in the bitboard
+    // count_ones counts the number of bits set in the bitboard
     //
     // @param: self - immutable reference to the bitboard
     // @return: number of bits set in the bitboard
     #[inline(always)]
-    pub const fn count(&self) -> u32 {
+    pub const fn count_ones(&self) -> u32 {
         self.0.count_ones()
     }
 

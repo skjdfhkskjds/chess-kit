@@ -30,7 +30,7 @@ impl MoveGenerator {
             let b_mask = MoveGenerator::bishop_mask(sq);
             let mask = if is_rook { r_mask } else { b_mask };
 
-            let bits = mask.count(); // Number of set bits in the mask
+            let bits = mask.count_ones(); // Number of set bits in the mask
             let permutations = 2u64.pow(bits); // Number of blocker boards to be indexed.
             let end = offset + permutations - 1; // End point in the attack table.
             let blocker_boards = MoveGenerator::blocker_boards(mask);

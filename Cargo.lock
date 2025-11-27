@@ -19,7 +19,17 @@ name = "chess-kit"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "chess-kit-derive",
  "rand",
+]
+
+[[package]]
+name = "chess-kit-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

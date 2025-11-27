@@ -46,10 +46,10 @@ impl Board {
             return false;
         }
 
-        let white_bishops = w[Pieces::BISHOP.unwrap()].count();
-        let black_bishops = b[Pieces::BISHOP.unwrap()].count();
-        let white_knights = w[Pieces::KNIGHT.unwrap()].count();
-        let black_knights = b[Pieces::KNIGHT.unwrap()].count();
+        let white_bishops = w[Pieces::BISHOP.unwrap()].count_ones();
+        let black_bishops = b[Pieces::BISHOP.unwrap()].count_ones();
+        let white_knights = w[Pieces::KNIGHT.unwrap()].count_ones();
+        let black_knights = b[Pieces::KNIGHT.unwrap()].count_ones();
         let piece_count = white_bishops + black_bishops + white_knights + black_knights;
 
         // check the number of pieces on the board
@@ -130,8 +130,8 @@ impl Board {
             return true;
         }
 
-        let white_knights = w[Pieces::KNIGHT.unwrap()].count();
-        let black_knights = b[Pieces::KNIGHT.unwrap()].count();
+        let white_knights = w[Pieces::KNIGHT.unwrap()].count_ones();
+        let black_knights = b[Pieces::KNIGHT.unwrap()].count_ones();
         
         // if either side has a knight-bishop pair, OR they have at least 3
         // knights, then that side can force checkmate
