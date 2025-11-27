@@ -104,6 +104,6 @@ pub struct Magic {
 impl Magic {
     pub fn get_index(&self, occupancy: Bitboard) -> usize {
         let blockerboard = occupancy & self.mask;
-        ((blockerboard.bits().wrapping_mul(self.num) >> self.shift) + self.offset) as usize
+        ((blockerboard.wrapping_mul(self.num) >> self.shift) + self.offset).bits() as usize
     }
 }

@@ -3,7 +3,7 @@ use crate::movegen::{
 };
 use crate::primitives::{
     BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Files, Piece, Pieces, Ranks,
-    Square, Squares,
+    Square, Squares, BitboardVec,
 };
 
 pub enum Direction {
@@ -16,8 +16,6 @@ pub enum Direction {
     DownRight,
     DownLeft,
 }
-
-type BitboardVec = Vec<Bitboard>;
 
 impl MoveGenerator {
     pub fn init_magics(&mut self, piece: Piece) {
@@ -67,7 +65,7 @@ impl MoveGenerator {
                 }
             }
 
-            // No failures  during indexing. Store this magic.
+            // No failures during indexing. Store this magic.
             if is_rook {
                 self.rook_magics[sq.unwrap()] = magic;
             } else {
@@ -87,6 +85,10 @@ impl MoveGenerator {
         assert!(offset == expectation as u64, "{}", ERROR);
     }
 
+    // rook_mask returns the rook mask for the given square
+    //
+    // @param: square - square to get the mask for
+    // @return: masking bitboard for the given square
     pub fn rook_mask(square: Square) -> Bitboard {
         let bb_rook_square = BITBOARD_SQUARES[square.unwrap()];
         let bb_edges = MoveGenerator::get_edges(square);
@@ -95,13 +97,19 @@ impl MoveGenerator {
         bb_mask & !bb_edges & !bb_rook_square
     }
 
+    // bishop_mask returns the bishop mask for the given square
+    //
+    // @param: square - square to get the mask for
+    // @return: masking bitboard for the given square
+    #[inline(always)]
     pub fn bishop_mask(square: Square) -> Bitboard {
+        let bitboard = Bitboard::empty();
         let bb_bishop_square = BITBOARD_SQUARES[square.unwrap()];
         let bb_edges = MoveGenerator::get_edges(square);
-        let bb_up_left = MoveGenerator::bb_ray(Bitboard::empty(), square, Direction::UpLeft);
-        let bb_up_right = MoveGenerator::bb_ray(Bitboard::empty(), square, Direction::UpRight);
-        let bb_down_right = MoveGenerator::bb_ray(Bitboard::empty(), square, Direction::DownRight);
-        let bb_down_left = MoveGenerator::bb_ray(Bitboard::empty(), square, Direction::DownLeft);
+        let bb_up_left = MoveGenerator::bb_ray(&bitboard, square, Direction::UpLeft);
+        let bb_up_right = MoveGenerator::bb_ray(&bitboard, square, Direction::UpRight);
+        let bb_down_right = MoveGenerator::bb_ray(&bitboard, square, Direction::DownRight);
+        let bb_down_left = MoveGenerator::bb_ray(&bitboard, square, Direction::DownLeft);
 
         (bb_up_left | bb_up_right | bb_down_right | bb_down_left) & !bb_edges & !bb_bishop_square
     }
@@ -119,17 +127,15 @@ impl MoveGenerator {
 
     // This function takes a square, and all the blocker boards belonging
     // to that square. Then it'll iterate through those blocker boards, and
-    // generate the attack board belonging to that blocker board. The
-    // 'length' parameter is the length of the given array of blocker
-    // boards.
+    // generate the attack board belonging to that blocker board.
     pub fn rook_attack_boards(square: Square, blockers: &[Bitboard]) -> BitboardVec {
         let mut attacks: BitboardVec = Vec::new();
 
-        for b in blockers.iter() {
-            let attacking = MoveGenerator::bb_ray(*b, square, Direction::Up)
-                | MoveGenerator::bb_ray(*b, square, Direction::Right)
-                | MoveGenerator::bb_ray(*b, square, Direction::Down)
-                | MoveGenerator::bb_ray(*b, square, Direction::Left);
+        for bitboard in blockers.iter() {
+            let attacking = MoveGenerator::bb_ray(bitboard, square, Direction::Up)
+                | MoveGenerator::bb_ray(bitboard, square, Direction::Right)
+                | MoveGenerator::bb_ray(bitboard, square, Direction::Down)
+                | MoveGenerator::bb_ray(bitboard, square, Direction::Left);
             attacks.push(attacking);
         }
 
@@ -141,10 +147,10 @@ impl MoveGenerator {
         let mut bb_attack_boards: BitboardVec = Vec::new();
 
         for b in blockers.iter() {
-            let bb_attacks = MoveGenerator::bb_ray(*b, square, Direction::UpLeft)
-                | MoveGenerator::bb_ray(*b, square, Direction::UpRight)
-                | MoveGenerator::bb_ray(*b, square, Direction::DownRight)
-                | MoveGenerator::bb_ray(*b, square, Direction::DownLeft);
+            let bb_attacks = MoveGenerator::bb_ray(b, square, Direction::UpLeft)
+                | MoveGenerator::bb_ray(b, square, Direction::UpRight)
+                | MoveGenerator::bb_ray(b, square, Direction::DownRight)
+                | MoveGenerator::bb_ray(b, square, Direction::DownLeft);
             bb_attack_boards.push(bb_attacks);
         }
 
@@ -182,7 +188,7 @@ impl MoveGenerator {
     // in that direction until it either hits a piece, or the edge of the
     // board. Therefore, in each call, only one of the eight blocks of this
     // function will be executed.
-    pub fn bb_ray(bb_in: Bitboard, square: Square, direction: Direction) -> Bitboard {
+    pub fn bb_ray(bb_in: &Bitboard, square: Square, direction: Direction) -> Bitboard {
         let mut file = square.file();
         let mut rank = square.rank();
         let mut bb_square = BITBOARD_SQUARES[square.unwrap()];
@@ -193,7 +199,7 @@ impl MoveGenerator {
             match direction {
                 Direction::Up => {
                     if rank != Ranks::R8 {
-                        bb_square <<= 8;
+                        bb_square <<= 8u8;
                         bb_ray |= bb_square;
                         rank += 1;
                         done = !(bb_square & bb_in).is_empty();
@@ -201,7 +207,7 @@ impl MoveGenerator {
                 }
                 Direction::Right => {
                     if file != Files::H {
-                        bb_square <<= 1;
+                        bb_square <<= 1u8;
                         bb_ray |= bb_square;
                         file += 1;
                         done = !(bb_square & bb_in).is_empty();
@@ -209,7 +215,7 @@ impl MoveGenerator {
                 }
                 Direction::Down => {
                     if rank != Ranks::R1 {
-                        bb_square >>= 8;
+                        bb_square >>= 8u8;
                         bb_ray |= bb_square;
                         rank -= 1;
                         done = !(bb_square & bb_in).is_empty();
@@ -217,7 +223,7 @@ impl MoveGenerator {
                 }
                 Direction::Left => {
                     if file != Files::A {
-                        bb_square >>= 1;
+                        bb_square >>= 1u8;
                         bb_ray |= bb_square;
                         file -= 1;
                         done = !(bb_square & bb_in).is_empty();
@@ -225,7 +231,7 @@ impl MoveGenerator {
                 }
                 Direction::UpLeft => {
                     if (rank != Ranks::R8) && (file != Files::A) {
-                        bb_square <<= 7;
+                        bb_square <<= 7u8;
                         bb_ray |= bb_square;
                         rank += 1;
                         file -= 1;
@@ -234,7 +240,7 @@ impl MoveGenerator {
                 }
                 Direction::UpRight => {
                     if (rank != Ranks::R8) && (file != Files::H) {
-                        bb_square <<= 9;
+                        bb_square <<= 9u8;
                         bb_ray |= bb_square;
                         rank += 1;
                         file += 1;
@@ -243,7 +249,7 @@ impl MoveGenerator {
                 }
                 Direction::DownRight => {
                     if (rank != Ranks::R1) && (file != Files::H) {
-                        bb_square >>= 7;
+                        bb_square >>= 7u8;
                         bb_ray |= bb_square;
                         rank -= 1;
                         file += 1;
@@ -252,7 +258,7 @@ impl MoveGenerator {
                 }
                 Direction::DownLeft => {
                     if (rank != Ranks::R1) && (file != Files::A) {
-                        bb_square >>= 9;
+                        bb_square >>= 9u8;
                         bb_ray |= bb_square;
                         rank -= 1;
                         file -= 1;

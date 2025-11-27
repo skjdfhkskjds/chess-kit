@@ -131,7 +131,7 @@ impl Board {
     // @param: side - side to get the king square for
     // @return: square of the king for the given side
     pub fn king_square(&self, side: Side) -> Square {
-        Square::new(self.get_piece(side, Pieces::KING).bits().trailing_zeros() as usize)
+        Square::new(self.get_piece(side, Pieces::KING).trailing_zeros() as usize)
     }
 
     // has_bishop_pair checks if the given side has a bishop pair
