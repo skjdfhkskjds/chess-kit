@@ -49,14 +49,14 @@ impl Board {
             self.state.halfmoves = 0;
             // Change castling permissions on rook capture in the corner.
             if captured == Pieces::ROOK && has_permissions {
-                let revoked_perms = match to {
+                let revoked_perms = CastleFlags::ALL & !match from {
                     Squares::A1 => CastleFlags::WHITE_QUEEN,
                     Squares::H1 => CastleFlags::WHITE_KING,
                     Squares::A8 => CastleFlags::BLACK_QUEEN,
                     Squares::H8 => CastleFlags::BLACK_KING,
                     _ => CastleFlags::NONE,
                 };
-                self.set_castling(self.state.castling ^ revoked_perms);
+                self.set_castling(self.state.castling & revoked_perms);
             }
         }
 
@@ -71,19 +71,19 @@ impl Board {
 
             // After an en-passant maneuver, the opponent's pawn must also be removed.
             if en_passant {
-                self.remove_piece(opponent, Pieces::PAWN, to ^ Square::new(8));
+                self.remove_piece(opponent, Pieces::PAWN, to ^ 8);
             }
 
             // A double-step is the only move that sets the ep-square.
             if double_step {
-                self.set_en_passant(to ^ Square::new(8));
+                self.set_en_passant(to ^ 8);
             }
         }
 
         // Remove castling permissions if king/rook leaves from starting square.
         // (This will also adjust permissions when castling, because the king moves.)
         if (piece == Pieces::KING || piece == Pieces::ROOK) && has_permissions {
-            let revoked_perms = match to {
+            let revoked_perms = CastleFlags::ALL & !match from {
                 Squares::A1 => CastleFlags::WHITE_QUEEN,
                 Squares::E1 => CastleFlags::WHITE,
                 Squares::H1 => CastleFlags::WHITE_KING,
@@ -92,7 +92,7 @@ impl Board {
                 Squares::H8 => CastleFlags::BLACK_KING,
                 _ => CastleFlags::NONE,
             };
-            self.set_castling(self.state.castling ^ revoked_perms);
+            self.set_castling(self.state.castling & revoked_perms);
         }
 
         // If the king is castling, then also move the rook.
@@ -102,7 +102,7 @@ impl Board {
                 Squares::C1 => self.move_piece(us, Pieces::ROOK, Squares::A1, Squares::D1),
                 Squares::G8 => self.move_piece(us, Pieces::ROOK, Squares::H8, Squares::F8),
                 Squares::C8 => self.move_piece(us, Pieces::ROOK, Squares::A8, Squares::D8),
-                _ => panic!("Error moving rook during castling. {to}"),
+                _ => panic!("Invalid king move during castling. {from} -> {to}"),
             }
         }
 

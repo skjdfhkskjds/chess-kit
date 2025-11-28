@@ -10,7 +10,7 @@ impl Board {
     // @side-effects: modifies the `board`
     pub fn set_castling(&mut self, castling: Castling) {
         self.state.zobrist_key ^= self.zobrist.castling(self.state.castling);
-        self.state.castling |= castling;
+        self.state.castling = castling;
         self.state.zobrist_key ^= self.zobrist.castling(self.state.castling);
     }
 

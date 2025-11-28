@@ -123,6 +123,12 @@ impl MoveGenerator {
                     return;
                 }
 
+                // assert!(
+                //     board.king_square(Sides::WHITE) == Squares::E1,
+                //     "King square is not E1, {}",
+                //     board.king_square(Sides::WHITE)
+                // );
+
                 if board.state.castling.kingside(Sides::WHITE) {
                     let bb_kingside_blockers = BITBOARD_SQUARES[Squares::F1.unwrap()]
                         | BITBOARD_SQUARES[Squares::G1.unwrap()];
@@ -156,6 +162,12 @@ impl MoveGenerator {
                 if !board.state.castling.can_castle(Sides::BLACK) {
                     return;
                 }
+
+                // assert!(
+                //     board.king_square(Sides::BLACK) == Squares::E8,
+                //     "King square is not E8, {}",
+                //     board.king_square(Sides::BLACK)
+                // );
 
                 if board.state.castling.kingside(Sides::BLACK) {
                     let bb_kingside_blockers = BITBOARD_SQUARES[Squares::F8.unwrap()]
@@ -214,25 +226,34 @@ impl MoveGenerator {
             let double_step = is_pawn && (to_square.distance(from) == 16);
             let castling = (piece == Pieces::KING) && (to_square.distance(from) == 2);
 
-            // Gather all data for this move into one 64-bit integer.
-            let move_data = Move::new(
-                piece,
-                from,
-                to_square,
-                capture,
-                Pieces::NONE,
-                en_passant,
-                double_step,
-                castling,
-            );
-
             // if the move is a promotion, push possible promotion moves
+            // TODO: figure out nice abstraction for deduplicating the code
+            //       right now the issue is that overwriting the promotion
+            //       piece needs to first unset the old NONE flags.
             if promotion {
-                PROMOTION_PIECES.iter().for_each(|piece| {
-                    list.push(move_data.with_promotion(*piece));
+                PROMOTION_PIECES.iter().for_each(|promotion_piece| {
+                    list.push(Move::new(
+                        piece,
+                        from,
+                        to_square,
+                        capture,
+                        *promotion_piece,
+                        en_passant,
+                        double_step,
+                        castling,
+                    ));
                 });
             } else {
-                list.push(move_data);
+                list.push(Move::new(
+                    piece,
+                    from,
+                    to_square,
+                    capture,
+                    Pieces::NONE,
+                    en_passant,
+                    double_step,
+                    castling,
+                ));
             }
         }
     }

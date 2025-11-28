@@ -52,18 +52,18 @@ fn run_tests() {
         match setup_result {
             Ok(b) => {
                 println!("board: {}", b);
-                for (i, piece) in b.pieces.iter().enumerate() {
-                    println!("piece {}: {}", i, piece);
-                }
-                for (i, bitboard) in b.bitboards[Sides::WHITE].iter().enumerate() {
-                    println!("white bitboard {}: {}", i, bitboard);
-                }
-                for (i, bitboard) in b.bitboards[Sides::BLACK].iter().enumerate() {
-                    println!("black bitboard {}: {}", i, bitboard);
-                }
-                for (i, side) in b.sides.iter().enumerate() {
-                    println!("side {}: {}", i, side);
-                }
+                // for (i, piece) in b.pieces.iter().enumerate() {
+                //     println!("piece {}: {}", i, piece);
+                // }
+                // for (i, bitboard) in b.bitboards[Sides::WHITE].iter().enumerate() {
+                //     println!("white bitboard {}: {}", i, bitboard);
+                // }
+                // for (i, bitboard) in b.bitboards[Sides::BLACK].iter().enumerate() {
+                //     println!("black bitboard {}: {}", i, bitboard);
+                // }
+                // for (i, side) in b.sides.iter().enumerate() {
+                //     println!("side {}: {}", i, side);
+                // }
 
                 board = b;
             },

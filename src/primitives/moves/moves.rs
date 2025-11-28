@@ -79,40 +79,35 @@ impl Move {
         castling: bool,
     ) -> Self {
         let data = piece.unwrap()
-            | from.unwrap() << Shift::FromSquare as usize
-            | to.unwrap() << Shift::ToSquare as usize
-            | capture.unwrap() << Shift::Capture as usize
-            | promotion.unwrap() << Shift::Promotion as usize
-            | (en_passant as usize) << Shift::EnPassant as usize
-            | (double_step as usize) << Shift::DoubleStep as usize
-            | (castling as usize) << Shift::Castling as usize;
+            | (from.unwrap() << Shift::FromSquare as usize)
+            | (to.unwrap() << Shift::ToSquare as usize)
+            | (capture.unwrap() << Shift::Capture as usize)
+            | (promotion.unwrap() << Shift::Promotion as usize)
+            | ((en_passant as usize) << Shift::EnPassant as usize)
+            | ((double_step as usize) << Shift::DoubleStep as usize)
+            | ((castling as usize) << Shift::Castling as usize);
 
-        Self { data }
-    }
-
-    pub fn with_promotion(self, promotion: Piece) -> Self {
-        let data = self.data | promotion.unwrap() << Shift::Promotion as usize;
         Self { data }
     }
 
     pub fn piece(&self) -> Piece {
-        Piece::new(((self.data >> Shift::Piece as u64) & 0x7) as usize)
+        Piece::new((self.data >> Shift::Piece as u64) & 0x7)
     }
 
     pub fn from(&self) -> Square {
-        Square::new(((self.data >> Shift::FromSquare as u64) & 0x3F) as usize)
+        Square::new((self.data >> Shift::FromSquare as u64) & 0x3F)
     }
 
     pub fn to(&self) -> Square {
-        Square::new(((self.data >> Shift::ToSquare as u64) & 0x3F) as usize)
+        Square::new((self.data >> Shift::ToSquare as u64) & 0x3F)
     }
 
     pub fn captured(&self) -> Piece {
-        Piece::new(((self.data >> Shift::Capture as u64) & 0x7) as usize)
+        Piece::new((self.data >> Shift::Capture as u64) & 0x7)
     }
 
     pub fn promoted(&self) -> Piece {
-        Piece::new(((self.data >> Shift::Promotion as u64) & 0x7) as usize)
+        Piece::new((self.data >> Shift::Promotion as u64) & 0x7)
     }
 
     pub fn en_passant(&self) -> bool {
