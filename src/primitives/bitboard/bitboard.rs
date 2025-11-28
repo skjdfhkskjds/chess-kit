@@ -1,4 +1,5 @@
 use chess_kit_derive::{Arithmetic, BitOps};
+use crate::primitives::{BITBOARD_SQUARES, Square};
 
 pub type BitboardVec = Vec<Bitboard>;
 
@@ -31,5 +32,27 @@ impl Bitboard {
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.0 == 0
+    }
+
+    // remove_at removes the piece at the given square
+    //
+    // @param: self - mutable reference to the bitboard
+    // @param: square - square to remove the piece from
+    // @return: void
+    // @side-effects: modifies the `bitboard`
+    #[inline(always)]
+    pub fn remove_at(&mut self, square: Square) {
+        self.0 &= !BITBOARD_SQUARES[square.unwrap()].0;
+    }
+
+    // set_at sets the piece at the given square
+    //
+    // @param: self - mutable reference to the bitboard
+    // @param: square - square to set the piece on
+    // @return: void
+    // @side-effects: modifies the `bitboard`
+    #[inline(always)]
+    pub fn set_at(&mut self, square: Square) {
+        self.0 |= BITBOARD_SQUARES[square.unwrap()].0;
     }
 }

@@ -1,6 +1,4 @@
-use chess_kit::{
-    board::Board, movegen::MoveGenerator, perft::{perft, perft_divide_print}, primitives::Sides
-};
+use chess_kit::{board::Board, movegen::MoveGenerator, perft::perft};
 mod testcases;
 use testcases::TEST_CASES;
 
@@ -15,7 +13,6 @@ impl TestResult {
     pub const ERR_FEN: usize = 1;
     pub const ERR_DEPTH: usize = 2;
     pub const ERR_EXPECT: usize = 3;
-    pub const ERR_FAIL: usize = 4;
 }
 
 const TEST_RESULTS: [&str; 5] = [
@@ -52,24 +49,10 @@ fn run_tests() {
         match setup_result {
             Ok(b) => {
                 println!("board: {}", b);
-                // for (i, piece) in b.pieces.iter().enumerate() {
-                //     println!("piece {}: {}", i, piece);
-                // }
-                // for (i, bitboard) in b.bitboards[Sides::WHITE].iter().enumerate() {
-                //     println!("white bitboard {}: {}", i, bitboard);
-                // }
-                // for (i, bitboard) in b.bitboards[Sides::BLACK].iter().enumerate() {
-                //     println!("black bitboard {}: {}", i, bitboard);
-                // }
-                // for (i, side) in b.sides.iter().enumerate() {
-                //     println!("side {}: {}", i, side);
-                // }
-
                 board = b;
-            },
+            }
             Err(_) => result = TestResult::ERR_FEN,
         };
-
 
         // Run all the parts of a test.
         let mut index: usize = 1;
@@ -101,11 +84,7 @@ fn run_tests() {
 
                 // This is the actual perft run for this test and depth.
                 let now = Instant::now();
-                let found_ln = perft_divide_print(
-                    &mut board,
-                    &move_generator,
-                    depth,
-                );
+                let found_ln = perft(&mut board, &move_generator, depth);
                 let elapsed = now.elapsed().as_millis();
                 let moves_per_second = ((found_ln * 1000) as f64 / elapsed as f64).floor();
                 let is_ok = expected_ln == found_ln;

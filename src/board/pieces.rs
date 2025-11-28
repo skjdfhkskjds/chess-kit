@@ -1,5 +1,5 @@
 use crate::board::board::Board;
-use crate::primitives::{BITBOARD_SQUARES, Bitboard, Piece, Pieces, Side, Square};
+use crate::primitives::{Bitboard, Piece, Pieces, Side, Square};
 
 impl Board {
     // get_piece returns the bitboard of the given side and piece
@@ -23,8 +23,8 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     pub fn remove_piece_no_incrementals(&mut self, side: Side, piece: Piece, square: Square) {
-        self.bitboards[side][piece.unwrap()] ^= BITBOARD_SQUARES[square.unwrap()];
-        self.sides[side] ^= BITBOARD_SQUARES[square.unwrap()];
+        self.bitboards[side][piece.unwrap()].remove_at(square);
+        self.sides[side].remove_at(square);
         self.pieces[square.unwrap()] = Pieces::NONE;
     }
 
@@ -53,8 +53,8 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     pub fn set_piece_no_incrementals(&mut self, side: Side, piece: Piece, square: Square) {
-        self.bitboards[side][piece.unwrap()] |= BITBOARD_SQUARES[square.unwrap()];
-        self.sides[side] |= BITBOARD_SQUARES[square.unwrap()];
+        self.bitboards[side][piece.unwrap()].set_at(square);
+        self.sides[side].set_at(square);
         self.pieces[square.unwrap()] = piece;
     }
 

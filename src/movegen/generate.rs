@@ -123,12 +123,6 @@ impl MoveGenerator {
                     return;
                 }
 
-                // assert!(
-                //     board.king_square(Sides::WHITE) == Squares::E1,
-                //     "King square is not E1, {}",
-                //     board.king_square(Sides::WHITE)
-                // );
-
                 if board.state.castling.kingside(Sides::WHITE) {
                     let bb_kingside_blockers = BITBOARD_SQUARES[Squares::F1.unwrap()]
                         | BITBOARD_SQUARES[Squares::G1.unwrap()];
@@ -163,12 +157,6 @@ impl MoveGenerator {
                     return;
                 }
 
-                // assert!(
-                //     board.king_square(Sides::BLACK) == Squares::E8,
-                //     "King square is not E8, {}",
-                //     board.king_square(Sides::BLACK)
-                // );
-
                 if board.state.castling.kingside(Sides::BLACK) {
                     let bb_kingside_blockers = BITBOARD_SQUARES[Squares::F8.unwrap()]
                         | BITBOARD_SQUARES[Squares::G8.unwrap()];
@@ -202,29 +190,42 @@ impl MoveGenerator {
         }
     }
 
-    // Add the generated moves to the move list.
+    // push_moves pushes a set of moves to the move list as defined by the
+    // given piece at the from square to the each of the to squares.
+    //
+    // @param: self - immutable reference to the move generator
+    // @param: board - immutable reference to the board
+    // @param: piece - piece to push the moves for
+    // @param: from - square to push the moves from
+    // @param: to_squares - bitboard of squares to push the moves to
+    // @param: list - mutable reference to the move list
+    // @return: void
+    // @side-effects: modifies the `move list`
     pub fn push_moves(
         &self,
         board: &Board,
         piece: Piece,
         from: Square,
-        to: Bitboard,
+        to_squares: Bitboard,
         list: &mut MoveList,
     ) {
-        // Shorthand variables.
         let promotion_rank = Ranks::promotion_rank(board.turn());
-        let is_pawn = piece == Pieces::PAWN;
+        let is_pawn = piece.is_pawn();
 
-        // add all destination squares to the move list
-        for to_square in to.iter() {
-            let capture = board.pieces[to_square.unwrap()];
+        // push a move for each of the `to` squares
+        for to in to_squares.iter() {
+            // check if the move is an en passant capture
             let en_passant = match board.state.en_passant {
-                Some(square) => is_pawn && (square == to_square),
+                Some(square) => is_pawn && (square == to),
                 None => false,
             };
-            let promotion = is_pawn && to_square.on_rank(promotion_rank);
-            let double_step = is_pawn && (to_square.distance(from) == 16);
-            let castling = (piece == Pieces::KING) && (to_square.distance(from) == 2);
+
+            // get the captured piece given by the existing piece at `to`
+            let capture = board.pieces[to.unwrap()];
+            
+            let promotion = is_pawn && to.on_rank(promotion_rank);
+            let double_step = is_pawn && (to.distance(from) == 16);
+            let castling = piece.is_king() && (to.distance(from) == 2);
 
             // if the move is a promotion, push possible promotion moves
             // TODO: figure out nice abstraction for deduplicating the code
@@ -235,7 +236,7 @@ impl MoveGenerator {
                     list.push(Move::new(
                         piece,
                         from,
-                        to_square,
+                        to,
                         capture,
                         *promotion_piece,
                         en_passant,
@@ -247,7 +248,7 @@ impl MoveGenerator {
                 list.push(Move::new(
                     piece,
                     from,
-                    to_square,
+                    to,
                     capture,
                     Pieces::NONE,
                     en_passant,

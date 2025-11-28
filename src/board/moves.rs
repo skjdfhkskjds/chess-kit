@@ -1,9 +1,41 @@
 use crate::board::board::Board;
 use crate::primitives::moves::Move;
-use crate::primitives::{CastleFlags, Castling, Pieces, Sides, Square, Squares};
+use crate::primitives::{CastleFlags, Castling, Piece, Pieces, Side, Sides, Square, Squares};
 
 // TODO: refactor all of this
 impl Board {
+    // capture_piece captures the side's piece at the given square
+    // 
+    // @param: self - mutable reference to the board
+    // @param: side - side to capture the piece from
+    // @param: piece - piece to capture
+    // @param: square - square to capture the piece from
+    // @return: void
+    // @side-effects: modifies the `board`
+    // @side-effects: resets the halfmove clock
+    // @side-effects: updates castling permissions (if applicable)
+    fn capture_piece(&mut self, side: Side, piece: Piece, square: Square) {
+        // remove the piece from the board
+        self.remove_piece(side, piece, square);
+
+        // reset the halfmove clock since a capture has occurred
+        self.state.halfmoves = 0;
+
+        // if the captured piece is a rook (king captures are invalid), and
+        // the side has castling permissions, then revoke the appropriate
+        // castling permissions
+        if piece.is_rook() && self.state.castling.can_castle(side) {
+            let revoked_perms = CastleFlags::ALL & !match square {
+                Squares::A1 => CastleFlags::WHITE_QUEEN,
+                Squares::H1 => CastleFlags::WHITE_KING,
+                Squares::A8 => CastleFlags::BLACK_QUEEN,
+                Squares::H8 => CastleFlags::BLACK_KING,
+                _ => CastleFlags::NONE,
+            };
+            self.set_castling(self.state.castling & revoked_perms);
+        }
+    }
+
     // make_move makes the given move on the board
     //
     // @param: self - mutable reference to the board
@@ -43,21 +75,9 @@ impl Board {
             self.clear_en_passant();
         }
 
-        // If a piece was captured with this move then remove it. Also reset half_move_clock.
+        // handle a piece capture
         if is_capture {
-            self.remove_piece(opponent, captured, to);
-            self.state.halfmoves = 0;
-            // Change castling permissions on rook capture in the corner.
-            if captured == Pieces::ROOK && has_permissions {
-                let revoked_perms = CastleFlags::ALL & !match from {
-                    Squares::A1 => CastleFlags::WHITE_QUEEN,
-                    Squares::H1 => CastleFlags::WHITE_KING,
-                    Squares::A8 => CastleFlags::BLACK_QUEEN,
-                    Squares::H8 => CastleFlags::BLACK_KING,
-                    _ => CastleFlags::NONE,
-                };
-                self.set_castling(self.state.castling & revoked_perms);
-            }
+            self.capture_piece(opponent, captured, to);
         }
 
         // Make the move. Just move the piece if it's not a pawn.
