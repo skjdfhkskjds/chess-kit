@@ -44,7 +44,7 @@ impl MoveGenerator {
     // @return: bitboard representing the queen targets
     #[inline(always)]
     pub fn get_queen_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
-        self.get_rook_attacks(square, bitboard) | self.get_bishop_attacks(square, bitboard)
+        self.get_rook_attacks(square, bitboard) ^ self.get_bishop_attacks(square, bitboard)
     }
 
     // rook_mask returns the rook mask for the given square

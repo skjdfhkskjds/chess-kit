@@ -159,7 +159,7 @@ impl From<&str> for Board {
     // @panic: if the FEN string is invalid
     fn from(fen: &str) -> Self {
         let fen_parser = FENParser::parse(fen);
-        match fen_parser {
+        let mut board = match fen_parser {
             Ok(fen_parser) => {
                 let mut board = Self::new();
                 board.bitboards = fen_parser.pieces.bitboards;
@@ -173,6 +173,10 @@ impl From<&str> for Board {
             Err(e) => {
                 panic!("Failed to parse FEN: {}", e);
             }
-        }
+        };
+
+        // TODO: move the board initialization elsewhere
+        board.init(None);
+        board
     }
 }

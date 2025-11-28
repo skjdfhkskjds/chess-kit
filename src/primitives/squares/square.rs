@@ -127,14 +127,14 @@ impl TryFrom<&str> for Square {
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.file() {
-            Files::A => write!(f, "A"),
-            Files::B => write!(f, "B"),
-            Files::C => write!(f, "C"),
-            Files::D => write!(f, "D"),
-            Files::E => write!(f, "E"),
+            Files::A => write!(f, "a"),
+            Files::B => write!(f, "b"),
+            Files::C => write!(f, "c"),
+            Files::D => write!(f, "d"),
+            Files::E => write!(f, "e"),
             Files::F => write!(f, "f"),
-            Files::G => write!(f, "G"),
-            Files::H => write!(f, "H"),
+            Files::G => write!(f, "g"),
+            Files::H => write!(f, "h"),
             _ => return Err(fmt::Error),
         }?;
         match self.rank() {

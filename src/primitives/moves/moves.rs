@@ -42,7 +42,7 @@ Storing the "To" square: Shift LEFT 9 bits, then XOR with "data".
 Note: credits to https://codeberg.org/mvanthoor/rustic
 */
 
-use crate::primitives::{Piece, Square};
+use crate::primitives::{Piece, Pieces, Square};
 use std::fmt::{self, Display};
 
 #[repr(usize)]
@@ -148,7 +148,12 @@ impl Move {
 
 impl Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        let promotion = if self.promoted() != Pieces::NONE {
+            format!("{}", self.promoted())
+        } else {
+            "".to_string()
+        };
+        write!(f, "{}{}{}", self.from(), self.to(), promotion)
     }
 }
 

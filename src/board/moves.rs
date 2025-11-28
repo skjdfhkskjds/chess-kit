@@ -102,7 +102,7 @@ impl Board {
                 Squares::C1 => self.move_piece(us, Pieces::ROOK, Squares::A1, Squares::D1),
                 Squares::G8 => self.move_piece(us, Pieces::ROOK, Squares::H8, Squares::F8),
                 Squares::C8 => self.move_piece(us, Pieces::ROOK, Squares::A8, Squares::D8),
-                _ => panic!("Error moving rook during castling."),
+                _ => panic!("Error moving rook during castling. {to}"),
             }
         }
 
@@ -115,12 +115,11 @@ impl Board {
         }
     }
 
-
     // unmake unmakes the last move on the board
     //
     // Note: since unmake pops from the history, we don't need to recompute
     //       any incremental game state since those are retrieved directly
-    // 
+    //
     // @param: self - mutable reference to the board
     // @return: void
     // @side-effects: modifies the `board`
@@ -160,10 +159,18 @@ impl Board {
         // Now undo the correct castling rook move.
         if castling {
             match to {
-                Squares::G1 => self.move_piece_no_incrementals(us, Pieces::ROOK, Squares::F1, Squares::H1),
-                Squares::C1 => self.move_piece_no_incrementals(us, Pieces::ROOK, Squares::D1, Squares::A1),
-                Squares::G8 => self.move_piece_no_incrementals(us, Pieces::ROOK, Squares::F8, Squares::H8),
-                Squares::C8 => self.move_piece_no_incrementals(us, Pieces::ROOK, Squares::D8, Squares::A8),
+                Squares::G1 => {
+                    self.move_piece_no_incrementals(us, Pieces::ROOK, Squares::F1, Squares::H1)
+                }
+                Squares::C1 => {
+                    self.move_piece_no_incrementals(us, Pieces::ROOK, Squares::D1, Squares::A1)
+                }
+                Squares::G8 => {
+                    self.move_piece_no_incrementals(us, Pieces::ROOK, Squares::F8, Squares::H8)
+                }
+                Squares::C8 => {
+                    self.move_piece_no_incrementals(us, Pieces::ROOK, Squares::D8, Squares::A8)
+                }
                 _ => panic!("Error: Reversing castling rook move."),
             };
         }
