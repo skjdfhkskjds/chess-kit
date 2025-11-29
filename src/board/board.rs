@@ -1,4 +1,4 @@
-use crate::board::fen::{FENParser, Parser};
+use crate::board::fen::{FENError, FENParser, Parser};
 use crate::board::history::History;
 use crate::board::state::State;
 use crate::board::zobrist::Zobrist;
@@ -87,11 +87,11 @@ impl Board {
 
             let mask = 1u64 << square; // bitmask for the square
             for (piece, (w, b)) in white.iter().zip(black.iter()).enumerate() {
-                if w.bits() & mask != 0 {
+                if !(w & mask).is_empty() {
                     on_square = Piece::new(piece);
                     break; // enforce exclusivity
                 }
-                if b.bits() & mask != 0 {
+                if !(b & mask).is_empty() {
                     on_square = Piece::new(piece);
                     break; // enforce exclusivity
                 }
@@ -151,28 +151,30 @@ impl Board {
     }
 }
 
-impl From<&str> for Board {
-    // from creates a new board from the given FEN string
+impl TryFrom<&str> for Board {
+    type Error = FENError;
+
+    // try_from creates a new board from the given FEN string
     //
     // @param: fen - FEN string to create the board from
-    // @return: new board
-    // @panic: if the FEN string is invalid
-    fn from(fen: &str) -> Self {
+    // @return: new board, or an error if the FEN string is invalid
+    fn try_from(fen: &str) -> Result<Self, Self::Error> {
         let fen_parser = FENParser::parse(fen);
-        match fen_parser {
-            Ok(fen_parser) => {
-                let mut board = Self::new();
-                board.bitboards = fen_parser.pieces.bitboards;
-                board.state.turn = fen_parser.turn.turn;
-                board.state.castling = fen_parser.castling.castling;
-                board.state.en_passant = fen_parser.en_passant.square;
-                board.state.halfmoves = fen_parser.halfmove_count.halfmove_count;
-                board.state.fullmoves = fen_parser.fullmove_count.fullmove_count;
-                board
-            }
-            Err(e) => {
-                panic!("Failed to parse FEN: {}", e);
-            }
+        if fen_parser.is_err() {
+            return Err(fen_parser.err().unwrap());
         }
+
+        let mut board = Self::new();
+        let parsed = fen_parser.unwrap();
+        board.bitboards = parsed.pieces.bitboards;
+        board.state.turn = parsed.turn.turn;
+        board.state.castling = parsed.castling.castling;
+        board.state.en_passant = parsed.en_passant.square;
+        board.state.halfmoves = parsed.halfmove_count.halfmove_count;
+        board.state.fullmoves = parsed.fullmove_count.fullmove_count;
+
+        // TODO: move the board initialization elsewhere
+        board.init(None);
+        Ok(board)
     }
 }

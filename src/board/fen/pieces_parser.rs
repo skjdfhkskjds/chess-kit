@@ -15,7 +15,7 @@ impl Parser for PiecesParser {
         let mut bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
 
         for c in segment.chars() {
-            let square = ((rank * 8) + file) as usize;
+            let square = (rank * 8) + file;
             match c {
                 'k' => bitboards[Sides::BLACK][Pieces::KING.unwrap()] |= BITBOARD_SQUARES[square],
                 'q' => bitboards[Sides::BLACK][Pieces::QUEEN.unwrap()] |= BITBOARD_SQUARES[square],
@@ -31,7 +31,7 @@ impl Parser for PiecesParser {
                 'P' => bitboards[Sides::WHITE][Pieces::PAWN.unwrap()] |= BITBOARD_SQUARES[square],
                 '1'..='8' => {
                     if let Some(offset) = c.to_digit(10) {
-                        file += offset as u8;
+                        file += offset as usize;
                     }
                 }
                 DELIMITTER => {

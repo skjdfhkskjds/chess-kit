@@ -1,7 +1,10 @@
-use crate::primitives::Square;
+use chess_kit_derive::{Arithmetic, BitOps};
+use crate::primitives::{BITBOARD_SQUARES, Square};
+
+pub type BitboardVec = Vec<Bitboard>;
 
 #[repr(transparent)]
-#[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Debug, Default, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, Hash, BitOps, Arithmetic)]
 pub struct Bitboard(pub(crate) u64);
 
 impl Bitboard {
@@ -22,50 +25,34 @@ impl Bitboard {
         Self(0)
     }
 
-    // bits gets the underlying u64 value of the bitboard
+    // is_empty checks if the bitboard is empty
     //
     // @param: self - immutable reference to the bitboard
-    // @return: underlying u64 value of the bitboard
+    // @return: true if the bitboard is empty, false otherwise
     #[inline(always)]
-    pub const fn bits(&self) -> u64 {
-        self.0
+    pub const fn is_empty(&self) -> bool {
+        self.0 == 0
     }
 
-    // iter iterates over the squares in the bitboard
+    // remove_at removes the piece at the given square
     //
-    // @param: self - immutable reference to the bitboard
-    // @return: iterator over the squares in the bitboard
-    pub fn iter(&self) -> BitboardIter {
-        BitboardIter(self.0)
+    // @param: self - mutable reference to the bitboard
+    // @param: square - square to remove the piece from
+    // @return: void
+    // @side-effects: modifies the `bitboard`
+    #[inline(always)]
+    pub fn remove_at(&mut self, square: Square) {
+        self.0 &= !BITBOARD_SQUARES[square.unwrap()].0;
     }
-}
 
-// ================================================
-//                    iteration
-// ================================================
-
-pub struct BitboardIter(u64);
-
-impl Iterator for BitboardIter {
-    type Item = Square;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.0 {
-            0 => None,
-            _ => {
-                let square = self.0.trailing_zeros();
-                self.0 ^= 1u64 << square;
-                Some(Square::new(square as usize))
-            }
-        }
-    }
-}
-
-impl IntoIterator for Bitboard {
-    type Item = Square;
-    type IntoIter = BitboardIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
+    // set_at sets the piece at the given square
+    //
+    // @param: self - mutable reference to the bitboard
+    // @param: square - square to set the piece on
+    // @return: void
+    // @side-effects: modifies the `bitboard`
+    #[inline(always)]
+    pub fn set_at(&mut self, square: Square) {
+        self.0 |= BITBOARD_SQUARES[square.unwrap()].0;
     }
 }

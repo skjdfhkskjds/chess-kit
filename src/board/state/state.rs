@@ -1,5 +1,5 @@
 use crate::board::zobrist::ZobristKey;
-use crate::primitives::{Castling, Side, Sides, Square};
+use crate::primitives::{Castling, Move, Side, Sides, Square};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct State {
@@ -10,6 +10,8 @@ pub struct State {
 
     pub halfmoves: u16, // halfmove clock
     pub fullmoves: u8,  // fullmove clock
+
+    pub next_move: Move, // next move to be made
 }
 
 impl State {
@@ -21,6 +23,7 @@ impl State {
             zobrist_key: 0,
             halfmoves: 0,
             fullmoves: 0,
+            next_move: Move::default(),
         }
     }
 
@@ -34,5 +37,6 @@ impl State {
         self.zobrist_key = 0;
         self.halfmoves = 0;
         self.fullmoves = 0;
+        self.next_move = Move::default();
     }
 }

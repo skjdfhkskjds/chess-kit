@@ -7,6 +7,8 @@ pub mod fen;
 pub mod display;
 pub mod sides;
 pub mod castling;
+pub mod moves;
+pub mod rules;
 
 pub use board::*;
 pub use state::*;

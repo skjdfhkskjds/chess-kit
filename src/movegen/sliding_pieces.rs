@@ -1,0 +1,262 @@
+use crate::movegen::MoveGenerator;
+use crate::primitives::{
+    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, BitboardVec, Files, Ranks, Square,
+};
+
+// Direction is an enum that represents the movement direction of a sliding
+// piece.
+pub enum Direction {
+    Up,
+    Right,
+    Down,
+    Left,
+    UpLeft,
+    UpRight,
+    DownRight,
+    DownLeft,
+}
+
+impl MoveGenerator {
+    // get_rook_attacks returns the attacks for the given square and bitboard.
+    //
+    // @param: square - square to get the attacks for
+    // @param: bitboard - current occupancy state of the board
+    // @return: bitboard representing the rook targets
+    #[inline(always)]
+    pub fn get_rook_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+        self.rook_table[self.rook_magics[square.unwrap()].index_of(bitboard)]
+    }
+
+    // get_bishop_attacks returns the attacks for the given square and bitboard.
+    //
+    // @param: square - square to get the attacks for
+    // @param: bitboard - current occupancy state of the board
+    // @return: bitboard representing the bishop targets
+    #[inline(always)]
+    pub fn get_bishop_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+        self.bishop_table[self.bishop_magics[square.unwrap()].index_of(bitboard)]
+    }
+
+    // get_queen_attacks returns the attacks for the given square and bitboard.
+    //
+    // @param: square - square to get the attacks for
+    // @param: bitboard - current occupancy state of the board
+    // @return: bitboard representing the queen targets
+    #[inline(always)]
+    pub fn get_queen_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+        self.get_rook_attacks(square, bitboard) ^ self.get_bishop_attacks(square, bitboard)
+    }
+
+    // rook_mask returns the rook mask for the given square
+    //
+    // @param: square - square to get the mask for
+    // @return: masking bitboard for the given square
+    pub fn rook_mask(square: Square) -> Bitboard {
+        let rook_at = BITBOARD_SQUARES[square.unwrap()];
+        let edges = MoveGenerator::get_edges(square);
+        let line_of_sight = BITBOARD_FILES[square.file()] | BITBOARD_RANKS[square.rank()];
+
+        line_of_sight & !edges & !rook_at
+    }
+
+    // bishop_mask returns the bishop mask for the given square
+    //
+    // @param: square - square to get the mask for
+    // @return: masking bitboard for the given square
+    pub fn bishop_mask(square: Square) -> Bitboard {
+        let bitboard = Bitboard::empty();
+        let bishop_at = BITBOARD_SQUARES[square.unwrap()];
+        let edges = MoveGenerator::get_edges(square);
+        let line_of_sight = MoveGenerator::attack_ray(&bitboard, square, Direction::UpLeft)
+            | MoveGenerator::attack_ray(&bitboard, square, Direction::UpRight)
+            | MoveGenerator::attack_ray(&bitboard, square, Direction::DownRight)
+            | MoveGenerator::attack_ray(&bitboard, square, Direction::DownLeft);
+
+        line_of_sight & !edges & !bishop_at
+    }
+
+    // rook_attack_boards returns the attack boards for the given square and
+    // blockers.
+    //
+    // @param: square - square to get the attack boards for
+    // @param: blockers - blockers to use to generate the attack boards
+    // @return: attack boards for the given square and blockers
+    pub fn rook_attack_boards(square: Square, blockers: &[Bitboard]) -> BitboardVec {
+        let mut attacks: BitboardVec = Vec::new();
+
+        for bitboard in blockers.iter() {
+            let attacking = MoveGenerator::attack_ray(bitboard, square, Direction::Up)
+                | MoveGenerator::attack_ray(bitboard, square, Direction::Right)
+                | MoveGenerator::attack_ray(bitboard, square, Direction::Down)
+                | MoveGenerator::attack_ray(bitboard, square, Direction::Left);
+            attacks.push(attacking);
+        }
+
+        attacks
+    }
+
+    // bishop_attack_boards returns the attack boards for the given square and
+    // blockers.
+    //
+    // @param: square - square to get the attack boards for
+    // @param: blockers - blockers to use to generate the attack boards
+    // @return: attack boards for the given square and blockers
+    pub fn bishop_attack_boards(square: Square, blockers: &[Bitboard]) -> BitboardVec {
+        let mut attacks: BitboardVec = Vec::new();
+
+        for bitboard in blockers.iter() {
+            let attacking = MoveGenerator::attack_ray(bitboard, square, Direction::UpLeft)
+                | MoveGenerator::attack_ray(bitboard, square, Direction::UpRight)
+                | MoveGenerator::attack_ray(bitboard, square, Direction::DownRight)
+                | MoveGenerator::attack_ray(bitboard, square, Direction::DownLeft);
+            attacks.push(attacking);
+        }
+
+        attacks
+    }
+
+    // blocker_boards() takes a piece mask. This is a bitboard in which all
+    // the bits are set for a square where a slider can move to, without
+    // the edges. (As generated by the functions in the mask.rs file.)
+    // blocker_boards() generates all possible permutations for the given
+    // mask, using the Carry Rippler method. See the given link, or
+    // http://rustic-chess.org for more information.
+    // TODO: revisit this function later
+    pub fn blocker_boards(mask: Bitboard) -> BitboardVec {
+        let mut bb_blocker_boards: BitboardVec = Vec::new();
+        let mut n: Bitboard = Bitboard::empty();
+
+        // Carry-Rippler
+        // https://www.chessprogramming.org/Traversing_Subsets_of_a_Set
+        loop {
+            bb_blocker_boards.push(n);
+            n = n.wrapping_sub(mask) & mask;
+            if n.is_empty() {
+                break;
+            }
+        }
+
+        bb_blocker_boards
+    }
+
+    // get_edges generates a bitboard of all the edges of the board excluding
+    // the given square.
+    //
+    // @param: exclude - square to exclude from the edges
+    // @return: bitboard of all the edges of the board
+    // TODO: think about moving this function elsewhere
+    fn get_edges(exclude: Square) -> Bitboard {
+        let exclude_file = BITBOARD_FILES[exclude.file()];
+        let exclude_rank = BITBOARD_RANKS[exclude.rank()];
+
+        (BITBOARD_FILES[Files::A] & !exclude_file)
+            | (BITBOARD_FILES[Files::H] & !exclude_file)
+            | (BITBOARD_RANKS[Ranks::R1] & !exclude_rank)
+            | (BITBOARD_RANKS[Ranks::R8] & !exclude_rank)
+    }
+
+    // attack_ray returns the attack ray from the current square in the given
+    // direction based on the given bitboard.
+    //
+    // @param: bitboard - bitboard to use as the base for the attack ray
+    // @param: square - square to start the attack ray from
+    // @param: direction - direction to attack in
+    // @return: attack ray bitboard
+    pub fn attack_ray(bitboard: &Bitboard, square: Square, direction: Direction) -> Bitboard {
+        // get the file and rank and the square to analyze
+        let mut file = square.file();
+        let mut rank = square.rank();
+        let mut square = BITBOARD_SQUARES[square.unwrap()];
+
+        // build the ray bitboard in the given direction
+        let mut ray = Bitboard::empty();
+        loop {
+            match direction {
+                Direction::Up => {
+                    if rank == Ranks::R8 {
+                        break;
+                    }
+
+                    square <<= 8u8;
+                    ray |= square;
+                    rank += 1;
+                }
+                Direction::Right => {
+                    if file == Files::H {
+                        break;
+                    }
+
+                    square <<= 1u8;
+                    ray |= square;
+                    file += 1;
+                }
+                Direction::Down => {
+                    if rank == Ranks::R1 {
+                        break;
+                    }
+
+                    square >>= 8u8;
+                    ray |= square;
+                    rank -= 1;
+                }
+                Direction::Left => {
+                    if file == Files::A {
+                        break;
+                    }
+
+                    square >>= 1u8;
+                    ray |= square;
+                    file -= 1;
+                }
+                Direction::UpLeft => {
+                    if rank == Ranks::R8 || file == Files::A {
+                        break;
+                    }
+
+                    square <<= 7u8;
+                    ray |= square;
+                    rank += 1;
+                    file -= 1;
+                }
+                Direction::UpRight => {
+                    if rank == Ranks::R8 || file == Files::H {
+                        break;
+                    }
+
+                    square <<= 9u8;
+                    ray |= square;
+                    rank += 1;
+                    file += 1;
+                }
+                Direction::DownRight => {
+                    if rank == Ranks::R1 || file == Files::H {
+                        break;
+                    }
+
+                    square >>= 7u8;
+                    ray |= square;
+                    rank -= 1;
+                    file += 1;
+                }
+                Direction::DownLeft => {
+                    if rank == Ranks::R1 || file == Files::A {
+                        break;
+                    }
+
+                    square >>= 9u8;
+                    ray |= square;
+                    rank -= 1;
+                    file -= 1;
+                }
+            };
+
+            // if the square is blocked, we have built the full ray in this
+            // direction, so we can stop
+            if !(square & bitboard).is_empty() {
+                break;
+            }
+        }
+
+        ray
+    }
+}
