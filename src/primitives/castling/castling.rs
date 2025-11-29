@@ -2,7 +2,7 @@ use crate::primitives::{Side};
 use chess_kit_derive::BitOps;
 
 #[repr(u8)]
-pub(crate) enum CastleRight {
+enum CastleRight {
     None = 0b00000000,
     WhiteKing = 0b00000001,
     WhiteQueen = 0b00000010,

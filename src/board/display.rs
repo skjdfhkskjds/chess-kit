@@ -4,34 +4,37 @@ use std::fmt;
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut board = [['.'; Rank::TOTAL]; File::TOTAL];
+        let mut board = [['.'; File::TOTAL]; Rank::TOTAL];
 
         // construct the ascii representation of the board
-        for (side, bitboards) in self.bitboards.iter().enumerate() {
-            for (piece, bitboard) in bitboards.iter().enumerate() {
-                for file in File::TOTAL..0 {
-                    for rank in Rank::TOTAL..0 {
-                        if !((bitboard >> ((rank * 8) as u32) + (file as u32)) & 1).is_empty() {
-                            let piece_str = format!("{}", Piece::new(piece));
-                            board[rank][file] = match Side::from_idx(side) {
-                                Side::White => piece_str.chars().next().unwrap(),
-                                Side::Black => {
-                                    piece_str.chars().next().unwrap().to_ascii_lowercase()
-                                }
-                            };
-                        }
-                    }
+        for (side_idx, bitboards) in self.bitboards.iter().enumerate() {
+            let side = Side::from_idx(side_idx);
+            for (piece_idx, bitboard) in bitboards.iter().enumerate() {
+                let base_char = Piece::new(piece_idx)
+                    .to_string()
+                    .chars()
+                    .next()
+                    .unwrap();
+                let piece_char = match side {
+                    Side::White => base_char,
+                    Side::Black => base_char.to_ascii_lowercase(),
+                };
+
+                for square in bitboard.iter() {
+                    let file_idx = square.file().idx();
+                    let rank_idx = square.rank().idx();
+                    board[rank_idx][file_idx] = piece_char;
                 }
             }
         }
 
         // print the board
-        for rank in Rank::TOTAL..0 {
+        for rank_idx in (0..Rank::TOTAL).rev() {
             writeln!(
                 f,
                 "{} {}",
-                rank + 1,
-                board[rank as usize].iter().collect::<String>()
+                rank_idx + 1,
+                board[rank_idx].iter().collect::<String>()
             )?;
         }
         writeln!(f, "  ABCDEFGH")?;

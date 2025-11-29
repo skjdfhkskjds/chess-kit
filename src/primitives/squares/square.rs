@@ -4,78 +4,16 @@ use std::fmt;
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Hash, EnumBitOps, IndexableEnum)]
+#[rustfmt::skip]
 pub enum Square {
-    A1,
-    B1,
-    C1,
-    D1,
-    E1,
-    F1,
-    G1,
-    H1,
-
-    A2,
-    B2,
-    C2,
-    D2,
-    E2,
-    F2,
-    G2,
-    H2,
-
-    A3,
-    B3,
-    C3,
-    D3,
-    E3,
-    F3,
-    G3,
-    H3,
-
-    A4,
-    B4,
-    C4,
-    D4,
-    E4,
-    F4,
-    G4,
-    H4,
-
-    A5,
-    B5,
-    C5,
-    D5,
-    E5,
-    F5,
-    G5,
-    H5,
-
-    A6,
-    B6,
-    C6,
-    D6,
-    E6,
-    F6,
-    G6,
-    H6,
-
-    A7,
-    B7,
-    C7,
-    D7,
-    E7,
-    F7,
-    G7,
-    H7,
-
-    A8,
-    B8,
-    C8,
-    D8,
-    E8,
-    F8,
-    G8,
-    H8,
+    A1, B1, C1, D1, E1, F1, G1, H1,
+    A2, B2, C2, D2, E2, F2, G2, H2,
+    A3, B3, C3, D3, E3, F3, G3, H3,
+    A4, B4, C4, D4, E4, F4, G4, H4,
+    A5, B5, C5, D5, E5, F5, G5, H5,
+    A6, B6, C6, D6, E6, F6, G6, H6,
+    A7, B7, C7, D7, E7, F7, G7, H7,
+    A8, B8, C8, D8, E8, F8, G8, H8,
 }
 
 impl Square {
@@ -92,6 +30,16 @@ impl Square {
         Self::A7, Self::B7, Self::C7, Self::D7, Self::E7, Self::F7, Self::G7, Self::H7,
         Self::A8, Self::B8, Self::C8, Self::D8, Self::E8, Self::F8, Self::G8, Self::H8,
     ];
+
+    // new creates a new square from the given file and rank
+    //
+    // @param: file - file to create the square from
+    // @param: rank - rank to create the square from
+    // @return: new square
+    #[inline(always)]
+    pub fn new(file: File, rank: Rank) -> Self {
+        Self::from_idx((rank.idx() * 8) + file.idx())
+    }
 
     // rank returns the rank of the square
     //
@@ -161,59 +109,18 @@ impl TryFrom<&str> for Square {
             return Err("invalid square");
         }
 
-        let file_str = s.chars().next().unwrap();
-        let rank_str = s.chars().nth(1).unwrap();
+        let file_str = &s[0..1];
+        let rank_str = &s[1..2];
 
-        let file = match file_str {
-            'A' => File::A,
-            'B' => File::B,
-            'C' => File::C,
-            'D' => File::D,
-            'E' => File::E,
-            'F' => File::F,
-            'G' => File::G,
-            'H' => File::H,
-            _ => return Err("invalid square"),
-        };
+        let file = File::try_from(file_str)?;
+        let rank = Rank::try_from(rank_str)?;
 
-        let rank = match rank_str {
-            '1' => Rank::R1,
-            '2' => Rank::R2,
-            '3' => Rank::R3,
-            '4' => Rank::R4,
-            '5' => Rank::R5,
-            '6' => Rank::R6,
-            '7' => Rank::R7,
-            '8' => Rank::R8,
-            _ => return Err("invalid square"),
-        };
-
-        Ok(Square::from_idx((rank.idx() * 8) + file.idx()))
+        Ok(Square::new(file, rank))
     }
 }
 
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.file() {
-            File::A => write!(f, "a"),
-            File::B => write!(f, "b"),
-            File::C => write!(f, "c"),
-            File::D => write!(f, "d"),
-            File::E => write!(f, "e"),
-            File::F => write!(f, "f"),
-            File::G => write!(f, "g"),
-            File::H => write!(f, "h"),
-        }?;
-        match self.rank() {
-            Rank::R1 => write!(f, "1"),
-            Rank::R2 => write!(f, "2"),
-            Rank::R3 => write!(f, "3"),
-            Rank::R4 => write!(f, "4"),
-            Rank::R5 => write!(f, "5"),
-            Rank::R6 => write!(f, "6"),
-            Rank::R7 => write!(f, "7"),
-            Rank::R8 => write!(f, "8"),
-        }?;
-        Ok(())
+        write!(f, "{}{}", self.file(), self.rank())
     }
 }
