@@ -13,9 +13,9 @@ pub type ZobristKey = u64;
 // for a given board position.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Zobrist {
-    piece_randoms: PieceRandoms, // values for each piece on each square for each side
-    castling_randoms: CastlingRandoms, // values for each castling right
-    side_randoms: SideRandoms,   // values for each side
+    piece_randoms: PieceRandoms,          // values for each piece on each square for each side
+    castling_randoms: CastlingRandoms,    // values for each castling right
+    side_randoms: SideRandoms,            // values for each side
     en_passant_randoms: EnPassantRandoms, // values for each en passant square
 }
 

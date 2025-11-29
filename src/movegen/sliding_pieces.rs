@@ -63,7 +63,6 @@ impl MoveGenerator {
     //
     // @param: square - square to get the mask for
     // @return: masking bitboard for the given square
-    #[inline(always)]
     pub fn bishop_mask(square: Square) -> Bitboard {
         let bitboard = Bitboard::empty();
         let bishop_at = BITBOARD_SQUARES[square.unwrap()];
