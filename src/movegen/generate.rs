@@ -2,7 +2,7 @@ use crate::board::Board;
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
     BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Move, MoveList, MoveType, Piece, Pieces, Ranks,
-    Side, Sides, Square, Squares,
+    Side, Square, Squares,
 };
 
 // This is a list of all pieces a pawn can promote to.
@@ -41,8 +41,8 @@ impl MoveGenerator {
 
         let occupancy = board.occupancy();
         let empty_squares = board.empty_squares();
-        let our_occupancy = board.sides[board.turn()];
-        let opponent_occupancy = board.sides[board.opponent()];
+        let our_occupancy = board.sides[board.turn().idx()];
+        let opponent_occupancy = board.sides[board.opponent().idx()];
 
         // generate moves from all positions of the piece for the current side
         // to move
@@ -74,8 +74,8 @@ impl MoveGenerator {
         let double_step_rank = BITBOARD_RANKS[Ranks::double_step_rank(board.turn())];
         // TODO: figure out how to abstract this away appropriately
         let direction = match board.turn() {
-            Sides::WHITE => 8,
-            Sides::BLACK => -8,
+            Side::White => 8,
+            Side::Black => -8,
             _ => unreachable!(),
         };
         let rotation_count = (Squares::TOTAL as i8 + direction) as u32;
@@ -98,7 +98,7 @@ impl MoveGenerator {
             // Generate pawn captures
             if mt == MoveType::All || mt == MoveType::Capture {
                 let bb_targets = self.get_pawn_attacks(from, board.turn());
-                let bb_captures = bb_targets & board.sides[board.opponent()];
+                let bb_captures = bb_targets & board.sides[board.opponent().idx()];
                 let bb_ep_capture = match board.state.en_passant {
                     Some(ep) => bb_targets & BITBOARD_SQUARES[ep.unwrap()],
                     None => Bitboard::empty(),
@@ -120,12 +120,12 @@ impl MoveGenerator {
 
         // generate castle moves depending on the side to move
         match us {
-            Sides::WHITE => {
-                if !board.state.castling.can_castle(Sides::WHITE) {
+            Side::White => {
+                if !board.state.castling.can_castle(Side::White) {
                     return;
                 }
 
-                if board.state.castling.kingside(Sides::WHITE) {
+                if board.state.castling.kingside(Side::White) {
                     let bb_kingside_blockers = BITBOARD_SQUARES[Squares::F1.unwrap()]
                         | BITBOARD_SQUARES[Squares::G1.unwrap()];
                     let is_kingside_blocked = !(occupancy & bb_kingside_blockers).is_empty();
@@ -139,7 +139,7 @@ impl MoveGenerator {
                     }
                 }
 
-                if board.state.castling.queenside(Sides::WHITE) {
+                if board.state.castling.queenside(Side::White) {
                     let bb_queenside_blockers = BITBOARD_SQUARES[Squares::B1.unwrap()]
                         | BITBOARD_SQUARES[Squares::C1.unwrap()]
                         | BITBOARD_SQUARES[Squares::D1.unwrap()];
@@ -154,12 +154,12 @@ impl MoveGenerator {
                     }
                 }
             }
-            Sides::BLACK => {
-                if !board.state.castling.can_castle(Sides::BLACK) {
+            Side::Black => {
+                if !board.state.castling.can_castle(Side::Black) {
                     return;
                 }
 
-                if board.state.castling.kingside(Sides::BLACK) {
+                if board.state.castling.kingside(Side::Black) {
                     let bb_kingside_blockers = BITBOARD_SQUARES[Squares::F8.unwrap()]
                         | BITBOARD_SQUARES[Squares::G8.unwrap()];
                     let is_kingside_blocked = !(occupancy & bb_kingside_blockers).is_empty();
@@ -173,7 +173,7 @@ impl MoveGenerator {
                     }
                 }
 
-                if board.state.castling.queenside(Sides::BLACK) {
+                if board.state.castling.queenside(Side::Black) {
                     let bb_queenside_blockers = BITBOARD_SQUARES[Squares::B8.unwrap()]
                         | BITBOARD_SQUARES[Squares::C8.unwrap()]
                         | BITBOARD_SQUARES[Squares::D8.unwrap()];
@@ -293,7 +293,7 @@ impl MoveGenerator {
 
         // check if there is an intersection between the attack board and that
         // piece's respective occupancy
-        let opponent = board.bitboards[Sides::other(side)];
+        let opponent = board.bitboards[side.other().idx()];
         !(king_attacks & opponent[Pieces::KING.unwrap()]).is_empty()
             || !(rook_attacks & opponent[Pieces::ROOK.unwrap()]).is_empty()
             || !(queen_attacks & opponent[Pieces::QUEEN.unwrap()]).is_empty()

@@ -1,4 +1,4 @@
-use crate::primitives::{Side, Sides};
+use crate::primitives::{Side};
 
 pub type Rank = usize;
 
@@ -20,17 +20,15 @@ impl Ranks {
 impl Ranks {
     pub const fn double_step_rank(side: Side) -> Rank {
         match side {
-            Sides::WHITE => Ranks::R4,
-            Sides::BLACK => Ranks::R5,
-            _ => unreachable!(),
+            Side::White => Ranks::R4,
+            Side::Black => Ranks::R5,
         }
     }
 
     pub const fn promotion_rank(side: Side) -> Rank {
         match side {
-            Sides::WHITE => Ranks::R8,
-            Sides::BLACK => Ranks::R1,
-            _ => unreachable!(),
+            Side::White => Ranks::R8,
+            Side::Black => Ranks::R1,
         }
     }
 }

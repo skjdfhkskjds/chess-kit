@@ -1,6 +1,6 @@
 use crate::board::board::Board;
 use crate::primitives::moves::Move;
-use crate::primitives::{Piece, Pieces, Side, Sides, Square, Squares};
+use crate::primitives::{Piece, Pieces, Side, Square, Squares};
 
 // TODO: refactor all of this
 impl Board {
@@ -26,10 +26,10 @@ impl Board {
         // castling permissions
         if piece.is_rook() && self.state.castling.can_castle(side) {
             self.set_castling(match square {
-                Squares::A1 => self.state.castling.revoke_queenside(Sides::WHITE),
-                Squares::H1 => self.state.castling.revoke_kingside(Sides::WHITE),
-                Squares::A8 => self.state.castling.revoke_queenside(Sides::BLACK),
-                Squares::H8 => self.state.castling.revoke_kingside(Sides::BLACK),
+                Squares::A1 => self.state.castling.revoke_queenside(Side::White),
+                Squares::H1 => self.state.castling.revoke_kingside(Side::White),
+                Squares::A8 => self.state.castling.revoke_queenside(Side::Black),
+                Squares::H8 => self.state.castling.revoke_kingside(Side::Black),
                 _ => self.state.castling,
             });
         }
@@ -58,7 +58,7 @@ impl Board {
         //
         // Note: if black is moving, increment the fullmove counter as well
         self.state.halfmoves += 1;
-        if us == Sides::BLACK {
+        if us == Side::Black {
             self.state.fullmoves += 1;
         }
 
@@ -77,12 +77,12 @@ impl Board {
             // square
             if (piece.is_king() || piece.is_rook()) && self.state.castling.can_castle(us) {
                 self.set_castling(match from {
-                    Squares::E1 => self.state.castling.revoke(Sides::WHITE), // white king moved
-                    Squares::E8 => self.state.castling.revoke(Sides::BLACK), // black king moved
-                    Squares::A1 => self.state.castling.revoke_queenside(Sides::WHITE), // white queenside rook moved
-                    Squares::H1 => self.state.castling.revoke_kingside(Sides::WHITE), // white kingside rook moved
-                    Squares::A8 => self.state.castling.revoke_queenside(Sides::BLACK), // black queenside rook moved
-                    Squares::H8 => self.state.castling.revoke_kingside(Sides::BLACK), // black kingside rook moved
+                    Squares::E1 => self.state.castling.revoke(Side::White), // white king moved
+                    Squares::E8 => self.state.castling.revoke(Side::Black), // black king moved
+                    Squares::A1 => self.state.castling.revoke_queenside(Side::White), // white queenside rook moved
+                    Squares::H1 => self.state.castling.revoke_kingside(Side::White), // white kingside rook moved
+                    Squares::A8 => self.state.castling.revoke_queenside(Side::Black), // black queenside rook moved
+                    Squares::H8 => self.state.castling.revoke_kingside(Side::Black), // black kingside rook moved
                     _ => self.state.castling,
                 });
             }

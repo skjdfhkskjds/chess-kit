@@ -10,7 +10,7 @@ impl Board {
     // @return: bitboard of the piece for the given side
     #[inline(always)]
     pub fn get_piece(&self, side: Side, piece: Piece) -> Bitboard {
-        self.bitboards[side][piece.unwrap()]
+        self.bitboards[side.idx()][piece.unwrap()]
     }
 
     // remove_piece_no_incrementals removes the piece from the given side and
@@ -23,8 +23,8 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     pub fn remove_piece_no_incrementals(&mut self, side: Side, piece: Piece, square: Square) {
-        self.bitboards[side][piece.unwrap()].remove_at(square);
-        self.sides[side].remove_at(square);
+        self.bitboards[side.idx()][piece.unwrap()].remove_at(square);
+        self.sides[side.idx()].remove_at(square);
         self.pieces[square.unwrap()] = Pieces::NONE;
     }
 
@@ -53,8 +53,8 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     pub fn set_piece_no_incrementals(&mut self, side: Side, piece: Piece, square: Square) {
-        self.bitboards[side][piece.unwrap()].set_at(square);
-        self.sides[side].set_at(square);
+        self.bitboards[side.idx()][piece.unwrap()].set_at(square);
+        self.sides[side.idx()].set_at(square);
         self.pieces[square.unwrap()] = piece;
     }
 

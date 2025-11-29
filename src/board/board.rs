@@ -2,7 +2,7 @@ use crate::board::fen::{FENError, FENParser, Parser};
 use crate::board::history::History;
 use crate::board::state::State;
 use crate::board::zobrist::Zobrist;
-use crate::primitives::{Bitboard, Piece, Pieces, Side, Sides, Squares};
+use crate::primitives::{Bitboard, Piece, Pieces, Side, Squares};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
@@ -10,8 +10,8 @@ pub struct Board {
     pub state: State,     // current state of the board
     pub history: History, // history of the board state
 
-    pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
-    pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
+    pub sides: [Bitboard; Side::TOTAL], // occupancy bitboard per side
+    pub bitboards: [[Bitboard; Pieces::TOTAL]; Side::TOTAL], // bitboard per piece per side
     pub pieces: [Piece; Squares::TOTAL], // piece type on each square
 
     pub zobrist: Zobrist, // zobrist random values for the board
@@ -26,8 +26,8 @@ impl Board {
         Self {
             state: State::new(),
             history: History::new(),
-            sides: [Bitboard::empty(); Sides::TOTAL],
-            bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
+            sides: [Bitboard::empty(); Side::TOTAL],
+            bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Side::TOTAL],
             pieces: [Pieces::NONE; Squares::TOTAL],
             zobrist: Zobrist::new(),
         }
@@ -61,12 +61,12 @@ impl Board {
     // @requires: `bitboards` is initialized
     // @side-effects: modifies the `sides` bitboards
     fn init_sides(&mut self) {
-        let white = self.bitboards[Sides::WHITE];
-        let black = self.bitboards[Sides::BLACK];
+        let white = self.bitboards[Side::White.idx()];
+        let black = self.bitboards[Side::Black.idx()];
 
         for (w, b) in white.iter().zip(black.iter()) {
-            self.sides[Sides::WHITE] |= *w;
-            self.sides[Sides::BLACK] |= *b;
+            self.sides[Side::White.idx()] |= *w;
+            self.sides[Side::Black.idx()] |= *b;
         }
     }
 
@@ -78,8 +78,8 @@ impl Board {
     // @requires: `bitboards` is initialized
     // @side-effects: modifies the `pieces` array
     fn init_pieces(&mut self) {
-        let white = self.bitboards[Sides::WHITE];
-        let black = self.bitboards[Sides::BLACK];
+        let white = self.bitboards[Side::White.idx()];
+        let black = self.bitboards[Side::Black.idx()];
 
         // set the piece type on each square
         for square in 0..Squares::TOTAL {
@@ -107,8 +107,8 @@ impl Board {
     pub fn reset(&mut self) {
         self.state.reset();
         self.history.clear();
-        self.sides = [Bitboard::empty(); Sides::TOTAL];
-        self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
+        self.sides = [Bitboard::empty(); Side::TOTAL];
+        self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Side::TOTAL];
         self.pieces = [Pieces::NONE; Squares::TOTAL];
     }
 
@@ -118,7 +118,7 @@ impl Board {
     // @return: bitboard of all pieces on the board
     #[inline(always)]
     pub fn occupancy(&self) -> Bitboard {
-        self.sides[Sides::WHITE] | self.sides[Sides::BLACK]
+        self.sides[Side::White.idx()] | self.sides[Side::Black.idx()]
     }
 
     // empty_squares gets the bitboard of all empty squares on the board
@@ -147,7 +147,7 @@ impl Board {
     // @return: opponent side
     #[inline(always)]
     pub fn opponent(&self) -> Side {
-        self.turn() ^ 1
+        self.turn().other()
     }
 }
 

@@ -1,34 +1,34 @@
 use crate::board::fen::{FENError, Parser};
-use crate::primitives::{BITBOARD_SQUARES, Bitboard, Files, Pieces, Ranks, Sides};
+use crate::primitives::{BITBOARD_SQUARES, Bitboard, Files, Pieces, Ranks, Side};
 
 const VALID_PIECES: &str = "kqrbnpKQRBNP";
 const DELIMITTER: char = '/';
 
 pub struct PiecesParser {
-    pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL],
+    pub bitboards: [[Bitboard; Pieces::TOTAL]; Side::TOTAL],
 }
 
 impl Parser for PiecesParser {
     fn parse(segment: &str) -> Result<Self, FENError> {
         let mut rank = Ranks::R8;
         let mut file = Files::A;
-        let mut bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
+        let mut bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Side::TOTAL];
 
         for c in segment.chars() {
             let square = (rank * 8) + file;
             match c {
-                'k' => bitboards[Sides::BLACK][Pieces::KING.unwrap()] |= BITBOARD_SQUARES[square],
-                'q' => bitboards[Sides::BLACK][Pieces::QUEEN.unwrap()] |= BITBOARD_SQUARES[square],
-                'r' => bitboards[Sides::BLACK][Pieces::ROOK.unwrap()] |= BITBOARD_SQUARES[square],
-                'b' => bitboards[Sides::BLACK][Pieces::BISHOP.unwrap()] |= BITBOARD_SQUARES[square],
-                'n' => bitboards[Sides::BLACK][Pieces::KNIGHT.unwrap()] |= BITBOARD_SQUARES[square],
-                'p' => bitboards[Sides::BLACK][Pieces::PAWN.unwrap()] |= BITBOARD_SQUARES[square],
-                'K' => bitboards[Sides::WHITE][Pieces::KING.unwrap()] |= BITBOARD_SQUARES[square],
-                'Q' => bitboards[Sides::WHITE][Pieces::QUEEN.unwrap()] |= BITBOARD_SQUARES[square],
-                'R' => bitboards[Sides::WHITE][Pieces::ROOK.unwrap()] |= BITBOARD_SQUARES[square],
-                'B' => bitboards[Sides::WHITE][Pieces::BISHOP.unwrap()] |= BITBOARD_SQUARES[square],
-                'N' => bitboards[Sides::WHITE][Pieces::KNIGHT.unwrap()] |= BITBOARD_SQUARES[square],
-                'P' => bitboards[Sides::WHITE][Pieces::PAWN.unwrap()] |= BITBOARD_SQUARES[square],
+                'k' => bitboards[Side::Black.idx()][Pieces::KING.unwrap()] |= BITBOARD_SQUARES[square],
+                'q' => bitboards[Side::Black.idx()][Pieces::QUEEN.unwrap()] |= BITBOARD_SQUARES[square],
+                'r' => bitboards[Side::Black.idx()][Pieces::ROOK.unwrap()] |= BITBOARD_SQUARES[square],
+                'b' => bitboards[Side::Black.idx()][Pieces::BISHOP.unwrap()] |= BITBOARD_SQUARES[square],
+                'n' => bitboards[Side::Black.idx()][Pieces::KNIGHT.unwrap()] |= BITBOARD_SQUARES[square],
+                'p' => bitboards[Side::Black.idx()][Pieces::PAWN.unwrap()] |= BITBOARD_SQUARES[square],
+                'K' => bitboards[Side::White.idx()][Pieces::KING.unwrap()] |= BITBOARD_SQUARES[square],
+                'Q' => bitboards[Side::White.idx()][Pieces::QUEEN.unwrap()] |= BITBOARD_SQUARES[square],
+                'R' => bitboards[Side::White.idx()][Pieces::ROOK.unwrap()] |= BITBOARD_SQUARES[square],
+                'B' => bitboards[Side::White.idx()][Pieces::BISHOP.unwrap()] |= BITBOARD_SQUARES[square],
+                'N' => bitboards[Side::White.idx()][Pieces::KNIGHT.unwrap()] |= BITBOARD_SQUARES[square],
+                'P' => bitboards[Side::White.idx()][Pieces::PAWN.unwrap()] |= BITBOARD_SQUARES[square],
                 '1'..='8' => {
                     if let Some(offset) = c.to_digit(10) {
                         file += offset as usize;

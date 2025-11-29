@@ -1,5 +1,5 @@
 use crate::board::fen::{FENError, Parser};
-use crate::primitives::{Sides, Side};
+use crate::primitives::Side;
 
 pub struct TurnParser {
     pub turn: Side,
@@ -12,8 +12,8 @@ impl Parser for TurnParser {
         }
 
         let turn = match segment.chars().next().unwrap() {
-            'w' => Sides::WHITE,
-            'b' => Sides::BLACK,
+            'w' => Side::White,
+            'b' => Side::Black,
             _ => return Err(FENError::InvalidTurn),
         };
 

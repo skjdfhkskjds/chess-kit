@@ -1,7 +1,6 @@
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Files, Ranks, Side, Sides, Square,
-    Squares,
+    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Files, Ranks, Side, Square, Squares,
 };
 
 impl MoveGenerator {
@@ -54,9 +53,9 @@ impl MoveGenerator {
     pub fn init_pawn_table(&mut self) {
         for sq in Squares::ALL {
             let bitboard = BITBOARD_SQUARES[sq.unwrap()];
-            self.pawn_table[Sides::WHITE][sq.unwrap()] = ((bitboard & !BITBOARD_FILES[Files::A]) << 7u8)
+            self.pawn_table[Side::White.idx()][sq.unwrap()] = ((bitboard & !BITBOARD_FILES[Files::A]) << 7u8)
                 | ((bitboard & !BITBOARD_FILES[Files::H]) << 9u8);
-            self.pawn_table[Sides::BLACK][sq.unwrap()] = ((bitboard & !BITBOARD_FILES[Files::A]) >> 9u8)
+            self.pawn_table[Side::Black.idx()][sq.unwrap()] = ((bitboard & !BITBOARD_FILES[Files::A]) >> 9u8)
                 | ((bitboard & !BITBOARD_FILES[Files::H]) >> 7u8);
         }
     }
@@ -92,6 +91,6 @@ impl MoveGenerator {
     // @return: pawn moves for the given square
     #[inline(always)]
     pub fn get_pawn_attacks(&self, sq: Square, side: Side) -> Bitboard {
-        self.pawn_table[side][sq.unwrap()]
+        self.pawn_table[side.idx()][sq.unwrap()]
     }
 }

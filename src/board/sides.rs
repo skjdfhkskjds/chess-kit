@@ -8,7 +8,7 @@ impl Board {
     // @side-effects: modifies the `board`
     pub fn swap_sides(&mut self) {
         self.state.zobrist_key ^= self.zobrist.side(self.state.turn);
-        self.state.turn ^= 1;
+        self.state.turn = self.state.turn.other();
         self.state.zobrist_key ^= self.zobrist.side(self.state.turn);
     }
 }

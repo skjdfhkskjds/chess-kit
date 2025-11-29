@@ -1,10 +1,10 @@
-use crate::primitives::{Bitboard, Squares, Sides, Pieces};
+use crate::primitives::{Bitboard, Squares, Side, Pieces};
 use crate::movegen::magics::{Magic, ROOK_TABLE_SIZE, BISHOP_TABLE_SIZE};
 
 pub struct MoveGenerator {
     pub(crate) king_table: [Bitboard; Squares::TOTAL],
     pub(crate) knight_table: [Bitboard; Squares::TOTAL],
-    pub(crate) pawn_table: [[Bitboard; Squares::TOTAL]; Sides::TOTAL],
+    pub(crate) pawn_table: [[Bitboard; Squares::TOTAL]; Side::TOTAL],
     pub(crate) bishop_table: Vec<Bitboard>,
     pub(crate) rook_table: Vec<Bitboard>,
     pub(crate) bishop_magics: [Magic; Squares::TOTAL],
@@ -23,7 +23,7 @@ impl MoveGenerator {
         let mut mg = Self {
             king_table: [Bitboard::empty(); Squares::TOTAL],
             knight_table: [Bitboard::empty(); Squares::TOTAL],
-            pawn_table: [[Bitboard::empty(); Squares::TOTAL]; Sides::TOTAL],
+            pawn_table: [[Bitboard::empty(); Squares::TOTAL]; Side::TOTAL],
             bishop_table: vec![Bitboard::empty(); BISHOP_TABLE_SIZE],
             rook_table: vec![Bitboard::empty(); ROOK_TABLE_SIZE],
             rook_magics: [magics; Squares::TOTAL],

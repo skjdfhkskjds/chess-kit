@@ -1,4 +1,4 @@
-use crate::primitives::{Side, Sides};
+use crate::primitives::{Side};
 use chess_kit_derive::BitOps;
 
 #[repr(u8)]
@@ -50,9 +50,8 @@ impl Castling {
     #[inline]
     pub fn with_kingside(&self, side: Side) -> Self {
         match side {
-            Sides::WHITE => Self(self.0 | CastleRight::WhiteKing as u8),
-            Sides::BLACK => Self(self.0 | CastleRight::BlackKing as u8),
-            _ => self.clone(),
+            Side::White => Self(self.0 | CastleRight::WhiteKing as u8),
+            Side::Black => Self(self.0 | CastleRight::BlackKing as u8),
         }
     }
 
@@ -63,9 +62,8 @@ impl Castling {
     #[inline]
     pub fn with_queenside(&self, side: Side) -> Self {
         match side {
-            Sides::WHITE => Self(self.0 | CastleRight::WhiteQueen as u8),
-            Sides::BLACK => Self(self.0 | CastleRight::BlackQueen as u8),
-            _ => self.clone(),
+            Side::White => Self(self.0 | CastleRight::WhiteQueen as u8),
+            Side::Black => Self(self.0 | CastleRight::BlackQueen as u8),
         }
     }
 
@@ -76,9 +74,8 @@ impl Castling {
     #[inline]
     pub fn revoke(&self, side: Side) -> Self {
         match side {
-            Sides::WHITE => Self(self.0 & !(CastleRight::White as u8)),
-            Sides::BLACK => Self(self.0 & !(CastleRight::Black as u8)),
-            _ => self.clone(),
+            Side::White => Self(self.0 & !(CastleRight::White as u8)),
+            Side::Black => Self(self.0 & !(CastleRight::Black as u8)),
         }
     }
 
@@ -89,9 +86,8 @@ impl Castling {
     #[inline]
     pub fn revoke_kingside(&self, side: Side) -> Self {
         match side {
-            Sides::WHITE => Self(self.0 & !(CastleRight::WhiteKing as u8)),
-            Sides::BLACK => Self(self.0 & !(CastleRight::BlackKing as u8)),
-            _ => self.clone(),
+            Side::White => Self(self.0 & !(CastleRight::WhiteKing as u8)),
+            Side::Black => Self(self.0 & !(CastleRight::BlackKing as u8)),
         }
     }
 
@@ -102,9 +98,8 @@ impl Castling {
     #[inline]
     pub fn revoke_queenside(&self, side: Side) -> Self {
         match side {
-            Sides::WHITE => Self(self.0 & !(CastleRight::WhiteQueen as u8)),
-            Sides::BLACK => Self(self.0 & !(CastleRight::BlackQueen as u8)),
-            _ => self.clone(),
+            Side::White => Self(self.0 & !(CastleRight::WhiteQueen as u8)),
+            Side::Black => Self(self.0 & !(CastleRight::BlackQueen as u8)),
         }
     }
 
@@ -115,9 +110,8 @@ impl Castling {
     #[inline(always)]
     pub fn can_castle(&self, side: Side) -> bool {
         match side {
-            Sides::WHITE => self.0 & CastleRight::White as u8 != CastleRight::None as u8,
-            Sides::BLACK => self.0 & CastleRight::Black as u8 != CastleRight::None as u8,
-            _ => false,
+            Side::White => self.0 & CastleRight::White as u8 != CastleRight::None as u8,
+            Side::Black => self.0 & CastleRight::Black as u8 != CastleRight::None as u8,
         }
     }
 
@@ -128,9 +122,8 @@ impl Castling {
     #[inline(always)]
     pub fn kingside(&self, side: Side) -> bool {
         match side {
-            Sides::WHITE => self.0 & CastleRight::WhiteKing as u8 != CastleRight::None as u8,
-            Sides::BLACK => self.0 & CastleRight::BlackKing as u8 != CastleRight::None as u8,
-            _ => false,
+            Side::White => self.0 & CastleRight::WhiteKing as u8 != CastleRight::None as u8,
+            Side::Black => self.0 & CastleRight::BlackKing as u8 != CastleRight::None as u8,
         }
     }
 
@@ -141,9 +134,8 @@ impl Castling {
     #[inline(always)]
     pub fn queenside(&self, side: Side) -> bool {
         match side {
-            Sides::WHITE => self.0 & CastleRight::WhiteQueen as u8 != CastleRight::None as u8,
-            Sides::BLACK => self.0 & CastleRight::BlackQueen as u8 != CastleRight::None as u8,
-            _ => false,
+            Side::White => self.0 & CastleRight::WhiteQueen as u8 != CastleRight::None as u8,
+            Side::Black => self.0 & CastleRight::BlackQueen as u8 != CastleRight::None as u8,
         }
     }
 }

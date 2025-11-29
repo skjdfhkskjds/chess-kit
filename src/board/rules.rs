@@ -1,5 +1,5 @@
 use crate::board::board::Board;
-use crate::primitives::{Pieces, Sides, Square};
+use crate::primitives::{Pieces, Side, Square};
 
 impl Board {
     // is_draw checks if the position is a draw
@@ -29,8 +29,8 @@ impl Board {
     // @return: true if the position is a draw by the rule, false otherwise
     pub fn is_draw_by_insufficient_material(&self) -> bool {
         // Get the piece bitboards for white and black.
-        let w = self.bitboards[Sides::WHITE];
-        let b = self.bitboards[Sides::BLACK];
+        let w = self.bitboards[Side::White.idx()];
+        let b = self.bitboards[Side::Black.idx()];
 
         // check if either side has sufficient solo material to deliver
         // checkmate
@@ -107,8 +107,8 @@ impl Board {
     // @param: self - immutable reference to the board
     // @return: true if either side can force checkmate, false otherwise
     pub fn can_force_checkmate(&self) -> bool {
-        let w = self.bitboards[Sides::WHITE];
-        let b = self.bitboards[Sides::BLACK];
+        let w = self.bitboards[Side::White.idx()];
+        let b = self.bitboards[Side::Black.idx()];
 
         // check if either side has sufficient solo material to deliver
         // checkmate
@@ -124,8 +124,8 @@ impl Board {
         // if either side has sufficient solo material or a bishop pair,
         // then that side can force checkmate
         if sufficient_solo_material ||
-            self.has_bishop_pair(Sides::WHITE) ||
-            self.has_bishop_pair(Sides::BLACK)
+            self.has_bishop_pair(Side::White) ||
+            self.has_bishop_pair(Side::Black)
         {
             return true;
         }
