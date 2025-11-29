@@ -76,7 +76,6 @@ impl MoveGenerator {
         let direction = match board.turn() {
             Side::White => 8,
             Side::Black => -8,
-            _ => unreachable!(),
         };
         let rotation_count = (Squares::TOTAL as i8 + direction) as u32;
 
@@ -188,7 +187,6 @@ impl MoveGenerator {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 
