@@ -42,7 +42,7 @@ impl Bitboard {
     // @side-effects: modifies the `bitboard`
     #[inline(always)]
     pub fn remove_at(&mut self, square: Square) {
-        self.0 &= !BITBOARD_SQUARES[square.unwrap()].0;
+        self.0 &= !BITBOARD_SQUARES[square.idx()].0;
     }
 
     // set_at sets the piece at the given square
@@ -53,6 +53,6 @@ impl Bitboard {
     // @side-effects: modifies the `bitboard`
     #[inline(always)]
     pub fn set_at(&mut self, square: Square) {
-        self.0 |= BITBOARD_SQUARES[square.unwrap()].0;
+        self.0 |= BITBOARD_SQUARES[square.idx()].0;
     }
 }

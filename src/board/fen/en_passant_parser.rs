@@ -1,9 +1,9 @@
 use crate::board::fen::{FENError, Parser};
-use crate::primitives::{Square, Squares};
+use crate::primitives::Square;
 use std::ops::RangeInclusive;
 
-const EP_SQUARES_WHITE: RangeInclusive<Square> = Squares::A3..=Squares::H3;
-const EP_SQUARES_BLACK: RangeInclusive<Square> = Squares::A6..=Squares::H6;
+const EP_SQUARES_WHITE: RangeInclusive<Square> = Square::A3..=Square::H3;
+const EP_SQUARES_BLACK: RangeInclusive<Square> = Square::A6..=Square::H6;
 
 pub struct EnPassantParser {
     pub square: Option<Square>,

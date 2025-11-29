@@ -3,18 +3,16 @@ use crate::primitives::{Pieces, Side, Square};
 
 impl Board {
     // is_draw checks if the position is a draw
-    // 
+    //
     // @param: self - immutable reference to the board
     // @return: true if the position is a draw, false otherwise
     pub fn is_draw(&self) -> bool {
-        self.is_draw_by_fifty_moves()
-            || !self.can_force_checkmate()
-            || self.is_draw_by_repetition()
+        self.is_draw_by_fifty_moves() || !self.can_force_checkmate() || self.is_draw_by_repetition()
     }
 
     // is_draw_by_fifty_moves checks if the position is a draw according to the
     // 50-move rule
-    // 
+    //
     // @param: self - immutable reference to the board
     // @return: true if the position is a draw by the rule, false otherwise
     pub fn is_draw_by_fifty_moves(&self) -> bool {
@@ -24,7 +22,7 @@ impl Board {
 
     // is_draw_by_insufficient_material checks if the position is a draw according
     // to the draw by insufficient material rule
-    // 
+    //
     // @param: self - immutable reference to the board
     // @return: true if the position is a draw by the rule, false otherwise
     pub fn is_draw_by_insufficient_material(&self) -> bool {
@@ -34,7 +32,7 @@ impl Board {
 
         // check if either side has sufficient solo material to deliver
         // checkmate
-        // 
+        //
         // that is, if either side has a queen, rook, or a pawn.
         let sufficient_solo_material = !w[Pieces::QUEEN.unwrap()].is_empty()
             || !w[Pieces::ROOK.unwrap()].is_empty()
@@ -53,7 +51,7 @@ impl Board {
         let piece_count = white_bishops + black_bishops + white_knights + black_knights;
 
         // check the number of pieces on the board
-        // 
+        //
         // 0: only kings on the board -> draw
         // 1: only one side has a non-king piece -> draw
         // 2: draw iff both sides have one bishop AND they are on the same colour
@@ -65,10 +63,12 @@ impl Board {
                 if white_bishops != 1 || black_bishops != 1 {
                     return false;
                 }
-                
+
                 // check if both bishops are on the same colour
-                let wb_sq = Square::new(w[Pieces::BISHOP.unwrap()].trailing_zeros() as usize);
-                let bb_sq = Square::new(b[Pieces::BISHOP.unwrap()].trailing_zeros() as usize);
+                // 
+                // TODO: refactor into bitboard.first() or something
+                let wb_sq = Square::from_idx(w[Pieces::BISHOP.unwrap()].trailing_zeros() as usize);
+                let bb_sq = Square::from_idx(b[Pieces::BISHOP.unwrap()].trailing_zeros() as usize);
                 wb_sq.is_white() == bb_sq.is_white()
             }
             _ => false,
@@ -77,14 +77,14 @@ impl Board {
 
     // is_draw_by_repetition checks if the position is a draw according to the
     // draw by repetition rule
-    // 
+    //
     // @param: self - immutable reference to the board
     // @return: true if the position is a draw by the rule, false otherwise
     pub fn is_draw_by_repetition(&self) -> bool {
         let mut count = 0;
 
         // walk backwards through the history
-        for historic_state in self.history.iter().rev() {            
+        for historic_state in self.history.iter().rev() {
             // if the zobrist keys match, we have a repetition
             if historic_state.zobrist_key == self.state.zobrist_key {
                 count += 1;
@@ -103,7 +103,7 @@ impl Board {
     }
 
     // can_force_checkmate checks if either side can force checkmate
-    // 
+    //
     // @param: self - immutable reference to the board
     // @return: true if either side can force checkmate, false otherwise
     pub fn can_force_checkmate(&self) -> bool {
@@ -112,7 +112,7 @@ impl Board {
 
         // check if either side has sufficient solo material to deliver
         // checkmate
-        // 
+        //
         // that is, if either side has a queen, rook, or a pawn.
         let sufficient_solo_material = !w[Pieces::QUEEN.unwrap()].is_empty()
             || !w[Pieces::ROOK.unwrap()].is_empty()
@@ -120,19 +120,19 @@ impl Board {
             || !b[Pieces::QUEEN.unwrap()].is_empty()
             || !b[Pieces::ROOK.unwrap()].is_empty()
             || !b[Pieces::PAWN.unwrap()].is_empty();
-        
+
         // if either side has sufficient solo material or a bishop pair,
         // then that side can force checkmate
-        if sufficient_solo_material ||
-            self.has_bishop_pair(Side::White) ||
-            self.has_bishop_pair(Side::Black)
+        if sufficient_solo_material
+            || self.has_bishop_pair(Side::White)
+            || self.has_bishop_pair(Side::Black)
         {
             return true;
         }
 
         let white_knights = w[Pieces::KNIGHT.unwrap()].count_ones();
         let black_knights = b[Pieces::KNIGHT.unwrap()].count_ones();
-        
+
         // if either side has a knight-bishop pair, OR they have at least 3
         // knights, then that side can force checkmate
         (!w[Pieces::BISHOP.unwrap()].is_empty() && white_knights > 0)

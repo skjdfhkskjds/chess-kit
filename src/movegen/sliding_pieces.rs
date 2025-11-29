@@ -24,7 +24,7 @@ impl MoveGenerator {
     // @return: bitboard representing the rook targets
     #[inline(always)]
     pub fn get_rook_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
-        self.rook_table[self.rook_magics[square.unwrap()].index_of(bitboard)]
+        self.rook_table[self.rook_magics[square.idx()].index_of(bitboard)]
     }
 
     // get_bishop_attacks returns the attacks for the given square and bitboard.
@@ -34,7 +34,7 @@ impl MoveGenerator {
     // @return: bitboard representing the bishop targets
     #[inline(always)]
     pub fn get_bishop_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
-        self.bishop_table[self.bishop_magics[square.unwrap()].index_of(bitboard)]
+        self.bishop_table[self.bishop_magics[square.idx()].index_of(bitboard)]
     }
 
     // get_queen_attacks returns the attacks for the given square and bitboard.
@@ -52,7 +52,7 @@ impl MoveGenerator {
     // @param: square - square to get the mask for
     // @return: masking bitboard for the given square
     pub fn rook_mask(square: Square) -> Bitboard {
-        let rook_at = BITBOARD_SQUARES[square.unwrap()];
+        let rook_at = BITBOARD_SQUARES[square.idx()];
         let edges = MoveGenerator::get_edges(square);
         let line_of_sight =
             BITBOARD_FILES[square.file().idx()] | BITBOARD_RANKS[square.rank().idx()];
@@ -66,7 +66,7 @@ impl MoveGenerator {
     // @return: masking bitboard for the given square
     pub fn bishop_mask(square: Square) -> Bitboard {
         let bitboard = Bitboard::empty();
-        let bishop_at = BITBOARD_SQUARES[square.unwrap()];
+        let bishop_at = BITBOARD_SQUARES[square.idx()];
         let edges = MoveGenerator::get_edges(square);
         let line_of_sight = MoveGenerator::attack_ray(&bitboard, square, Direction::UpLeft)
             | MoveGenerator::attack_ray(&bitboard, square, Direction::UpRight)
@@ -167,7 +167,7 @@ impl MoveGenerator {
         // get the file and rank and the square to analyze
         let mut file = square.file();
         let mut rank = square.rank();
-        let mut square = BITBOARD_SQUARES[square.unwrap()];
+        let mut square = BITBOARD_SQUARES[square.idx()];
 
         // build the ray bitboard in the given direction
         let mut ray = Bitboard::empty();

@@ -91,8 +91,8 @@ impl Move {
         is_castle: bool,
     ) -> Self {
         let data = piece.unwrap() as u64
-            | (from.unwrap() as u64) << FROM_SHIFT
-            | (to.unwrap() as u64) << TO_SHIFT
+            | (from.idx() as u64) << FROM_SHIFT
+            | (to.idx() as u64) << TO_SHIFT
             | (captured.unwrap() as u64) << CAPTURED_SHIFT
             | (promoted.unwrap() as u64) << PROMOTED_SHIFT
             | (is_en_passant as u64) << IS_EN_PASSANT_SHIFT
@@ -233,7 +233,7 @@ impl Move {
     // @return: square
     #[inline(always)]
     fn to_square(value: u64) -> Square {
-        Square::new((value & SQUARE_MASK) as usize)
+        Square::from_idx((value & SQUARE_MASK) as usize)
     }
 
     // to_piece is a helper routine that converts the shifted value to a piece

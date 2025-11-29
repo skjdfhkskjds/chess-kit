@@ -2,7 +2,7 @@ use crate::board::Board;
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
     BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Move, MoveList, MoveType, Piece, Pieces, Rank,
-    Side, Square, Squares,
+    Side, Square,
 };
 
 // This is a list of all pieces a pawn can promote to.
@@ -77,12 +77,12 @@ impl MoveGenerator {
             Side::White => 8,
             Side::Black => -8,
         };
-        let rotation_count = (Squares::TOTAL as i8 + direction) as u32;
+        let rotation_count = (Square::TOTAL as i8 + direction) as u32;
 
         // As long as there are pawns, generate moves for each of them.
         let pawn_squares = board.get_piece(board.turn(), Pieces::PAWN);
         for from in pawn_squares.iter() {
-            let to = (from.unwrap() as i8 + direction) as usize;
+            let to = (from.idx() as i8 + direction) as usize;
             let mut moves = Bitboard::empty();
 
             // Generate pawn pushes
@@ -99,7 +99,7 @@ impl MoveGenerator {
                 let bb_targets = self.get_pawn_attacks(from, board.turn());
                 let bb_captures = bb_targets & board.sides[board.opponent().idx()];
                 let bb_ep_capture = match board.state.en_passant {
-                    Some(ep) => bb_targets & BITBOARD_SQUARES[ep.unwrap()],
+                    Some(ep) => bb_targets & BITBOARD_SQUARES[ep.idx()],
                     None => Bitboard::empty(),
                 };
                 moves |= bb_captures | bb_ep_capture;
@@ -125,30 +125,30 @@ impl MoveGenerator {
                 }
 
                 if board.state.castling.kingside(Side::White) {
-                    let bb_kingside_blockers = BITBOARD_SQUARES[Squares::F1.unwrap()]
-                        | BITBOARD_SQUARES[Squares::G1.unwrap()];
+                    let bb_kingside_blockers = BITBOARD_SQUARES[Square::F1.idx()]
+                        | BITBOARD_SQUARES[Square::G1.idx()];
                     let is_kingside_blocked = !(occupancy & bb_kingside_blockers).is_empty();
 
                     if !is_kingside_blocked
-                        && !self.is_attacked(board, us, Squares::E1)
-                        && !self.is_attacked(board, us, Squares::F1)
+                        && !self.is_attacked(board, us, Square::E1)
+                        && !self.is_attacked(board, us, Square::F1)
                     {
-                        let to = BITBOARD_SQUARES[from.unwrap()] << 2u8;
+                        let to = BITBOARD_SQUARES[from.idx()] << 2u8;
                         self.push_moves(board, Pieces::KING, from, to, list);
                     }
                 }
 
                 if board.state.castling.queenside(Side::White) {
-                    let bb_queenside_blockers = BITBOARD_SQUARES[Squares::B1.unwrap()]
-                        | BITBOARD_SQUARES[Squares::C1.unwrap()]
-                        | BITBOARD_SQUARES[Squares::D1.unwrap()];
+                    let bb_queenside_blockers = BITBOARD_SQUARES[Square::B1.idx()]
+                        | BITBOARD_SQUARES[Square::C1.idx()]
+                        | BITBOARD_SQUARES[Square::D1.idx()];
                     let is_queenside_blocked = !(occupancy & bb_queenside_blockers).is_empty();
 
                     if !is_queenside_blocked
-                        && !self.is_attacked(board, us, Squares::E1)
-                        && !self.is_attacked(board, us, Squares::D1)
+                        && !self.is_attacked(board, us, Square::E1)
+                        && !self.is_attacked(board, us, Square::D1)
                     {
-                        let to = BITBOARD_SQUARES[from.unwrap()] >> 2u8;
+                        let to = BITBOARD_SQUARES[from.idx()] >> 2u8;
                         self.push_moves(board, Pieces::KING, from, to, list);
                     }
                 }
@@ -159,30 +159,30 @@ impl MoveGenerator {
                 }
 
                 if board.state.castling.kingside(Side::Black) {
-                    let bb_kingside_blockers = BITBOARD_SQUARES[Squares::F8.unwrap()]
-                        | BITBOARD_SQUARES[Squares::G8.unwrap()];
+                    let bb_kingside_blockers = BITBOARD_SQUARES[Square::F8.idx()]
+                        | BITBOARD_SQUARES[Square::G8.idx()];
                     let is_kingside_blocked = !(occupancy & bb_kingside_blockers).is_empty();
 
                     if !is_kingside_blocked
-                        && !self.is_attacked(board, us, Squares::E8)
-                        && !self.is_attacked(board, us, Squares::F8)
+                        && !self.is_attacked(board, us, Square::E8)
+                        && !self.is_attacked(board, us, Square::F8)
                     {
-                        let to = BITBOARD_SQUARES[from.unwrap()] << 2u8;
+                        let to = BITBOARD_SQUARES[from.idx()] << 2u8;
                         self.push_moves(board, Pieces::KING, from, to, list);
                     }
                 }
 
                 if board.state.castling.queenside(Side::Black) {
-                    let bb_queenside_blockers = BITBOARD_SQUARES[Squares::B8.unwrap()]
-                        | BITBOARD_SQUARES[Squares::C8.unwrap()]
-                        | BITBOARD_SQUARES[Squares::D8.unwrap()];
+                    let bb_queenside_blockers = BITBOARD_SQUARES[Square::B8.idx()]
+                        | BITBOARD_SQUARES[Square::C8.idx()]
+                        | BITBOARD_SQUARES[Square::D8.idx()];
                     let is_queenside_blocked = !(occupancy & bb_queenside_blockers).is_empty();
 
                     if !is_queenside_blocked
-                        && !self.is_attacked(board, us, Squares::E8)
-                        && !self.is_attacked(board, us, Squares::D8)
+                        && !self.is_attacked(board, us, Square::E8)
+                        && !self.is_attacked(board, us, Square::D8)
                     {
-                        let to = BITBOARD_SQUARES[from.unwrap()] >> 2u8;
+                        let to = BITBOARD_SQUARES[from.idx()] >> 2u8;
                         self.push_moves(board, Pieces::KING, from, to, list);
                     }
                 }
@@ -221,7 +221,7 @@ impl MoveGenerator {
             };
 
             // get the captured piece given by the existing piece at `to`
-            let capture = board.pieces[to.unwrap()];
+            let capture = board.pieces[to.idx()];
 
             let promotion = is_pawn && to.on_rank(promotion_rank);
             let double_step = is_pawn && (to.distance(from) == 16);

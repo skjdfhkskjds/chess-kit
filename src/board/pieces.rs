@@ -25,7 +25,7 @@ impl Board {
     pub fn remove_piece_no_incrementals(&mut self, side: Side, piece: Piece, square: Square) {
         self.bitboards[side.idx()][piece.unwrap()].remove_at(square);
         self.sides[side.idx()].remove_at(square);
-        self.pieces[square.unwrap()] = Pieces::NONE;
+        self.pieces[square.idx()] = Pieces::NONE;
     }
 
     // remove_piece removes the piece from the given side and square
@@ -55,7 +55,7 @@ impl Board {
     pub fn set_piece_no_incrementals(&mut self, side: Side, piece: Piece, square: Square) {
         self.bitboards[side.idx()][piece.unwrap()].set_at(square);
         self.sides[side.idx()].set_at(square);
-        self.pieces[square.unwrap()] = piece;
+        self.pieces[square.idx()] = piece;
     }
 
     // set_piece puts the piece on the given side and square
@@ -131,7 +131,8 @@ impl Board {
     // @param: side - side to get the king square for
     // @return: square of the king for the given side
     pub fn king_square(&self, side: Side) -> Square {
-        Square::new(self.get_piece(side, Pieces::KING).trailing_zeros() as usize)
+        // TODO: refactor into bitboard.first() or something
+        Square::from_idx(self.get_piece(side, Pieces::KING).trailing_zeros() as usize)
     }
 
     // has_bishop_pair checks if the given side has a bishop pair

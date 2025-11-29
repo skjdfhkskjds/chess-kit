@@ -1,11 +1,11 @@
-use crate::primitives::{Bitboard, Castling, Piece, Pieces, Side, Square, Squares};
+use crate::primitives::{Bitboard, Castling, Piece, Pieces, Side, Square};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
-type PieceRandoms = [[[u64; Squares::TOTAL]; Pieces::TOTAL]; Side::TOTAL];
+type PieceRandoms = [[[u64; Square::TOTAL]; Pieces::TOTAL]; Side::TOTAL];
 type CastlingRandoms = [u64; Castling::TOTAL];
 type SideRandoms = [u64; Side::TOTAL];
-type EnPassantRandoms = [u64; Squares::TOTAL + 1];
+type EnPassantRandoms = [u64; Square::TOTAL + 1];
 
 pub type ZobristKey = u64;
 
@@ -25,10 +25,10 @@ impl Zobrist {
     // @return: new Zobrist instance
     pub fn new() -> Self {
         Self {
-            piece_randoms: [[[0; Squares::TOTAL]; Pieces::TOTAL]; Side::TOTAL],
+            piece_randoms: [[[0; Square::TOTAL]; Pieces::TOTAL]; Side::TOTAL],
             castling_randoms: [0; Castling::TOTAL],
             side_randoms: [0; Side::TOTAL],
-            en_passant_randoms: [0; Squares::TOTAL + 1],
+            en_passant_randoms: [0; Square::TOTAL + 1],
         }
     }
 
@@ -96,7 +96,7 @@ impl Zobrist {
     // @param: square - square to get the random value for
     // @return: random value for the given side, piece, and square
     pub fn piece(&self, side: Side, piece: Piece, square: Square) -> ZobristKey {
-        self.piece_randoms[side.idx()][piece.unwrap()][square.unwrap()]
+        self.piece_randoms[side.idx()][piece.unwrap()][square.idx()]
     }
 
     // castling returns the random value for the given castling rights
@@ -122,8 +122,8 @@ impl Zobrist {
     // @return: random value for the given en passant square
     pub fn en_passant(&self, en_passant: Option<Square>) -> ZobristKey {
         match en_passant {
-            Some(square) => self.en_passant_randoms[square.unwrap()],
-            None => self.en_passant_randoms[Squares::TOTAL],
+            Some(square) => self.en_passant_randoms[square.idx()],
+            None => self.en_passant_randoms[Square::TOTAL],
         }
     }
 }

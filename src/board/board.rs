@@ -2,7 +2,7 @@ use crate::board::fen::{FENError, FENParser, Parser};
 use crate::board::history::History;
 use crate::board::state::State;
 use crate::board::zobrist::Zobrist;
-use crate::primitives::{Bitboard, Piece, Pieces, Side, Squares};
+use crate::primitives::{Bitboard, Piece, Pieces, Side, Square};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
@@ -12,7 +12,7 @@ pub struct Board {
 
     pub sides: [Bitboard; Side::TOTAL], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Side::TOTAL], // bitboard per piece per side
-    pub pieces: [Piece; Squares::TOTAL], // piece type on each square
+    pub pieces: [Piece; Square::TOTAL], // piece type on each square
 
     pub zobrist: Zobrist, // zobrist random values for the board
 }
@@ -28,7 +28,7 @@ impl Board {
             history: History::new(),
             sides: [Bitboard::empty(); Side::TOTAL],
             bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Side::TOTAL],
-            pieces: [Pieces::NONE; Squares::TOTAL],
+            pieces: [Pieces::NONE; Square::TOTAL],
             zobrist: Zobrist::new(),
         }
     }
@@ -82,7 +82,7 @@ impl Board {
         let black = self.bitboards[Side::Black.idx()];
 
         // set the piece type on each square
-        for square in 0..Squares::TOTAL {
+        for square in 0..Square::TOTAL {
             let mut on_square: Piece = Pieces::NONE;
 
             let mask = 1u64 << square; // bitmask for the square
@@ -109,7 +109,7 @@ impl Board {
         self.history.clear();
         self.sides = [Bitboard::empty(); Side::TOTAL];
         self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Side::TOTAL];
-        self.pieces = [Pieces::NONE; Squares::TOTAL];
+        self.pieces = [Pieces::NONE; Square::TOTAL];
     }
 
     // occupancy gets the bitboard of all pieces on the board

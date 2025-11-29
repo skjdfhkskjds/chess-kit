@@ -10,4 +10,4 @@ pub use castling::Castling;
 pub use moves::{Move, MoveList, MoveType, ShortMove};
 pub use pieces::{Piece, Pieces};
 pub use sides::Side;
-pub use squares::{File, Rank, Square, Squares};
+pub use squares::{File, Rank, Square};
