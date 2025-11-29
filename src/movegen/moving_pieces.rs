@@ -9,7 +9,7 @@ impl MoveGenerator {
     // @param: self - mutable reference to the move generator
     // @return: void
     #[rustfmt::skip]
-    pub fn init_king_table(&mut self) {
+    pub(crate) fn init_king_table(&mut self) {
         for sq in Square::ALL {
             let bitboard = BITBOARD_SQUARES[sq.idx()];
             let moves = ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_RANKS[Rank::R8.idx()]) << 7u8)
@@ -29,7 +29,7 @@ impl MoveGenerator {
     // @param: self - mutable reference to the move generator
     // @return: void
     #[rustfmt::skip]
-    pub fn init_knight_table(&mut self) {
+    pub(crate) fn init_knight_table(&mut self) {
         for sq in Square::ALL {
             let bitboard = BITBOARD_SQUARES[sq.idx()];
             let moves =
@@ -50,7 +50,7 @@ impl MoveGenerator {
     // @param: self - mutable reference to the move generator
     // @return: void
     #[rustfmt::skip]
-    pub fn init_pawn_table(&mut self) {
+    pub(crate) fn init_pawn_table(&mut self) {
         for sq in Square::ALL {
             let bitboard = BITBOARD_SQUARES[sq.idx()];
             self.pawn_table[Side::White.idx()][sq.idx()] = ((bitboard & !BITBOARD_FILES[File::A.idx()]) << 7u8)
@@ -60,37 +60,37 @@ impl MoveGenerator {
         }
     }
 
-    // get_king_attacks returns the squares that the king attacks from the given
+    // get_king_targets returns the squares that the king targets from the given
     // square
     //
     // @param: self - immutable reference to the move generator
     // @param: sq - square that the king is on
-    // @return: king moves for the given square
+    // @return: king targets from the given square
     #[inline(always)]
-    pub fn get_king_attacks(&self, sq: Square) -> Bitboard {
+    pub(crate) fn get_king_targets(&self, sq: Square) -> Bitboard {
         self.king_table[sq.idx()]
     }
 
-    // get_knight_attacks returns the squares that the knight attacks from the
+    // get_knight_targets returns the squares that the knight targets from the
     // given square
     //
     // @param: self - immutable reference to the move generator
     // @param: sq - square that the knight is on
-    // @return: knight moves for the given square
+    // @return: knight targets from the given square
     #[inline(always)]
-    pub fn get_knight_attacks(&self, sq: Square) -> Bitboard {
+    pub(crate) fn get_knight_targets(&self, sq: Square) -> Bitboard {
         self.knight_table[sq.idx()]
     }
 
-    // get_pawn_attacks returns the squares that the pawn attacks from the given
+    // get_pawn_targets returns the squares that the pawn targets from the given
     // square for the given side
     //
     // @param: self - immutable reference to the move generator
     // @param: sq - square that the pawn is on
     // @param: side - side to get the pawn moves for
-    // @return: pawn moves for the given square
+    // @return: pawn targets from the given square
     #[inline(always)]
-    pub fn get_pawn_attacks(&self, sq: Square, side: Side) -> Bitboard {
+    pub(crate) fn get_pawn_targets(&self, sq: Square, side: Side) -> Bitboard {
         self.pawn_table[side.idx()][sq.idx()]
     }
 }

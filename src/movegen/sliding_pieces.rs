@@ -33,7 +33,7 @@ impl MoveGenerator {
     // @param: bitboard - current occupancy state of the board
     // @return: bitboard representing the bishop targets
     #[inline(always)]
-    pub fn get_bishop_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+    pub(crate) fn get_bishop_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
         self.bishop_table[self.bishop_magics[square.idx()].index_of(bitboard)]
     }
 
@@ -43,7 +43,7 @@ impl MoveGenerator {
     // @param: bitboard - current occupancy state of the board
     // @return: bitboard representing the queen targets
     #[inline(always)]
-    pub fn get_queen_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+    pub(crate) fn get_queen_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
         self.get_rook_attacks(square, bitboard) ^ self.get_bishop_attacks(square, bitboard)
     }
 
@@ -51,7 +51,7 @@ impl MoveGenerator {
     //
     // @param: square - square to get the mask for
     // @return: masking bitboard for the given square
-    pub fn rook_mask(square: Square) -> Bitboard {
+    pub(crate) fn rook_mask(square: Square) -> Bitboard {
         let rook_at = BITBOARD_SQUARES[square.idx()];
         let edges = MoveGenerator::get_edges(square);
         let line_of_sight =
@@ -64,7 +64,7 @@ impl MoveGenerator {
     //
     // @param: square - square to get the mask for
     // @return: masking bitboard for the given square
-    pub fn bishop_mask(square: Square) -> Bitboard {
+    pub(crate) fn bishop_mask(square: Square) -> Bitboard {
         let bitboard = Bitboard::empty();
         let bishop_at = BITBOARD_SQUARES[square.idx()];
         let edges = MoveGenerator::get_edges(square);
@@ -82,7 +82,7 @@ impl MoveGenerator {
     // @param: square - square to get the attack boards for
     // @param: blockers - blockers to use to generate the attack boards
     // @return: attack boards for the given square and blockers
-    pub fn rook_attack_boards(square: Square, blockers: &[Bitboard]) -> BitboardVec {
+    pub(crate) fn rook_attack_boards(square: Square, blockers: &[Bitboard]) -> BitboardVec {
         let mut attacks: BitboardVec = Vec::new();
 
         for bitboard in blockers.iter() {
@@ -102,7 +102,7 @@ impl MoveGenerator {
     // @param: square - square to get the attack boards for
     // @param: blockers - blockers to use to generate the attack boards
     // @return: attack boards for the given square and blockers
-    pub fn bishop_attack_boards(square: Square, blockers: &[Bitboard]) -> BitboardVec {
+    pub(crate) fn bishop_attack_boards(square: Square, blockers: &[Bitboard]) -> BitboardVec {
         let mut attacks: BitboardVec = Vec::new();
 
         for bitboard in blockers.iter() {
@@ -123,7 +123,7 @@ impl MoveGenerator {
     // mask, using the Carry Rippler method. See the given link, or
     // http://rustic-chess.org for more information.
     // TODO: revisit this function later
-    pub fn blocker_boards(mask: Bitboard) -> BitboardVec {
+    pub(crate) fn blocker_boards(mask: Bitboard) -> BitboardVec {
         let mut bb_blocker_boards: BitboardVec = Vec::new();
         let mut n: Bitboard = Bitboard::empty();
 
@@ -163,7 +163,7 @@ impl MoveGenerator {
     // @param: square - square to start the attack ray from
     // @param: direction - direction to attack in
     // @return: attack ray bitboard
-    pub fn attack_ray(bitboard: &Bitboard, square: Square, direction: Direction) -> Bitboard {
+    fn attack_ray(bitboard: &Bitboard, square: Square, direction: Direction) -> Bitboard {
         // get the file and rank and the square to analyze
         let mut file = square.file();
         let mut rank = square.rank();

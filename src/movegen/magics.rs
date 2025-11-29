@@ -215,7 +215,7 @@ impl MoveGenerator {
     // @panic: if the piece is illegal
     // @panic: if the table is successfully initialized
     // @panic: if the table size is not the expected size
-    pub fn init_magics(&mut self, piece: Piece) {
+    pub(crate) fn init_magics(&mut self, piece: Piece) {
         assert!(
             piece == Piece::Rook || piece == Piece::Bishop,
             "Illegal piece: {piece}"
