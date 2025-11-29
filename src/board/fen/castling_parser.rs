@@ -1,5 +1,5 @@
 use crate::board::fen::{FENError, Parser};
-use crate::primitives::{CastleFlags, Castling};
+use crate::primitives::{Castling, Sides};
 
 pub struct CastlingParser {
     pub castling: Castling,
@@ -7,21 +7,22 @@ pub struct CastlingParser {
 
 impl Parser for CastlingParser {
     fn parse(segment: &str) -> Result<Self, FENError> {
-        let mut castling = Castling::none();
-        if (1..=4).contains(&segment.len()) {
-            for c in segment.chars() {
-                match c {
-                    'K' => castling |= CastleFlags::WHITE_KING,
-                    'Q' => castling |= CastleFlags::WHITE_QUEEN,
-                    'k' => castling |= CastleFlags::BLACK_KING,
-                    'q' => castling |= CastleFlags::BLACK_QUEEN,
-                    '-' => (),
-                    _ => return Err(FENError::InvalidCastling),
-                }
-            }
-            return Ok(Self { castling });
+        if !(1..=4).contains(&segment.len()) {
+            return Err(FENError::InvalidCastling);
         }
 
-        Err(FENError::InvalidCastling)
+        let mut castling = Castling::none();
+        for c in segment.chars() {
+            match c {
+                'K' => castling = castling.with_kingside(Sides::WHITE),
+                'Q' => castling = castling.with_queenside(Sides::WHITE),
+                'k' => castling = castling.with_kingside(Sides::BLACK),
+                'q' => castling = castling.with_queenside(Sides::BLACK),
+                '-' => (),
+                _ => return Err(FENError::InvalidCastling),
+            }
+        }
+
+        Ok(Self { castling })
     }
 }

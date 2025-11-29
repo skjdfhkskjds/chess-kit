@@ -1,15 +1,15 @@
 use crate::board::board::Board;
 use crate::primitives::moves::Move;
-use crate::primitives::{CastleFlags, Castling, Piece, Pieces, Side, Sides, Square, Squares};
+use crate::primitives::{Piece, Pieces, Side, Sides, Square, Squares};
 
 // TODO: refactor all of this
 impl Board {
     // capture_piece captures the side's piece at the given square
-    // 
+    //
     // @param: self - mutable reference to the board
-    // @param: side - side to capture the piece from
+    // @param: side - side to whose piece is being captured
     // @param: piece - piece to capture
-    // @param: square - square to capture the piece from
+    // @param: square - square that the captured piece is on
     // @return: void
     // @side-effects: modifies the `board`
     // @side-effects: resets the halfmove clock
@@ -25,14 +25,13 @@ impl Board {
         // the side has castling permissions, then revoke the appropriate
         // castling permissions
         if piece.is_rook() && self.state.castling.can_castle(side) {
-            let revoked_perms = CastleFlags::ALL & !match square {
-                Squares::A1 => CastleFlags::WHITE_QUEEN,
-                Squares::H1 => CastleFlags::WHITE_KING,
-                Squares::A8 => CastleFlags::BLACK_QUEEN,
-                Squares::H8 => CastleFlags::BLACK_KING,
-                _ => CastleFlags::NONE,
-            };
-            self.set_castling(self.state.castling & revoked_perms);
+            self.set_castling(match square {
+                Squares::A1 => self.state.castling.revoke_queenside(Sides::WHITE),
+                Squares::H1 => self.state.castling.revoke_kingside(Sides::WHITE),
+                Squares::A8 => self.state.castling.revoke_queenside(Sides::BLACK),
+                Squares::H8 => self.state.castling.revoke_kingside(Sides::BLACK),
+                _ => self.state.castling,
+            });
         }
     }
 
@@ -42,97 +41,88 @@ impl Board {
     // @param: m - move to make
     // @return: void
     // @side-effects: modifies the `board`
-    pub fn make_move(&mut self, m: Move) {
-        // Create the unmake info and store it.
+    pub fn make_move(&mut self, mv: Move) {
+        // push the current state into the history
         let mut current_state = self.state;
-        current_state.next_move = m;
+        current_state.next_move = mv;
         self.history.push(current_state);
 
-        // Set "us" and "opponent"
+        // helper variables to avoid repeated calls
         let us = self.turn();
         let opponent = self.opponent();
+        let piece = mv.piece();
+        let from = mv.from();
+        let to = mv.to();
 
-        // Dissect the move so we don't need "m.function()" and type casts everywhere.
-        let piece = m.piece();
-        let from = m.from();
-        let to = m.to();
-        let captured = m.captured();
-        let promoted = m.promoted();
-        let castling = m.castling();
-        let double_step = m.double_step();
-        let en_passant = m.en_passant();
-
-        // Shorthands
-        let is_promotion = promoted != Pieces::NONE;
-        let is_capture = captured != Pieces::NONE;
-        let has_permissions = self.state.castling != Castling::none();
-
-        // Assume this is not a pawn move or a capture.
+        // increment the move counters
+        //
+        // Note: if black is moving, increment the fullmove counter as well
         self.state.halfmoves += 1;
-
-        // Every move except double_step unsets the ep-square.
-        if self.state.en_passant.is_some() {
-            self.clear_en_passant();
+        if us == Sides::BLACK {
+            self.state.fullmoves += 1;
         }
 
         // handle a piece capture
-        if is_capture {
+        let captured = mv.captured();
+        if captured != Pieces::NONE {
             self.capture_piece(opponent, captured, to);
         }
 
-        // Make the move. Just move the piece if it's not a pawn.
-        if piece != Pieces::PAWN {
+        // move the piece
+        if !piece.is_pawn() {
+            // if the moving piece is not a pawn, just perform a regular move
             self.move_piece(us, piece, from, to);
+
+            // revoke castling permissions if king/rook leaves from starting
+            // square
+            if (piece.is_king() || piece.is_rook()) && self.state.castling.can_castle(us) {
+                self.set_castling(match from {
+                    Squares::E1 => self.state.castling.revoke(Sides::WHITE), // white king moved
+                    Squares::E8 => self.state.castling.revoke(Sides::BLACK), // black king moved
+                    Squares::A1 => self.state.castling.revoke_queenside(Sides::WHITE), // white queenside rook moved
+                    Squares::H1 => self.state.castling.revoke_kingside(Sides::WHITE), // white kingside rook moved
+                    Squares::A8 => self.state.castling.revoke_queenside(Sides::BLACK), // black queenside rook moved
+                    Squares::H8 => self.state.castling.revoke_kingside(Sides::BLACK), // black kingside rook moved
+                    _ => self.state.castling,
+                });
+            }
+
+            // if the move is a castle, move the appropriate rook as well
+            if mv.is_castle() {
+                match to {
+                    Squares::G1 => self.move_piece(us, Pieces::ROOK, Squares::H1, Squares::F1),
+                    Squares::C1 => self.move_piece(us, Pieces::ROOK, Squares::A1, Squares::D1),
+                    Squares::G8 => self.move_piece(us, Pieces::ROOK, Squares::H8, Squares::F8),
+                    Squares::C8 => self.move_piece(us, Pieces::ROOK, Squares::A8, Squares::D8),
+                    _ => panic!("Invalid king move during castling. {from} -> {to}"),
+                }
+            }
         } else {
-            // It's a pawn move. Take promotion into account and reset half_move_clock.
+            let promoted = mv.promoted();
+            let is_promotion = promoted != Pieces::NONE;
+
+            // if the move is a pawn move, handle the promotion case and reset
+            // the halfmove clock
             self.remove_piece(us, piece, from);
             self.set_piece(us, if !is_promotion { piece } else { promoted }, to);
             self.state.halfmoves = 0;
 
-            // After an en-passant maneuver, the opponent's pawn must also be removed.
-            if en_passant {
+            // if the move is an en passant capture, remove the opponent's pawn
+            if mv.is_en_passant() {
                 self.remove_piece(opponent, Pieces::PAWN, to ^ 8);
             }
-
-            // A double-step is the only move that sets the ep-square.
-            if double_step {
-                self.set_en_passant(to ^ 8);
-            }
         }
 
-        // Remove castling permissions if king/rook leaves from starting square.
-        // (This will also adjust permissions when castling, because the king moves.)
-        if (piece == Pieces::KING || piece == Pieces::ROOK) && has_permissions {
-            let revoked_perms = CastleFlags::ALL & !match from {
-                Squares::A1 => CastleFlags::WHITE_QUEEN,
-                Squares::E1 => CastleFlags::WHITE,
-                Squares::H1 => CastleFlags::WHITE_KING,
-                Squares::A8 => CastleFlags::BLACK_QUEEN,
-                Squares::E8 => CastleFlags::BLACK,
-                Squares::H8 => CastleFlags::BLACK_KING,
-                _ => CastleFlags::NONE,
-            };
-            self.set_castling(self.state.castling & revoked_perms);
+        // if the move is a double step, set the en passant square, otherwise
+        // clear it
+        if mv.is_double_step() {
+            self.set_en_passant(to ^ 8);
+        } else {
+            self.clear_en_passant();
         }
 
-        // If the king is castling, then also move the rook.
-        if castling {
-            match to {
-                Squares::G1 => self.move_piece(us, Pieces::ROOK, Squares::H1, Squares::F1),
-                Squares::C1 => self.move_piece(us, Pieces::ROOK, Squares::A1, Squares::D1),
-                Squares::G8 => self.move_piece(us, Pieces::ROOK, Squares::H8, Squares::F8),
-                Squares::C8 => self.move_piece(us, Pieces::ROOK, Squares::A8, Squares::D8),
-                _ => panic!("Invalid king move during castling. {from} -> {to}"),
-            }
-        }
-
-        // Swap the side to move.
+        // swap the side to move
         self.swap_sides();
-
-        // Increase full move number if black has moved
-        if us == Sides::BLACK {
-            self.state.fullmoves += 1;
-        }
     }
 
     // unmake unmakes the last move on the board
@@ -158,14 +148,14 @@ impl Board {
         let opponent = self.opponent();
 
         // Dissect the move to undo
-        let m = self.state.next_move;
-        let piece = m.piece();
-        let from = m.from();
-        let to = m.to();
-        let captured = m.captured();
-        let promoted = m.promoted();
-        let castling = m.castling();
-        let en_passant = m.en_passant();
+        let mv = self.state.next_move;
+        let piece = mv.piece();
+        let from = mv.from();
+        let to = mv.to();
+        let captured = mv.captured();
+        let promoted = mv.promoted();
+        let castling = mv.is_castle();
+        let en_passant = mv.is_en_passant();
 
         // Moving backwards...
         if promoted == Pieces::NONE {
