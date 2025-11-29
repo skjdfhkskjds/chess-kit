@@ -1,7 +1,7 @@
 use crate::board::Board;
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
-    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Move, MoveList, MoveType, Piece, Pieces, Ranks,
+    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Move, MoveList, MoveType, Piece, Pieces, Rank,
     Side, Square, Squares,
 };
 
@@ -71,7 +71,7 @@ impl MoveGenerator {
     pub fn generate_pawn_moves(&self, board: &Board, list: &mut MoveList, mt: MoveType) {
         // Create shorthand variables.
         let empty_squares = board.empty_squares();
-        let double_step_rank = BITBOARD_RANKS[Ranks::double_step_rank(board.turn())];
+        let double_step_rank = BITBOARD_RANKS[Rank::double_step_rank(board.turn()).idx()];
         // TODO: figure out how to abstract this away appropriately
         let direction = match board.turn() {
             Side::White => 8,
@@ -209,7 +209,7 @@ impl MoveGenerator {
         to_squares: Bitboard,
         list: &mut MoveList,
     ) {
-        let promotion_rank = Ranks::promotion_rank(board.turn());
+        let promotion_rank = Rank::promotion_rank(board.turn());
         let is_pawn = piece.is_pawn();
 
         // push a move for each of the `to` squares

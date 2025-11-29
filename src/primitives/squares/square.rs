@@ -1,4 +1,4 @@
-use crate::primitives::{File, Rank, Ranks};
+use crate::primitives::{File, Rank};
 use chess_kit_derive::{Arithmetic, BitOps};
 use std::fmt;
 
@@ -30,8 +30,8 @@ impl Square {
     // @param: self - immutable reference to the square
     // @return: rank of the square
     #[inline(always)]
-    pub const fn rank(&self) -> Rank {
-        (self.0 / 8) as Rank
+    pub fn rank(&self) -> Rank {
+        Rank::from_idx(self.0 / 8)
     }
 
     // file returns the file of the square
@@ -70,7 +70,7 @@ impl Square {
     // @param: rank - rank to check
     // @return: true if the square is on the given rank, false otherwise
     #[inline(always)]
-    pub const fn on_rank(&self, rank: Rank) -> bool {
+    pub fn on_rank(&self, rank: Rank) -> bool {
         self.rank() == rank
     }
 
@@ -109,18 +109,18 @@ impl TryFrom<&str> for Square {
         };
 
         let rank = match rank_str {
-            '1' => Ranks::R1,
-            '2' => Ranks::R2,
-            '3' => Ranks::R3,
-            '4' => Ranks::R4,
-            '5' => Ranks::R5,
-            '6' => Ranks::R6,
-            '7' => Ranks::R7,
-            '8' => Ranks::R8,
+            '1' => Rank::R1,
+            '2' => Rank::R2,
+            '3' => Rank::R3,
+            '4' => Rank::R4,
+            '5' => Rank::R5,
+            '6' => Rank::R6,
+            '7' => Rank::R7,
+            '8' => Rank::R8,
             _ => return Err("invalid square"),
         };
 
-        Ok(Square::new((rank * 8) + file.idx()))
+        Ok(Square::new((rank.idx() * 8) + file.idx()))
     }
 }
 
@@ -137,15 +137,14 @@ impl fmt::Display for Square {
             File::H => write!(f, "h"),
         }?;
         match self.rank() {
-            Ranks::R1 => write!(f, "1"),
-            Ranks::R2 => write!(f, "2"),
-            Ranks::R3 => write!(f, "3"),
-            Ranks::R4 => write!(f, "4"),
-            Ranks::R5 => write!(f, "5"),
-            Ranks::R6 => write!(f, "6"),
-            Ranks::R7 => write!(f, "7"),
-            Ranks::R8 => write!(f, "8"),
-            _ => return Err(fmt::Error),
+            Rank::R1 => write!(f, "1"),
+            Rank::R2 => write!(f, "2"),
+            Rank::R3 => write!(f, "3"),
+            Rank::R4 => write!(f, "4"),
+            Rank::R5 => write!(f, "5"),
+            Rank::R6 => write!(f, "6"),
+            Rank::R7 => write!(f, "7"),
+            Rank::R8 => write!(f, "8"),
         }?;
         Ok(())
     }

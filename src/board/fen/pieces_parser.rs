@@ -1,5 +1,5 @@
 use crate::board::fen::{FENError, Parser};
-use crate::primitives::{BITBOARD_SQUARES, Bitboard, File, Pieces, Ranks, Side};
+use crate::primitives::{BITBOARD_SQUARES, Bitboard, File, Pieces, Rank, Side};
 
 const VALID_PIECES: &str = "kqrbnpKQRBNP";
 const DELIMITTER: char = '/';
@@ -10,7 +10,7 @@ pub struct PiecesParser {
 
 impl Parser for PiecesParser {
     fn parse(segment: &str) -> Result<Self, FENError> {
-        let mut rank = Ranks::R8;
+        let mut rank = Rank::R8.idx();
         let mut file = File::A.idx();
         let mut bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Side::TOTAL];
 

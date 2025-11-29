@@ -1,13 +1,13 @@
 use crate::primitives::bitboard::Bitboard;
-use crate::primitives::{Ranks, File, Squares};
+use crate::primitives::{Rank, File, Squares};
 
-pub const BITBOARD_RANKS: [Bitboard; Ranks::TOTAL] = {
+pub const BITBOARD_RANKS: [Bitboard; Rank::TOTAL] = {
     const RANK_1: u64 = 0xFF;
-    let mut ranks = [Bitboard::empty(); Ranks::TOTAL];
+    let mut ranks = [Bitboard::empty(); Rank::TOTAL];
     let mut i = 0;
 
     // Note: while loop hack to get around const fn loop limitations
-    while i < Ranks::TOTAL {
+    while i < Rank::TOTAL {
         ranks[i] = Bitboard::new(RANK_1 << (i * 8));
         i += 1;
     }

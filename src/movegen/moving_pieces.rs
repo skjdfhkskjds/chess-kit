@@ -1,6 +1,6 @@
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, File, Ranks, Side, Square, Squares,
+    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, File, Rank, Side, Square, Squares,
 };
 
 impl MoveGenerator {
@@ -12,13 +12,13 @@ impl MoveGenerator {
     pub fn init_king_table(&mut self) {
         for sq in Squares::ALL {
             let bitboard = BITBOARD_SQUARES[sq.unwrap()];
-            let moves = ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_RANKS[Ranks::R8]) << 7u8)
-                | ((bitboard & !BITBOARD_RANKS[Ranks::R8]) << 8u8)
-                | ((bitboard & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Ranks::R8]) << 9u8)
+            let moves = ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_RANKS[Rank::R8.idx()]) << 7u8)
+                | ((bitboard & !BITBOARD_RANKS[Rank::R8.idx()]) << 8u8)
+                | ((bitboard & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Rank::R8.idx()]) << 9u8)
                 | ((bitboard & !BITBOARD_FILES[File::H.idx()]) << 1u8)
-                | ((bitboard & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Ranks::R1]) >> 7u8)
-                | ((bitboard & !BITBOARD_RANKS[Ranks::R1]) >> 8u8)
-                | ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_RANKS[Ranks::R1]) >> 9u8)
+                | ((bitboard & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Rank::R1.idx()]) >> 7u8)
+                | ((bitboard & !BITBOARD_RANKS[Rank::R1.idx()]) >> 8u8)
+                | ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_RANKS[Rank::R1.idx()]) >> 9u8)
                 | ((bitboard & !BITBOARD_FILES[File::A.idx()]) >> 1u8);
             self.king_table[sq.unwrap()] = moves;
         }
@@ -33,14 +33,14 @@ impl MoveGenerator {
         for sq in Squares::ALL {
             let bitboard = BITBOARD_SQUARES[sq.unwrap()];
             let moves =
-                ((bitboard & !BITBOARD_RANKS[Ranks::R8] & !BITBOARD_RANKS[Ranks::R7] & !BITBOARD_FILES[File::A.idx()]) << 15u8)
-                | ((bitboard & !BITBOARD_RANKS[Ranks::R8] & !BITBOARD_RANKS[Ranks::R7] & !BITBOARD_FILES[File::H.idx()]) << 17u8)
-                | ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_FILES[File::B.idx()] & !BITBOARD_RANKS[Ranks::R8]) << 6u8)
-                | ((bitboard & !BITBOARD_FILES[File::G.idx()] & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Ranks::R8]) << 10u8)
-                | ((bitboard & !BITBOARD_RANKS[Ranks::R1] & !BITBOARD_RANKS[Ranks::R2] & !BITBOARD_FILES[File::A.idx()]) >> 17u8)
-                | ((bitboard & !BITBOARD_RANKS[Ranks::R1] & !BITBOARD_RANKS[Ranks::R2] & !BITBOARD_FILES[File::H.idx()]) >> 15u8)
-                | ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_FILES[File::B.idx()] & !BITBOARD_RANKS[Ranks::R1]) >> 10u8)
-                | ((bitboard & !BITBOARD_FILES[File::G.idx()] & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Ranks::R1]) >> 6u8);
+                ((bitboard & !BITBOARD_RANKS[Rank::R8.idx()] & !BITBOARD_RANKS[Rank::R7.idx()] & !BITBOARD_FILES[File::A.idx()]) << 15u8)
+                | ((bitboard & !BITBOARD_RANKS[Rank::R8.idx()] & !BITBOARD_RANKS[Rank::R7.idx()] & !BITBOARD_FILES[File::H.idx()]) << 17u8)
+                | ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_FILES[File::B.idx()] & !BITBOARD_RANKS[Rank::R8.idx()]) << 6u8)
+                | ((bitboard & !BITBOARD_FILES[File::G.idx()] & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Rank::R8.idx()]) << 10u8)
+                | ((bitboard & !BITBOARD_RANKS[Rank::R1.idx()] & !BITBOARD_RANKS[Rank::R2.idx()] & !BITBOARD_FILES[File::A.idx()]) >> 17u8)
+                | ((bitboard & !BITBOARD_RANKS[Rank::R1.idx()] & !BITBOARD_RANKS[Rank::R2.idx()] & !BITBOARD_FILES[File::H.idx()]) >> 15u8)
+                | ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_FILES[File::B.idx()] & !BITBOARD_RANKS[Rank::R1.idx()]) >> 10u8)
+                | ((bitboard & !BITBOARD_FILES[File::G.idx()] & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Rank::R1.idx()]) >> 6u8);
             self.knight_table[sq.unwrap()] = moves;
         }
     }

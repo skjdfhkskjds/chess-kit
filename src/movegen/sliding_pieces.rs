@@ -1,6 +1,6 @@
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, BitboardVec, File, Ranks, Square,
+    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, BitboardVec, File, Rank, Square,
 };
 
 // Direction is an enum that represents the movement direction of a sliding
@@ -54,7 +54,8 @@ impl MoveGenerator {
     pub fn rook_mask(square: Square) -> Bitboard {
         let rook_at = BITBOARD_SQUARES[square.unwrap()];
         let edges = MoveGenerator::get_edges(square);
-        let line_of_sight = BITBOARD_FILES[square.file().idx()] | BITBOARD_RANKS[square.rank()];
+        let line_of_sight =
+            BITBOARD_FILES[square.file().idx()] | BITBOARD_RANKS[square.rank().idx()];
 
         line_of_sight & !edges & !rook_at
     }
@@ -147,12 +148,12 @@ impl MoveGenerator {
     // TODO: think about moving this function elsewhere
     fn get_edges(exclude: Square) -> Bitboard {
         let exclude_file = BITBOARD_FILES[exclude.file().idx()];
-        let exclude_rank = BITBOARD_RANKS[exclude.rank()];
+        let exclude_rank = BITBOARD_RANKS[exclude.rank().idx()];
 
         (BITBOARD_FILES[File::A.idx()] & !exclude_file)
             | (BITBOARD_FILES[File::H.idx()] & !exclude_file)
-            | (BITBOARD_RANKS[Ranks::R1] & !exclude_rank)
-            | (BITBOARD_RANKS[Ranks::R8] & !exclude_rank)
+            | (BITBOARD_RANKS[Rank::R1.idx()] & !exclude_rank)
+            | (BITBOARD_RANKS[Rank::R8.idx()] & !exclude_rank)
     }
 
     // attack_ray returns the attack ray from the current square in the given
@@ -173,13 +174,13 @@ impl MoveGenerator {
         loop {
             match direction {
                 Direction::Up => {
-                    if rank == Ranks::R8 {
+                    if rank == Rank::R8 {
                         break;
                     }
 
                     square <<= 8u8;
                     ray |= square;
-                    rank += 1;
+                    rank.inc();
                 }
                 Direction::Right => {
                     if file == File::H {
@@ -191,13 +192,13 @@ impl MoveGenerator {
                     file.inc();
                 }
                 Direction::Down => {
-                    if rank == Ranks::R1 {
+                    if rank == Rank::R1 {
                         break;
                     }
 
                     square >>= 8u8;
                     ray |= square;
-                    rank -= 1;
+                    rank.dec();
                 }
                 Direction::Left => {
                     if file == File::A {
@@ -209,43 +210,43 @@ impl MoveGenerator {
                     file.dec();
                 }
                 Direction::UpLeft => {
-                    if rank == Ranks::R8 || file == File::A {
+                    if rank == Rank::R8 || file == File::A {
                         break;
                     }
 
                     square <<= 7u8;
                     ray |= square;
-                    rank += 1;
+                    rank.inc();
                     file.dec();
                 }
                 Direction::UpRight => {
-                    if rank == Ranks::R8 || file == File::H {
+                    if rank == Rank::R8 || file == File::H {
                         break;
                     }
 
                     square <<= 9u8;
                     ray |= square;
-                    rank += 1;
+                    rank.inc();
                     file.inc();
                 }
                 Direction::DownRight => {
-                    if rank == Ranks::R1 || file == File::H {
+                    if rank == Rank::R1 || file == File::H {
                         break;
                     }
 
                     square >>= 7u8;
                     ray |= square;
-                    rank -= 1;
+                    rank.dec();
                     file.inc();
                 }
                 Direction::DownLeft => {
-                    if rank == Ranks::R1 || file == File::A {
+                    if rank == Rank::R1 || file == File::A {
                         break;
                     }
 
                     square >>= 9u8;
                     ray |= square;
-                    rank -= 1;
+                    rank.dec();
                     file.dec();
                 }
             };
