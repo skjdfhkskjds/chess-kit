@@ -9,6 +9,11 @@ impl Sides {
 }
 
 impl Sides {
+    // other returns the other side
+    // 
+    // @param: side - side to get the other side of
+    // @return: other side
+    #[inline(always)]
     pub const fn other(side: Side) -> Side {
         side ^ 1
     }

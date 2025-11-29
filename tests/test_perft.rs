@@ -1,3 +1,22 @@
+mod perft;
+use perft::{PerftHarness, PerftHarnessMode, PerftTest};
+
+// run_perft_tests runs the perft tests
+#[test]
+fn run_perft_tests() {
+    // assemble the test cases
+    let test_cases = TEST_CASES
+        .iter()
+        .map(|test| PerftTest::try_from(*test).unwrap())
+        .collect::<Vec<PerftTest>>();
+
+    // create a new perft harness
+    let mut harness = PerftHarness::new(PerftHarnessMode::Default, test_cases);
+
+    // run the test cases
+    harness.run();
+}
+
 // ===== Large EPD test suite =====
 
 pub const TEST_CASES: [&str; 172] = [

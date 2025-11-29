@@ -111,13 +111,15 @@ impl MoveGenerator {
     }
 
     pub fn generate_castle_moves(&self, board: &Board, list: &mut MoveList) {
-        // Create shorthand variables.
-        let opponent = board.opponent();
+        let us = board.turn();
         let occupancy = board.occupancy();
 
-        let king_squares = board.get_piece(board.turn(), Pieces::KING);
+        // get the current king square
+        let king_squares = board.get_piece(us, Pieces::KING);
         let from = king_squares.iter().next().unwrap();
-        match board.turn() {
+
+        // generate castle moves depending on the side to move
+        match us {
             Sides::WHITE => {
                 if !board.state.castling.can_castle(Sides::WHITE) {
                     return;
@@ -129,8 +131,8 @@ impl MoveGenerator {
                     let is_kingside_blocked = !(occupancy & bb_kingside_blockers).is_empty();
 
                     if !is_kingside_blocked
-                        && !self.square_attacked(board, opponent, Squares::E1)
-                        && !self.square_attacked(board, opponent, Squares::F1)
+                        && !self.is_attacked(board, us, Squares::E1)
+                        && !self.is_attacked(board, us, Squares::F1)
                     {
                         let to = BITBOARD_SQUARES[from.unwrap()] << 2u8;
                         self.push_moves(board, Pieces::KING, from, to, list);
@@ -144,8 +146,8 @@ impl MoveGenerator {
                     let is_queenside_blocked = !(occupancy & bb_queenside_blockers).is_empty();
 
                     if !is_queenside_blocked
-                        && !self.square_attacked(board, opponent, Squares::E1)
-                        && !self.square_attacked(board, opponent, Squares::D1)
+                        && !self.is_attacked(board, us, Squares::E1)
+                        && !self.is_attacked(board, us, Squares::D1)
                     {
                         let to = BITBOARD_SQUARES[from.unwrap()] >> 2u8;
                         self.push_moves(board, Pieces::KING, from, to, list);
@@ -163,8 +165,8 @@ impl MoveGenerator {
                     let is_kingside_blocked = !(occupancy & bb_kingside_blockers).is_empty();
 
                     if !is_kingside_blocked
-                        && !self.square_attacked(board, opponent, Squares::E8)
-                        && !self.square_attacked(board, opponent, Squares::F8)
+                        && !self.is_attacked(board, us, Squares::E8)
+                        && !self.is_attacked(board, us, Squares::F8)
                     {
                         let to = BITBOARD_SQUARES[from.unwrap()] << 2u8;
                         self.push_moves(board, Pieces::KING, from, to, list);
@@ -178,8 +180,8 @@ impl MoveGenerator {
                     let is_queenside_blocked = !(occupancy & bb_queenside_blockers).is_empty();
 
                     if !is_queenside_blocked
-                        && !self.square_attacked(board, opponent, Squares::E8)
-                        && !self.square_attacked(board, opponent, Squares::D8)
+                        && !self.is_attacked(board, us, Squares::E8)
+                        && !self.is_attacked(board, us, Squares::D8)
                     {
                         let to = BITBOARD_SQUARES[from.unwrap()] >> 2u8;
                         self.push_moves(board, Pieces::KING, from, to, list);
@@ -261,30 +263,53 @@ impl MoveGenerator {
 }
 
 impl MoveGenerator {
-    // Determine if a square is attacked by 'attacker', on the given board.
-    pub fn square_attacked(&self, board: &Board, attacker: Side, square: Square) -> bool {
-        let attackers = board.bitboards[attacker];
+    // is_attacked returns true if the given square on the given side is attacked
+    // by the opponent.
+    // 
+    // @param: self - immutable reference to the move generator
+    // @param: board - immutable reference to the board
+    // @param: side - side to check if is attacked
+    // @param: square - square to check if is attacked
+    // @return: true if the square is attacked, false otherwise
+    pub fn is_attacked(&self, board: &Board, side: Side, square: Square) -> bool {
+        // idea: our square `T` is attacked iff the opponent has at least one
+        //       piece in square `S` such that attack board generated from `T`
+        //       includes `S`
+        // 
+        // effectively relies on this idea of, if i can see you, you can see me
+        // 
+        // the nuance not covered above is pawn attacks are not symmetric, so we
+        // reconcile this by checking the pawn attacks for our side instead of the
+        // opponent's
 
-        // Use the super-piece method: get the moves for each piece,
-        // starting from the given square. This provides the sqaures where
-        // a piece has to be, to be able to reach the given square.
+        // generate the attack boards for each piece
         let occupancy = board.occupancy();
-        let bb_king = self.get_king_attacks(square);
-        let bb_rook = self.get_rook_attacks(square, &occupancy);
-        let bb_bishop = self.get_bishop_attacks(square, &occupancy);
-        let bb_knight = self.get_knight_attacks(square);
-        let bb_pawns = self.get_pawn_attacks(square, Sides::other(attacker));
-        let bb_queen = bb_rook | bb_bishop;
+        let king_attacks = self.get_king_attacks(square);
+        let rook_attacks = self.get_rook_attacks(square, &occupancy);
+        let bishop_attacks = self.get_bishop_attacks(square, &occupancy);
+        let knight_attacks = self.get_knight_attacks(square);
+        let pawn_attacks = self.get_pawn_attacks(square, side);
+        let queen_attacks = rook_attacks | bishop_attacks;
+        
+        // check if there is an intersection between the attack board and that
+        // piece's respective occupancy
+        let opponent = board.bitboards[Sides::other(side)];
+        !(king_attacks & opponent[Pieces::KING.unwrap()]).is_empty()
+            || !(rook_attacks & opponent[Pieces::ROOK.unwrap()]).is_empty()
+            || !(queen_attacks & opponent[Pieces::QUEEN.unwrap()]).is_empty()
+            || !(bishop_attacks & opponent[Pieces::BISHOP.unwrap()]).is_empty()
+            || !(knight_attacks & opponent[Pieces::KNIGHT.unwrap()]).is_empty()
+            || !(pawn_attacks & opponent[Pieces::PAWN.unwrap()]).is_empty()
+    }
 
-        // Then determine if such a piece is actually there: see if a rook
-        // is on one of the squares a rook has to be to reach the given
-        // square. Same for the queen, knight, etc... As soon as one is
-        // found, the square is attacked.
-        !(bb_king & attackers[Pieces::KING.unwrap()]).is_empty()
-            || !(bb_rook & attackers[Pieces::ROOK.unwrap()]).is_empty()
-            || !(bb_queen & attackers[Pieces::QUEEN.unwrap()]).is_empty()
-            || !(bb_bishop & attackers[Pieces::BISHOP.unwrap()]).is_empty()
-            || !(bb_knight & attackers[Pieces::KNIGHT.unwrap()]).is_empty()
-            || !(bb_pawns & attackers[Pieces::PAWN.unwrap()]).is_empty()
+    // is_checked returns true if the given side is checked
+    //
+    // @param: self - immutable reference to the move generator
+    // @param: board - immutable reference to the board
+    // @param: side - side to check if is checked
+    // @return: true if the side is checked, false otherwise
+    #[inline(always)]
+    pub fn is_checked(&self, board: &Board, side: Side) -> bool {
+        self.is_attacked(board, side, board.king_square(side))
     }
 }
