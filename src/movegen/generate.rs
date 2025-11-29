@@ -224,7 +224,7 @@ impl MoveGenerator {
 
             // get the captured piece given by the existing piece at `to`
             let capture = board.pieces[to.unwrap()];
-            
+
             let promotion = is_pawn && to.on_rank(promotion_rank);
             let double_step = is_pawn && (to.distance(from) == 16);
             let castling = piece.is_king() && (to.distance(from) == 2);
@@ -265,7 +265,7 @@ impl MoveGenerator {
 impl MoveGenerator {
     // is_attacked returns true if the given square on the given side is attacked
     // by the opponent.
-    // 
+    //
     // @param: self - immutable reference to the move generator
     // @param: board - immutable reference to the board
     // @param: side - side to check if is attacked
@@ -275,9 +275,9 @@ impl MoveGenerator {
         // idea: our square `T` is attacked iff the opponent has at least one
         //       piece in square `S` such that attack board generated from `T`
         //       includes `S`
-        // 
+        //
         // effectively relies on this idea of, if i can see you, you can see me
-        // 
+        //
         // the nuance not covered above is pawn attacks are not symmetric, so we
         // reconcile this by checking the pawn attacks for our side instead of the
         // opponent's
@@ -290,7 +290,7 @@ impl MoveGenerator {
         let knight_attacks = self.get_knight_attacks(square);
         let pawn_attacks = self.get_pawn_attacks(square, side);
         let queen_attacks = rook_attacks | bishop_attacks;
-        
+
         // check if there is an intersection between the attack board and that
         // piece's respective occupancy
         let opponent = board.bitboards[Sides::other(side)];

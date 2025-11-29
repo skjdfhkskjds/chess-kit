@@ -4,5 +4,4 @@ pub mod moving_pieces;
 pub mod sliding_pieces;
 pub mod generate;
 
-pub use movegen::*;
-pub use magics::*;
+pub use movegen::MoveGenerator;

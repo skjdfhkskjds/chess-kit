@@ -10,8 +10,8 @@ pub mod castling;
 pub mod moves;
 pub mod rules;
 
-pub use board::*;
-pub use state::*;
-pub use zobrist::*;
-pub use history::*;
-pub use fen::*;
+pub use board::Board;
+pub use state::State;
+pub use zobrist::{Zobrist, ZobristKey};
+pub use history::History;
+pub use fen::{FENError, FENParser, Parser};
