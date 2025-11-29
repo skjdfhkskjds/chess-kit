@@ -1,5 +1,5 @@
 use crate::board::board::Board;
-use crate::primitives::{Pieces, Side, Square};
+use crate::primitives::{Piece, Side, Square};
 
 impl Board {
     // is_draw checks if the position is a draw
@@ -34,20 +34,20 @@ impl Board {
         // checkmate
         //
         // that is, if either side has a queen, rook, or a pawn.
-        let sufficient_solo_material = !w[Pieces::QUEEN.unwrap()].is_empty()
-            || !w[Pieces::ROOK.unwrap()].is_empty()
-            || !w[Pieces::PAWN.unwrap()].is_empty()
-            || !b[Pieces::QUEEN.unwrap()].is_empty()
-            || !b[Pieces::ROOK.unwrap()].is_empty()
-            || !b[Pieces::PAWN.unwrap()].is_empty();
+        let sufficient_solo_material = !w[Piece::Queen.idx()].is_empty()
+            || !w[Piece::Rook.idx()].is_empty()
+            || !w[Piece::Pawn.idx()].is_empty()
+            || !b[Piece::Queen.idx()].is_empty()
+            || !b[Piece::Rook.idx()].is_empty()
+            || !b[Piece::Pawn.idx()].is_empty();
         if sufficient_solo_material {
             return false;
         }
 
-        let white_bishops = w[Pieces::BISHOP.unwrap()].count_ones();
-        let black_bishops = b[Pieces::BISHOP.unwrap()].count_ones();
-        let white_knights = w[Pieces::KNIGHT.unwrap()].count_ones();
-        let black_knights = b[Pieces::KNIGHT.unwrap()].count_ones();
+        let white_bishops = w[Piece::Bishop.idx()].count_ones();
+        let black_bishops = b[Piece::Bishop.idx()].count_ones();
+        let white_knights = w[Piece::Knight.idx()].count_ones();
+        let black_knights = b[Piece::Knight.idx()].count_ones();
         let piece_count = white_bishops + black_bishops + white_knights + black_knights;
 
         // check the number of pieces on the board
@@ -67,8 +67,8 @@ impl Board {
                 // check if both bishops are on the same colour
                 // 
                 // TODO: refactor into bitboard.first() or something
-                let wb_sq = Square::from_idx(w[Pieces::BISHOP.unwrap()].trailing_zeros() as usize);
-                let bb_sq = Square::from_idx(b[Pieces::BISHOP.unwrap()].trailing_zeros() as usize);
+                let wb_sq = Square::from_idx(w[Piece::Bishop.idx()].trailing_zeros() as usize);
+                let bb_sq = Square::from_idx(b[Piece::Bishop.idx()].trailing_zeros() as usize);
                 wb_sq.is_white() == bb_sq.is_white()
             }
             _ => false,
@@ -114,12 +114,12 @@ impl Board {
         // checkmate
         //
         // that is, if either side has a queen, rook, or a pawn.
-        let sufficient_solo_material = !w[Pieces::QUEEN.unwrap()].is_empty()
-            || !w[Pieces::ROOK.unwrap()].is_empty()
-            || !w[Pieces::PAWN.unwrap()].is_empty()
-            || !b[Pieces::QUEEN.unwrap()].is_empty()
-            || !b[Pieces::ROOK.unwrap()].is_empty()
-            || !b[Pieces::PAWN.unwrap()].is_empty();
+        let sufficient_solo_material = !w[Piece::Queen.idx()].is_empty()
+            || !w[Piece::Rook.idx()].is_empty()
+            || !w[Piece::Pawn.idx()].is_empty()
+            || !b[Piece::Queen.idx()].is_empty()
+            || !b[Piece::Rook.idx()].is_empty()
+            || !b[Piece::Pawn.idx()].is_empty();
 
         // if either side has sufficient solo material or a bishop pair,
         // then that side can force checkmate
@@ -130,13 +130,13 @@ impl Board {
             return true;
         }
 
-        let white_knights = w[Pieces::KNIGHT.unwrap()].count_ones();
-        let black_knights = b[Pieces::KNIGHT.unwrap()].count_ones();
+        let white_knights = w[Piece::Knight.idx()].count_ones();
+        let black_knights = b[Piece::Knight.idx()].count_ones();
 
         // if either side has a knight-bishop pair, OR they have at least 3
         // knights, then that side can force checkmate
-        (!w[Pieces::BISHOP.unwrap()].is_empty() && white_knights > 0)
-            || (!b[Pieces::BISHOP.unwrap()].is_empty() && black_knights > 0)
+        (!w[Piece::Bishop.idx()].is_empty() && white_knights > 0)
+            || (!b[Piece::Bishop.idx()].is_empty() && black_knights > 0)
             || white_knights >= 3
             || black_knights >= 3
     }

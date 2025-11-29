@@ -5,7 +5,7 @@ use crate::movegen::MoveGenerator;
  * extra::wizardry. It's not even compiled into the engine when not called; it's there for
  * didactic purposes, and to be used/called if the magics in this file ever get corrupted.
 */
-use crate::primitives::{Bitboard, Piece, Pieces, Square};
+use crate::primitives::{Bitboard, Piece, Square};
 
 // These are the exact sizes needed for the rook and bishop moves. These
 // can be calculated by adding all the possible blocker boards for a rook
@@ -119,8 +119,8 @@ impl MoveGenerator {
     // @panic: if the table size is not the expected size
     fn assert_table_initialized(&self, size: usize, piece: Piece) {
         let expected_size = match piece {
-            Pieces::ROOK => ROOK_TABLE_SIZE,
-            Pieces::BISHOP => BISHOP_TABLE_SIZE,
+            Piece::Rook => ROOK_TABLE_SIZE,
+            Piece::Bishop => BISHOP_TABLE_SIZE,
             _ => panic!("Illegal piece type for magics: {piece}"),
         };
 
@@ -141,8 +141,8 @@ impl MoveGenerator {
     fn init_square_magics(&mut self, offset: &mut u64, square: Square, piece: Piece) {
         // get the mask for the given piece and square
         let mask = match piece {
-            Pieces::ROOK => MoveGenerator::rook_mask(square),
-            Pieces::BISHOP => MoveGenerator::bishop_mask(square),
+            Piece::Rook => MoveGenerator::rook_mask(square),
+            Piece::Bishop => MoveGenerator::bishop_mask(square),
             _ => panic!("Illegal piece type for magics: {piece}"),
         };
 
@@ -153,8 +153,8 @@ impl MoveGenerator {
 
         // get the attack boards for the given piece and square
         let attack_boards = match piece {
-            Pieces::ROOK => MoveGenerator::rook_attack_boards(square, &blocker_boards),
-            Pieces::BISHOP => MoveGenerator::bishop_attack_boards(square, &blocker_boards),
+            Piece::Rook => MoveGenerator::rook_attack_boards(square, &blocker_boards),
+            Piece::Bishop => MoveGenerator::bishop_attack_boards(square, &blocker_boards),
             _ => panic!("Illegal piece type for magics: {piece}"),
         };
 
@@ -164,15 +164,15 @@ impl MoveGenerator {
         magic.shift = (64 - bits) as u8;
         magic.offset = *offset;
         magic.num = match piece {
-            Pieces::ROOK => ROOK_MAGIC_NUMS[square.idx()],
-            Pieces::BISHOP => BISHOP_MAGIC_NUMS[square.idx()],
+            Piece::Rook => ROOK_MAGIC_NUMS[square.idx()],
+            Piece::Bishop => BISHOP_MAGIC_NUMS[square.idx()],
             _ => panic!("Illegal piece type for magics: {piece}"),
         };
 
         // get a mutable reference to the table for the given piece
         let table = match piece {
-            Pieces::ROOK => &mut self.rook_table[..],
-            Pieces::BISHOP => &mut self.bishop_table[..],
+            Piece::Rook => &mut self.rook_table[..],
+            Piece::Bishop => &mut self.bishop_table[..],
             _ => panic!("Illegal piece type for magics: {piece}"),
         };
 
@@ -199,8 +199,8 @@ impl MoveGenerator {
 
         // store the magic for the given piece and square
         match piece {
-            Pieces::ROOK => self.rook_magics[square.idx()] = magic,
-            Pieces::BISHOP => self.bishop_magics[square.idx()] = magic,
+            Piece::Rook => self.rook_magics[square.idx()] = magic,
+            Piece::Bishop => self.bishop_magics[square.idx()] = magic,
             _ => panic!("Illegal piece type for magics: {piece}"),
         }
 
@@ -217,7 +217,7 @@ impl MoveGenerator {
     // @panic: if the table size is not the expected size
     pub fn init_magics(&mut self, piece: Piece) {
         assert!(
-            piece == Pieces::ROOK || piece == Pieces::BISHOP,
+            piece == Piece::Rook || piece == Piece::Bishop,
             "Illegal piece: {piece}"
         );
 

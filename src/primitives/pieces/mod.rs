@@ -1,6 +1,4 @@
 pub mod piece;
-pub mod pieces;
-pub mod display;
+mod display;
 
 pub use piece::*;
-pub use pieces::*;

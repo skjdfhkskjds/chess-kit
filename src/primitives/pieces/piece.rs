@@ -1,14 +1,17 @@
-#[repr(transparent)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, Hash)]
-pub struct Piece(pub(crate) usize);
+use chess_kit_derive::IndexableEnum;
+
+#[repr(u8)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, IndexableEnum)]
+pub enum Piece {
+    Pawn,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    King,
+    None,
+}
 
 impl Piece {
-    pub const fn new(piece: usize) -> Self {
-        Self(piece)
-    }
-
-    #[inline(always)]
-    pub const fn unwrap(&self) -> usize {
-        self.0
-    }
+    pub const TOTAL: usize = 7;
 }

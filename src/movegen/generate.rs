@@ -1,22 +1,21 @@
 use crate::board::Board;
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
-    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Move, MoveList, MoveType, Piece, Pieces, Rank,
-    Side, Square,
+    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Move, MoveList, MoveType, Piece, Rank, Side, Square,
 };
 
 // This is a list of all pieces a pawn can promote to.
-const PROMOTION_PIECES: [Piece; 4] = [Pieces::QUEEN, Pieces::ROOK, Pieces::BISHOP, Pieces::KNIGHT];
+const PROMOTION_PIECES: [Piece; 4] = [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight];
 
 impl MoveGenerator {
     // Generates moves for the side that is to move. The MoveType parameter
     // determines if all moves, or only captures need to be generated.
     pub fn generate_moves(&self, board: &Board, ml: &mut MoveList, mt: MoveType) {
-        self.generate_moves_for_piece(board, Pieces::KING, ml, mt);
-        self.generate_moves_for_piece(board, Pieces::KNIGHT, ml, mt);
-        self.generate_moves_for_piece(board, Pieces::ROOK, ml, mt);
-        self.generate_moves_for_piece(board, Pieces::BISHOP, ml, mt);
-        self.generate_moves_for_piece(board, Pieces::QUEEN, ml, mt);
+        self.generate_moves_for_piece(board, Piece::King, ml, mt);
+        self.generate_moves_for_piece(board, Piece::Knight, ml, mt);
+        self.generate_moves_for_piece(board, Piece::Rook, ml, mt);
+        self.generate_moves_for_piece(board, Piece::Bishop, ml, mt);
+        self.generate_moves_for_piece(board, Piece::Queen, ml, mt);
         self.generate_pawn_moves(board, ml, mt);
 
         if mt == MoveType::All || mt == MoveType::Quiet {
@@ -35,7 +34,7 @@ impl MoveGenerator {
         list: &mut MoveList,
         mt: MoveType,
     ) {
-        if piece == Pieces::PAWN {
+        if piece == Piece::Pawn {
             return self.generate_pawn_moves(board, list, mt);
         }
 
@@ -49,11 +48,11 @@ impl MoveGenerator {
         let to_move = board.get_piece(board.turn(), piece);
         for from in to_move.iter() {
             let bb_target = match piece {
-                Pieces::KING => self.get_king_attacks(from),
-                Pieces::KNIGHT => self.get_knight_attacks(from),
-                Pieces::BISHOP => self.get_bishop_attacks(from, &occupancy),
-                Pieces::ROOK => self.get_rook_attacks(from, &occupancy),
-                Pieces::QUEEN => self.get_queen_attacks(from, &occupancy),
+                Piece::King => self.get_king_attacks(from),
+                Piece::Knight => self.get_knight_attacks(from),
+                Piece::Bishop => self.get_bishop_attacks(from, &occupancy),
+                Piece::Rook => self.get_rook_attacks(from, &occupancy),
+                Piece::Queen => self.get_queen_attacks(from, &occupancy),
                 _ => panic!("Not a piece: {piece}"),
             };
 
@@ -80,7 +79,7 @@ impl MoveGenerator {
         let rotation_count = (Square::TOTAL as i8 + direction) as u32;
 
         // As long as there are pawns, generate moves for each of them.
-        let pawn_squares = board.get_piece(board.turn(), Pieces::PAWN);
+        let pawn_squares = board.get_piece(board.turn(), Piece::Pawn);
         for from in pawn_squares.iter() {
             let to = (from.idx() as i8 + direction) as usize;
             let mut moves = Bitboard::empty();
@@ -105,7 +104,7 @@ impl MoveGenerator {
                 moves |= bb_captures | bb_ep_capture;
             }
 
-            self.push_moves(board, Pieces::PAWN, from, moves, list);
+            self.push_moves(board, Piece::Pawn, from, moves, list);
         }
     }
 
@@ -114,7 +113,7 @@ impl MoveGenerator {
         let occupancy = board.occupancy();
 
         // get the current king square
-        let king_squares = board.get_piece(us, Pieces::KING);
+        let king_squares = board.get_piece(us, Piece::King);
         let from = king_squares.iter().next().unwrap();
 
         // generate castle moves depending on the side to move
@@ -125,8 +124,8 @@ impl MoveGenerator {
                 }
 
                 if board.state.castling.kingside(Side::White) {
-                    let bb_kingside_blockers = BITBOARD_SQUARES[Square::F1.idx()]
-                        | BITBOARD_SQUARES[Square::G1.idx()];
+                    let bb_kingside_blockers =
+                        BITBOARD_SQUARES[Square::F1.idx()] | BITBOARD_SQUARES[Square::G1.idx()];
                     let is_kingside_blocked = !(occupancy & bb_kingside_blockers).is_empty();
 
                     if !is_kingside_blocked
@@ -134,7 +133,7 @@ impl MoveGenerator {
                         && !self.is_attacked(board, us, Square::F1)
                     {
                         let to = BITBOARD_SQUARES[from.idx()] << 2u8;
-                        self.push_moves(board, Pieces::KING, from, to, list);
+                        self.push_moves(board, Piece::King, from, to, list);
                     }
                 }
 
@@ -149,7 +148,7 @@ impl MoveGenerator {
                         && !self.is_attacked(board, us, Square::D1)
                     {
                         let to = BITBOARD_SQUARES[from.idx()] >> 2u8;
-                        self.push_moves(board, Pieces::KING, from, to, list);
+                        self.push_moves(board, Piece::King, from, to, list);
                     }
                 }
             }
@@ -159,8 +158,8 @@ impl MoveGenerator {
                 }
 
                 if board.state.castling.kingside(Side::Black) {
-                    let bb_kingside_blockers = BITBOARD_SQUARES[Square::F8.idx()]
-                        | BITBOARD_SQUARES[Square::G8.idx()];
+                    let bb_kingside_blockers =
+                        BITBOARD_SQUARES[Square::F8.idx()] | BITBOARD_SQUARES[Square::G8.idx()];
                     let is_kingside_blocked = !(occupancy & bb_kingside_blockers).is_empty();
 
                     if !is_kingside_blocked
@@ -168,7 +167,7 @@ impl MoveGenerator {
                         && !self.is_attacked(board, us, Square::F8)
                     {
                         let to = BITBOARD_SQUARES[from.idx()] << 2u8;
-                        self.push_moves(board, Pieces::KING, from, to, list);
+                        self.push_moves(board, Piece::King, from, to, list);
                     }
                 }
 
@@ -183,7 +182,7 @@ impl MoveGenerator {
                         && !self.is_attacked(board, us, Square::D8)
                     {
                         let to = BITBOARD_SQUARES[from.idx()] >> 2u8;
-                        self.push_moves(board, Pieces::KING, from, to, list);
+                        self.push_moves(board, Piece::King, from, to, list);
                     }
                 }
             }
@@ -209,53 +208,45 @@ impl MoveGenerator {
         to_squares: Bitboard,
         list: &mut MoveList,
     ) {
-        let promotion_rank = Rank::promotion_rank(board.turn());
-        let is_pawn = piece.is_pawn();
-
         // push a move for each of the `to` squares
         for to in to_squares.iter() {
-            // check if the move is an en passant capture
-            let en_passant = match board.state.en_passant {
-                Some(square) => is_pawn && (square == to),
-                None => false,
-            };
-
+            let mut mv = Move::new(piece, from, to);
             // get the captured piece given by the existing piece at `to`
             let capture = board.pieces[to.idx()];
 
-            let promotion = is_pawn && to.on_rank(promotion_rank);
-            let double_step = is_pawn && (to.distance(from) == 16);
-            let castling = piece.is_king() && (to.distance(from) == 2);
+            if matches!(piece, Piece::Pawn) {
+                // check if the move is an en passant capture
+                let en_passant = match board.state.en_passant {
+                    Some(square) => square == to,
+                    None => false,
+                };
 
-            // if the move is a promotion, push possible promotion moves
-            // TODO: figure out nice abstraction for deduplicating the code
-            //       right now the issue is that overwriting the promotion
-            //       piece needs to first unset the old NONE flags.
-            if promotion {
-                PROMOTION_PIECES.iter().for_each(|promotion_piece| {
+                let double_step = to.distance(from) == 16;
+
+                if to.on_rank(Rank::promotion_rank(board.turn())) {
+                    PROMOTION_PIECES.iter().for_each(|promotion_piece| {
+                        list.push(Move::new(piece, from, to).with_promotion(*promotion_piece));
+                    });
+                } else if en_passant {
                     list.push(Move::new(
                         piece,
                         from,
                         to,
                         capture,
-                        *promotion_piece,
+                        Piece::None,
                         en_passant,
                         double_step,
                         castling,
                     ));
-                });
-            } else {
-                list.push(Move::new(
-                    piece,
-                    from,
-                    to,
-                    capture,
-                    Pieces::NONE,
-                    en_passant,
-                    double_step,
-                    castling,
-                ));
+                }
             }
+
+            let castling = piece == Piece::King && (to.distance(from) == 2);
+
+            // if the move is a promotion, push possible promotion moves
+            // TODO: figure out nice abstraction for deduplicating the code
+            //       right now the issue is that overwriting the promotion
+            //       piece needs to first unset the old NONE flags.
         }
     }
 }
@@ -292,12 +283,12 @@ impl MoveGenerator {
         // check if there is an intersection between the attack board and that
         // piece's respective occupancy
         let opponent = board.bitboards[side.other().idx()];
-        !(king_attacks & opponent[Pieces::KING.unwrap()]).is_empty()
-            || !(rook_attacks & opponent[Pieces::ROOK.unwrap()]).is_empty()
-            || !(queen_attacks & opponent[Pieces::QUEEN.unwrap()]).is_empty()
-            || !(bishop_attacks & opponent[Pieces::BISHOP.unwrap()]).is_empty()
-            || !(knight_attacks & opponent[Pieces::KNIGHT.unwrap()]).is_empty()
-            || !(pawn_attacks & opponent[Pieces::PAWN.unwrap()]).is_empty()
+        !(king_attacks & opponent[Piece::King.idx()]).is_empty()
+            || !(rook_attacks & opponent[Piece::Rook.idx()]).is_empty()
+            || !(queen_attacks & opponent[Piece::Queen.idx()]).is_empty()
+            || !(bishop_attacks & opponent[Piece::Bishop.idx()]).is_empty()
+            || !(knight_attacks & opponent[Piece::Knight.idx()]).is_empty()
+            || !(pawn_attacks & opponent[Piece::Pawn.idx()]).is_empty()
     }
 
     // is_checked returns true if the given side is checked

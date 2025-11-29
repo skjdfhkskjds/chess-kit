@@ -1,5 +1,5 @@
 use crate::board::board::Board;
-use crate::primitives::{Bitboard, Piece, Pieces, Side, Square};
+use crate::primitives::{Bitboard, Piece, Side, Square};
 
 impl Board {
     // get_piece returns the bitboard of the given side and piece
@@ -10,12 +10,12 @@ impl Board {
     // @return: bitboard of the piece for the given side
     #[inline(always)]
     pub fn get_piece(&self, side: Side, piece: Piece) -> Bitboard {
-        self.bitboards[side.idx()][piece.unwrap()]
+        self.bitboards[side.idx()][piece.idx()]
     }
 
     // remove_piece_no_incrementals removes the piece from the given side and
     // square without updating the zobrist key or any incremental game state
-    // 
+    //
     // @param: self - mutable reference to the board
     // @param: side - side to remove the piece from
     // @param: piece - piece to remove
@@ -23,9 +23,9 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     pub fn remove_piece_no_incrementals(&mut self, side: Side, piece: Piece, square: Square) {
-        self.bitboards[side.idx()][piece.unwrap()].remove_at(square);
+        self.bitboards[side.idx()][piece.idx()].remove_at(square);
         self.sides[side.idx()].remove_at(square);
-        self.pieces[square.idx()] = Pieces::NONE;
+        self.pieces[square.idx()] = Piece::None;
     }
 
     // remove_piece removes the piece from the given side and square
@@ -53,7 +53,7 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     pub fn set_piece_no_incrementals(&mut self, side: Side, piece: Piece, square: Square) {
-        self.bitboards[side.idx()][piece.unwrap()].set_at(square);
+        self.bitboards[side.idx()][piece.idx()].set_at(square);
         self.sides[side.idx()].set_at(square);
         self.pieces[square.idx()] = piece;
     }
@@ -72,7 +72,7 @@ impl Board {
 
         // TODO: make updates to game state for things like phase, turn, piece square valuation
     }
-    
+
     // move_piece_no_incrementals moves the piece from the given square to the given square
     // without updating the zobrist key or any incremental game state
     //
@@ -83,7 +83,13 @@ impl Board {
     // @param: to - square to move the piece to
     // @return: void
     // @side-effects: modifies the `board`
-    pub fn move_piece_no_incrementals(&mut self, side: Side, piece: Piece, from: Square, to: Square) {
+    pub fn move_piece_no_incrementals(
+        &mut self,
+        side: Side,
+        piece: Piece,
+        from: Square,
+        to: Square,
+    ) {
         self.remove_piece_no_incrementals(side, piece, from);
         self.set_piece_no_incrementals(side, piece, to);
     }
@@ -132,7 +138,7 @@ impl Board {
     // @return: square of the king for the given side
     pub fn king_square(&self, side: Side) -> Square {
         // TODO: refactor into bitboard.first() or something
-        Square::from_idx(self.get_piece(side, Pieces::KING).trailing_zeros() as usize)
+        Square::from_idx(self.get_piece(side, Piece::King).trailing_zeros() as usize)
     }
 
     // has_bishop_pair checks if the given side has a bishop pair
@@ -141,7 +147,7 @@ impl Board {
     // @param: side - side to check for a bishop pair
     // @return: true if the given side has a bishop pair, false otherwise
     pub fn has_bishop_pair(&self, side: Side) -> bool {
-        let bitboard = self.get_piece(side, Pieces::BISHOP);
+        let bitboard = self.get_piece(side, Piece::Bishop);
         let mut white_bishops = 0;
         let mut black_bishops = 0;
 

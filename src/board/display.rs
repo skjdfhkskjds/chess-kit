@@ -10,7 +10,7 @@ impl fmt::Display for Board {
         for (side_idx, bitboards) in self.bitboards.iter().enumerate() {
             let side = Side::from_idx(side_idx);
             for (piece_idx, bitboard) in bitboards.iter().enumerate() {
-                let base_char = Piece::new(piece_idx)
+                let base_char = Piece::from_idx(piece_idx)
                     .to_string()
                     .chars()
                     .next()
