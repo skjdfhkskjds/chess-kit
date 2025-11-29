@@ -208,53 +208,66 @@ impl MoveGenerator {
         to_squares: Bitboard,
         list: &mut MoveList,
     ) {
-        let promotion_rank = Rank::promotion_rank(board.turn());
-        let is_pawn = piece == Piece::Pawn;
-
         // push a move for each of the `to` squares
         for to in to_squares.iter() {
-            // check if the move is an en passant capture
-            let en_passant = match board.state.en_passant {
-                Some(square) => is_pawn && (square == to),
-                None => false,
-            };
+            let mut mv = Move::new(piece, from, to);
 
-            // get the captured piece given by the existing piece at `to`
-            let capture = board.pieces[to.idx()];
-
-            let promotion = is_pawn && to.on_rank(promotion_rank);
-            let double_step = is_pawn && (to.distance(from) == 16);
-            let castling = piece == Piece::King && (to.distance(from) == 2);
-
-            // if the move is a promotion, push possible promotion moves
-            // TODO: figure out nice abstraction for deduplicating the code
-            //       right now the issue is that overwriting the promotion
-            //       piece needs to first unset the old NONE flags.
-            if promotion {
-                PROMOTION_PIECES.iter().for_each(|promotion_piece| {
-                    list.push(Move::new(
-                        piece,
-                        from,
-                        to,
-                        capture,
-                        *promotion_piece,
-                        en_passant,
-                        double_step,
-                        castling,
-                    ));
-                });
-            } else {
-                list.push(Move::new(
-                    piece,
-                    from,
-                    to,
-                    capture,
-                    Piece::None,
-                    en_passant,
-                    double_step,
-                    castling,
-                ));
+            // set the captured piece for the move if there is one
+            //
+            // Note: a captured piece is the piece that currently occupies the
+            //       target square. Notice that this definition excludes en-passant
+            //       captures.
+            let captured = board.pieces[to.idx()];
+            if !matches!(captured, Piece::None) {
+                mv = mv.with_capture(captured);
             }
+
+            // handle the special cases for the piece
+            match piece {
+                Piece::Pawn => {
+                    // a pawn is moving, so we need to handle the cases
+                    // 
+                    // 1. en passant capture
+                    // 2. double step pawn push
+                    // 3. promotion
+
+                    // check if the move is an en passant capture
+                    let is_en_passant = match board.state.en_passant {
+                        Some(square) => square == to,
+                        None => false,
+                    };
+
+                    if is_en_passant {
+                        // the move is an en passant capture
+                        mv = mv.with_en_passant();
+                    } else if to.distance(from) == 16 {
+                        // the move is a double step pawn push
+                        mv = mv.with_double_step();
+                    } else if to.on_rank(Rank::promotion_rank(board.turn())) {
+                        // generate all possible promotion moves
+                        PROMOTION_PIECES.iter().for_each(|promotion_piece| {
+                            list.push(mv.with_promotion(*promotion_piece));
+                        });
+
+                        // all move variants have been generated, move on to the
+                        // next move instead of exiting out of the conditional
+                        // block
+                        continue;
+                    }
+                }
+                Piece::King => {
+                    // check if the move is a castle
+                    if to.distance(from) == 2 {
+                        mv = mv.with_castle();
+                    }
+                }
+                _ => {
+                    // no special handling required for other pieces
+                }
+            }
+
+            // push the move to the list
+            list.push(mv);
         }
     }
 }

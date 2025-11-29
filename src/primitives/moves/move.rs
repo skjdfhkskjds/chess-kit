@@ -74,32 +74,63 @@ impl Move {
     // @param: piece - piece to move
     // @param: from - square to move from
     // @param: to - square to move to
-    // @param: captured - piece that was captured
-    // @param: promoted - piece that the pawn promoted to
-    // @param: is_en_passant - whether the move is an en passant capture
-    // @param: is_double_step - whether the move is a double step
-    // @param: is_castle - whether the move is a castle
     // @return: new move value
-    pub fn new(
-        piece: Piece,
-        from: Square,
-        to: Square,
-        captured: Piece,
-        promoted: Piece,
-        is_en_passant: bool,
-        is_double_step: bool,
-        is_castle: bool,
-    ) -> Self {
-        let data = piece.idx() as u64
-            | (from.idx() as u64) << FROM_SHIFT
-            | (to.idx() as u64) << TO_SHIFT
-            | (captured.idx() as u64) << CAPTURED_SHIFT
-            | (promoted.idx() as u64) << PROMOTED_SHIFT
-            | (is_en_passant as u64) << IS_EN_PASSANT_SHIFT
-            | (is_double_step as u64) << IS_DOUBLE_STEP_SHIFT
-            | (is_castle as u64) << IS_CASTLING_SHIFT;
+    pub fn new(piece: Piece, from: Square, to: Square) -> Self {
+        let data =
+            piece.idx() as u64 | (from.idx() as u64) << FROM_SHIFT | (to.idx() as u64) << TO_SHIFT;
 
         Self { data }
+    }
+
+    // with_capture sets the captured piece for the move
+    //
+    // @param: self - mutable reference to the move
+    // @param: captured - piece that was captured
+    // @return: move with the captured piece set
+    #[inline(always)]
+    pub fn with_capture(mut self, captured: Piece) -> Self {
+        self.data |= (captured.idx() as u64) << CAPTURED_SHIFT;
+        self
+    }
+
+    // with_promotion sets the promotion flag to true for the move
+    //
+    // @param: self - mutable reference to the move
+    // @return: move with the promotion flag set
+    #[inline(always)]
+    pub fn with_promotion(mut self, promoted: Piece) -> Self {
+        self.data |= (promoted.idx() as u64) << PROMOTED_SHIFT;
+        self
+    }
+
+    // with_en_passant sets the en passant flag to true for the move
+    //
+    // @param: self - mutable reference to the move
+    // @return: move with the en passant flag set
+    #[inline(always)]
+    pub fn with_en_passant(mut self) -> Self {
+        self.data |= 1 << IS_EN_PASSANT_SHIFT;
+        self
+    }
+
+    // with_double_step sets the double step flag to true for the move
+    //
+    // @param: self - mutable reference to the move
+    // @return: move with the double step flag set
+    #[inline(always)]
+    pub fn with_double_step(mut self) -> Self {
+        self.data |= 1 << IS_DOUBLE_STEP_SHIFT;
+        self
+    }
+
+    // with_castle sets the castle flag to true for the move
+    //
+    // @param: self - mutable reference to the move
+    // @return: move with the castle flag set
+    #[inline(always)]
+    pub fn with_castle(mut self) -> Self {
+        self.data |= 1 << IS_CASTLING_SHIFT;
+        self
     }
 
     // piece returns the piece that is moving
@@ -251,7 +282,7 @@ impl Move {
     // @return: boolean
     #[inline(always)]
     fn to_bool(value: u64) -> bool {
-        (value & BOOL_MASK) as u8 == 1
+        value & BOOL_MASK == 1
     }
 }
 
