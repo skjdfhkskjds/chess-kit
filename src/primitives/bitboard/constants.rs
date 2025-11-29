@@ -1,5 +1,5 @@
 use crate::primitives::bitboard::Bitboard;
-use crate::primitives::{Ranks, Files, Squares};
+use crate::primitives::{Ranks, File, Squares};
 
 pub const BITBOARD_RANKS: [Bitboard; Ranks::TOTAL] = {
     const RANK_1: u64 = 0xFF;
@@ -15,13 +15,13 @@ pub const BITBOARD_RANKS: [Bitboard; Ranks::TOTAL] = {
     ranks
 };
 
-pub const BITBOARD_FILES: [Bitboard; Files::TOTAL] = {
+pub const BITBOARD_FILES: [Bitboard; File::TOTAL] = {
     const FILE_A: u64 = 0x0101_0101_0101_0101;
-    let mut files = [Bitboard::empty(); Files::TOTAL];
+    let mut files = [Bitboard::empty(); File::TOTAL];
     let mut i = 0;
 
     // Note: while loop hack to get around const fn loop limitations
-    while i < Files::TOTAL {
+    while i < File::TOTAL {
         files[i] = Bitboard::new(FILE_A << i);
         i += 1;
     }

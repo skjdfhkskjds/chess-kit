@@ -1,4 +1,4 @@
-use crate::primitives::{File, Files, Rank, Ranks};
+use crate::primitives::{File, Rank, Ranks};
 use chess_kit_derive::{Arithmetic, BitOps};
 use std::fmt;
 
@@ -39,8 +39,8 @@ impl Square {
     // @param: self - immutable reference to the square
     // @return: file of the square
     #[inline(always)]
-    pub const fn file(&self) -> File {
-        (self.0 % 8) as File
+    pub fn file(&self) -> File {
+        File::from_idx(self.0 % 8)
     }
 
     // is_white returns true if the square is a white square
@@ -80,7 +80,7 @@ impl Square {
     // @param: file - file to check
     // @return: true if the square is on the given file, false otherwise
     #[inline(always)]
-    pub const fn on_file(&self, file: File) -> bool {
+    pub fn on_file(&self, file: File) -> bool {
         self.file() == file
     }
 }
@@ -97,14 +97,14 @@ impl TryFrom<&str> for Square {
         let rank_str = s.chars().nth(1).unwrap();
 
         let file = match file_str {
-            'A' => Files::A,
-            'B' => Files::B,
-            'C' => Files::C,
-            'D' => Files::D,
-            'E' => Files::E,
-            'F' => Files::F,
-            'G' => Files::G,
-            'H' => Files::H,
+            'A' => File::A,
+            'B' => File::B,
+            'C' => File::C,
+            'D' => File::D,
+            'E' => File::E,
+            'F' => File::F,
+            'G' => File::G,
+            'H' => File::H,
             _ => return Err("invalid square"),
         };
 
@@ -120,22 +120,21 @@ impl TryFrom<&str> for Square {
             _ => return Err("invalid square"),
         };
 
-        Ok(Square::new((rank * 8) + file))
+        Ok(Square::new((rank * 8) + file.idx()))
     }
 }
 
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.file() {
-            Files::A => write!(f, "a"),
-            Files::B => write!(f, "b"),
-            Files::C => write!(f, "c"),
-            Files::D => write!(f, "d"),
-            Files::E => write!(f, "e"),
-            Files::F => write!(f, "f"),
-            Files::G => write!(f, "g"),
-            Files::H => write!(f, "h"),
-            _ => return Err(fmt::Error),
+            File::A => write!(f, "a"),
+            File::B => write!(f, "b"),
+            File::C => write!(f, "c"),
+            File::D => write!(f, "d"),
+            File::E => write!(f, "e"),
+            File::F => write!(f, "f"),
+            File::G => write!(f, "g"),
+            File::H => write!(f, "h"),
         }?;
         match self.rank() {
             Ranks::R1 => write!(f, "1"),

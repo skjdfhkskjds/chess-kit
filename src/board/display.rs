@@ -1,15 +1,15 @@
 use crate::board::Board;
-use crate::primitives::{Files, Piece, Ranks, Side};
+use crate::primitives::{File, Piece, Ranks, Side};
 use std::fmt;
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut board = [['.'; Ranks::TOTAL]; Files::TOTAL];
+        let mut board = [['.'; Ranks::TOTAL]; File::TOTAL];
 
         // construct the ascii representation of the board
         for (side, bitboards) in self.bitboards.iter().enumerate() {
             for (piece, bitboard) in bitboards.iter().enumerate() {
-                for file in (Files::A..=Files::H).rev() {
+                for file in File::TOTAL..0 {
                     for rank in (Ranks::R1..=Ranks::R8).rev() {
                         if !((bitboard >> ((rank * 8) as u32) + (file as u32)) & 1).is_empty() {
                             let piece_str = format!("{}", Piece::new(piece));

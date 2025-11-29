@@ -1,6 +1,6 @@
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, BitboardVec, Files, Ranks, Square,
+    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, BitboardVec, File, Ranks, Square,
 };
 
 // Direction is an enum that represents the movement direction of a sliding
@@ -54,7 +54,7 @@ impl MoveGenerator {
     pub fn rook_mask(square: Square) -> Bitboard {
         let rook_at = BITBOARD_SQUARES[square.unwrap()];
         let edges = MoveGenerator::get_edges(square);
-        let line_of_sight = BITBOARD_FILES[square.file()] | BITBOARD_RANKS[square.rank()];
+        let line_of_sight = BITBOARD_FILES[square.file().idx()] | BITBOARD_RANKS[square.rank()];
 
         line_of_sight & !edges & !rook_at
     }
@@ -146,11 +146,11 @@ impl MoveGenerator {
     // @return: bitboard of all the edges of the board
     // TODO: think about moving this function elsewhere
     fn get_edges(exclude: Square) -> Bitboard {
-        let exclude_file = BITBOARD_FILES[exclude.file()];
+        let exclude_file = BITBOARD_FILES[exclude.file().idx()];
         let exclude_rank = BITBOARD_RANKS[exclude.rank()];
 
-        (BITBOARD_FILES[Files::A] & !exclude_file)
-            | (BITBOARD_FILES[Files::H] & !exclude_file)
+        (BITBOARD_FILES[File::A.idx()] & !exclude_file)
+            | (BITBOARD_FILES[File::H.idx()] & !exclude_file)
             | (BITBOARD_RANKS[Ranks::R1] & !exclude_rank)
             | (BITBOARD_RANKS[Ranks::R8] & !exclude_rank)
     }
@@ -182,13 +182,13 @@ impl MoveGenerator {
                     rank += 1;
                 }
                 Direction::Right => {
-                    if file == Files::H {
+                    if file == File::H {
                         break;
                     }
 
                     square <<= 1u8;
                     ray |= square;
-                    file += 1;
+                    file.inc();
                 }
                 Direction::Down => {
                     if rank == Ranks::R1 {
@@ -200,53 +200,53 @@ impl MoveGenerator {
                     rank -= 1;
                 }
                 Direction::Left => {
-                    if file == Files::A {
+                    if file == File::A {
                         break;
                     }
 
                     square >>= 1u8;
                     ray |= square;
-                    file -= 1;
+                    file.dec();
                 }
                 Direction::UpLeft => {
-                    if rank == Ranks::R8 || file == Files::A {
+                    if rank == Ranks::R8 || file == File::A {
                         break;
                     }
 
                     square <<= 7u8;
                     ray |= square;
                     rank += 1;
-                    file -= 1;
+                    file.dec();
                 }
                 Direction::UpRight => {
-                    if rank == Ranks::R8 || file == Files::H {
+                    if rank == Ranks::R8 || file == File::H {
                         break;
                     }
 
                     square <<= 9u8;
                     ray |= square;
                     rank += 1;
-                    file += 1;
+                    file.inc();
                 }
                 Direction::DownRight => {
-                    if rank == Ranks::R1 || file == Files::H {
+                    if rank == Ranks::R1 || file == File::H {
                         break;
                     }
 
                     square >>= 7u8;
                     ray |= square;
                     rank -= 1;
-                    file += 1;
+                    file.inc();
                 }
                 Direction::DownLeft => {
-                    if rank == Ranks::R1 || file == Files::A {
+                    if rank == Ranks::R1 || file == File::A {
                         break;
                     }
 
                     square >>= 9u8;
                     ray |= square;
                     rank -= 1;
-                    file -= 1;
+                    file.dec();
                 }
             };
 
