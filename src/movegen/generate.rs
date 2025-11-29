@@ -208,45 +208,53 @@ impl MoveGenerator {
         to_squares: Bitboard,
         list: &mut MoveList,
     ) {
+        let promotion_rank = Rank::promotion_rank(board.turn());
+        let is_pawn = piece == Piece::Pawn;
+
         // push a move for each of the `to` squares
         for to in to_squares.iter() {
-            let mut mv = Move::new(piece, from, to);
+            // check if the move is an en passant capture
+            let en_passant = match board.state.en_passant {
+                Some(square) => is_pawn && (square == to),
+                None => false,
+            };
+
             // get the captured piece given by the existing piece at `to`
             let capture = board.pieces[to.idx()];
 
-            if matches!(piece, Piece::Pawn) {
-                // check if the move is an en passant capture
-                let en_passant = match board.state.en_passant {
-                    Some(square) => square == to,
-                    None => false,
-                };
-
-                let double_step = to.distance(from) == 16;
-
-                if to.on_rank(Rank::promotion_rank(board.turn())) {
-                    PROMOTION_PIECES.iter().for_each(|promotion_piece| {
-                        list.push(Move::new(piece, from, to).with_promotion(*promotion_piece));
-                    });
-                } else if en_passant {
-                    list.push(Move::new(
-                        piece,
-                        from,
-                        to,
-                        capture,
-                        Piece::None,
-                        en_passant,
-                        double_step,
-                        castling,
-                    ));
-                }
-            }
-
+            let promotion = is_pawn && to.on_rank(promotion_rank);
+            let double_step = is_pawn && (to.distance(from) == 16);
             let castling = piece == Piece::King && (to.distance(from) == 2);
 
             // if the move is a promotion, push possible promotion moves
             // TODO: figure out nice abstraction for deduplicating the code
             //       right now the issue is that overwriting the promotion
             //       piece needs to first unset the old NONE flags.
+            if promotion {
+                PROMOTION_PIECES.iter().for_each(|promotion_piece| {
+                    list.push(Move::new(
+                        piece,
+                        from,
+                        to,
+                        capture,
+                        *promotion_piece,
+                        en_passant,
+                        double_step,
+                        castling,
+                    ));
+                });
+            } else {
+                list.push(Move::new(
+                    piece,
+                    from,
+                    to,
+                    capture,
+                    Piece::None,
+                    en_passant,
+                    double_step,
+                    castling,
+                ));
+            }
         }
     }
 }

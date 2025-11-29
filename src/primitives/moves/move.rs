@@ -42,7 +42,7 @@ Storing the "To" square: Shift LEFT 9 bits, then XOR with "data".
 Note: credits to https://codeberg.org/mvanthoor/rustic
 */
 
-use crate::primitives::{Piece, Pieces, Square};
+use crate::primitives::{Piece, Square};
 use std::fmt::{self, Display};
 
 // bit-shift offsets to parse the move data according to the schema above
@@ -90,11 +90,11 @@ impl Move {
         is_double_step: bool,
         is_castle: bool,
     ) -> Self {
-        let data = piece.unwrap() as u64
+        let data = piece.idx() as u64
             | (from.idx() as u64) << FROM_SHIFT
             | (to.idx() as u64) << TO_SHIFT
-            | (captured.unwrap() as u64) << CAPTURED_SHIFT
-            | (promoted.unwrap() as u64) << PROMOTED_SHIFT
+            | (captured.idx() as u64) << CAPTURED_SHIFT
+            | (promoted.idx() as u64) << PROMOTED_SHIFT
             | (is_en_passant as u64) << IS_EN_PASSANT_SHIFT
             | (is_double_step as u64) << IS_DOUBLE_STEP_SHIFT
             | (is_castle as u64) << IS_CASTLING_SHIFT;
@@ -108,7 +108,7 @@ impl Move {
     // @return: piece that is moving
     #[inline(always)]
     pub fn piece(&self) -> Piece {
-        Piece::new(((self.data >> PIECE_SHIFT) & PIECE_MASK) as usize)
+        Piece::from_idx(((self.data >> PIECE_SHIFT) & PIECE_MASK) as usize)
     }
 
     // from returns the square that the piece is moving from
@@ -153,7 +153,7 @@ impl Move {
     // @return: true if the move is a promotion, false otherwise
     #[inline(always)]
     pub fn is_promotion(&self) -> bool {
-        self.promoted() != Pieces::NONE
+        self.promoted() != Piece::None
     }
 
     // is_en_passant returns whether the move is an en passant capture
@@ -242,7 +242,7 @@ impl Move {
     // @return: piece
     #[inline(always)]
     fn to_piece(value: u64) -> Piece {
-        Piece::new((value & PIECE_MASK) as usize)
+        Piece::from_idx((value & PIECE_MASK) as usize)
     }
 
     // to_bool is a helper routine that converts the shifted value to a boolean
