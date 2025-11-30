@@ -68,6 +68,22 @@ where
         self.memory_size > 0
     }
 
+    // max_buckets returns the maximum number of buckets in the transposition table
+    //
+    // @return: maximum number of buckets in the transposition table
+    #[inline(always)]
+    pub const fn max_buckets(&self) -> usize {
+        self.max_buckets
+    }
+
+    // max_entries returns the maximum number of entries in the transposition table
+    //
+    // @return: maximum number of entries in the transposition table
+    #[inline(always)]
+    pub const fn max_entries(&self) -> usize {
+        self.max_entries
+    }
+
     // resize resizes the transposition table's underlying memory allocation to
     // the requested size
     //
