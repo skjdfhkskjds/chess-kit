@@ -1,6 +1,6 @@
 pub mod transposition_table;
-pub(crate) mod bucket;
 pub(crate) mod entry;
+pub(crate) mod bucket;
 
 pub use transposition_table::TranspositionTable;
 

@@ -28,8 +28,8 @@ impl PerftHarness {
         let tt = TranspositionTable::<PerftData>::new(32); // TODO: make configurable
         println!(
             "tt config: [{} buckets, {} entries]",
-            tt.max_buckets(),
-            tt.max_entries()
+            tt.buckets(),
+            tt.capacity()
         );
 
         Self {

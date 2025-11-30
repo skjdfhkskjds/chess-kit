@@ -1,33 +1,34 @@
 use crate::board::ZobristKey;
-use crate::transposition::{NodeData, entry::Entry};
+use crate::transposition::{NodeData, bucket::Bucket};
 
 const MB_TO_BYTES: usize = 1024 * 1024;
 
 pub struct TranspositionTable<T: NodeData> {
-    memory_size: usize, // amount of memory allocated in MBs
-    size: usize,        // number of buckets used in the table
-    max_entries: usize, // maximum number of entries in the table
+    size: usize,        // number of entries in the table
+    capacity: usize,    // maximum number of entries in the table
     max_buckets: usize, // maximum number of buckets in the table
+    memory_size: usize, // amount of memory allocated in MBs
 
-    entries: Vec<Entry<T>>,
+    buckets: Vec<Bucket<T>>,
 }
 
 impl<T> TranspositionTable<T>
 where
     T: NodeData + Copy + Clone,
 {
-    // Create a new TT of the requested size, able to hold the data
-    // of type D, where D has to implement HashData, and must be cloneable
-    // and copyable.
+    // new creates a new transposition table with the requested memory size
+    //
+    // @param: memory_size - the size of the transposition table in MBs
+    // @return: a new transposition table
     pub fn new(memory_size: usize) -> Self {
-        let (max_entries, max_buckets) = Self::calculate_sizes(memory_size);
+        let (buckets, capacity) = Self::calculate_sizes(memory_size);
 
         Self {
-            memory_size: memory_size,
             size: 0,
-            max_entries: max_entries,
-            max_buckets: max_buckets,
-            entries: vec![Entry::<T>::new(); max_entries],
+            capacity,
+            max_buckets: buckets,
+            memory_size: memory_size,
+            buckets: vec![Bucket::<T>::new(); buckets],
         }
     }
 
@@ -43,7 +44,7 @@ where
         }
 
         let (idx, key) = self.parse_zobrist_key(zobrist_key);
-        self.size += self.entries[idx].set(key, data) as usize;
+        self.size += self.buckets[idx].set(key, data) as usize;
     }
 
     // probe probes the transposition table for an entry with the given zobrist
@@ -57,7 +58,7 @@ where
         }
 
         let (idx, key) = self.parse_zobrist_key(zobrist_key);
-        self.entries[idx].get(key)
+        self.buckets[idx].get(key)
     }
 
     // is_enabled checks if the transposition table is enabled
@@ -68,20 +69,20 @@ where
         self.memory_size > 0
     }
 
-    // max_buckets returns the maximum number of buckets in the transposition table
-    //
-    // @return: maximum number of buckets in the transposition table
-    #[inline(always)]
-    pub const fn max_buckets(&self) -> usize {
-        self.max_buckets
-    }
-
-    // max_entries returns the maximum number of entries in the transposition table
+    // capacity returns the maximum number of entries in the transposition table
     //
     // @return: maximum number of entries in the transposition table
     #[inline(always)]
-    pub const fn max_entries(&self) -> usize {
-        self.max_entries
+    pub const fn capacity(&self) -> usize {
+        self.capacity
+    }
+
+    // buckets returns the number of buckets allocated in the transposition table
+    //
+    // @return: number of buckets allocated in the transposition table
+    #[inline(always)]
+    pub const fn buckets(&self) -> usize {
+        self.max_buckets
     }
 
     // resize resizes the transposition table's underlying memory allocation to
@@ -89,7 +90,7 @@ where
     //
     // @param: memory_size - the new size of the transposition table in MBs
     // @return: void
-    // @side-effects: zeroes the transposition table
+    // @side-effects: clears the transposition table
     pub fn resize(&mut self, memory_size: usize) {
         // if the memory size is unchanged, just clear the table
         if self.memory_size == memory_size {
@@ -105,10 +106,10 @@ where
     // clear clears the transposition table
     //
     // @return: void
-    // @side-effects: modifies the transposition table
+    // @side-effects: clears the transposition table
     #[inline(always)]
     pub fn clear(&mut self) {
-        for entry in self.entries.iter_mut() {
+        for entry in self.buckets.iter_mut() {
             entry.clear();
         }
         self.size = 0;
@@ -145,7 +146,7 @@ where
         //       key is an alias/wrapper around a u64 and relies on the fact that
         //       the `as` cast truncates the superfluous upper bits
         // TODO: make a choice as to whether or not that invariant is reasonable
-        let index = ((zobrist_key >> 32) as u32) as usize % self.max_entries;
+        let index = ((zobrist_key >> 32) as u32) as usize % self.max_buckets;
         let key = zobrist_key as u32;
         (index, key)
     }
@@ -161,7 +162,7 @@ where
             return 0;
         }
 
-        let fraction = self.size as f64 / self.max_buckets as f64;
+        let fraction = self.size as f64 / self.capacity as f64;
         (fraction * base).floor() as u16
     }
 
@@ -169,12 +170,12 @@ where
     // into the requested amount of memory
     //
     // @param: memory_size - the amount of memory in MBs
-    // @return: total number of entries and buckets that fit in memory_size
+    // @return: number of buckets and capacity that fit in memory_size
     #[inline(always)]
     const fn calculate_sizes(memory_size: usize) -> (usize, usize) {
-        let entries = MB_TO_BYTES / Entry::<T>::size_of_mem() * memory_size;
-        let buckets = entries * Entry::<T>::num_buckets();
+        let buckets = MB_TO_BYTES / Bucket::<T>::size_of_mem() * memory_size;
+        let capacity = buckets * Bucket::<T>::capacity();
 
-        (entries, buckets)
+        (buckets, capacity)
     }
 }

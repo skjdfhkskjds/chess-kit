@@ -1,99 +1,82 @@
-use crate::transposition::{NodeData, bucket::Bucket};
+use crate::transposition::NodeData;
 
-// TODO: make this configurable
-pub const BUCKETS_PER_ENTRY: usize = 3;
-
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Entry<T: NodeData> {
-    buckets: [Bucket<T>; BUCKETS_PER_ENTRY],
+    dirty: bool,
+    key: u32,
+    data: T,
 }
 
 impl<T> Entry<T>
 where
-    T: NodeData + Copy,
+    T: NodeData,
 {
-    // new creates a new entry with all buckets initialized to empty
-    // 
-    // @return: new entry
-    #[inline(always)]
-    pub(crate) fn new() -> Self {
-        Self {
-            buckets: [Bucket::new(); BUCKETS_PER_ENTRY],
-        }
-    }
-
-    // get fetches the first bucket containing the given key
-    // 
-    // @param: key - key to fetch the data for
-    // @return: data if the key is found, None otherwise
-    pub(crate) fn get(&self, key: u32) -> Option<&T> {
-        for bucket in self.buckets.iter() {
-            if bucket.key() == key {
-                return Some(bucket.data());
-            }
-        }
-        None
-    }
-
-    // set sets the value of the bucket with the lowest depth to the given key
-    // data pair
+    // new creates a new bucket with the given key and data
     // 
     // @param: key - key to set the value to
     // @param: data - data to set the value to
-    // @return: true if a bucket was set for the first time, false otherwise
-    pub(crate) fn set(&mut self, key: u32, data: T) -> bool {
-        // find the index of the entry with the lowest depth
-        let mut min_depth = 0;
-        let mut min_depth_idx = 0;
-        for i in 0..BUCKETS_PER_ENTRY {
-            let depth = self.buckets[i].data().depth();
-            if depth < min_depth {
-                min_depth = depth;
-                min_depth_idx = i;
-            }
+    // @return: new bucket
+    #[inline(always)]
+    pub(crate) fn new() -> Self {
+        Self {
+            dirty: false,
+            key: 0,
+            data: T::empty(),
         }
-
-        // check if the bucket was dirty before this operation
-        let was_dirty = self.buckets[min_depth_idx].is_dirty();
-
-        // set the value of the bucket
-        // 
-        // Note: we always replace the old value
-        self.buckets[min_depth_idx].set(key, data);
-
-        !was_dirty
     }
 
-    // clear clears the entry to an empty state
+    // is_dirty checks if the bucket is dirty
+    // 
+    // @return: true if the bucket is dirty, false otherwise
+    #[inline(always)]
+    pub(crate) const fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    // key returns the key of the bucket
+    // 
+    // @return: key of the bucket
+    #[inline(always)]
+    pub(crate) const fn key(&self) -> u32 {
+        self.key
+    }
+
+    // data returns a reference to the data in the bucket
+    // 
+    // @return: reference to the data in the bucket
+    #[inline(always)]
+    pub(crate) const fn data(&self) -> &T {
+        &self.data
+    }
+
+    // set sets the value of the bucket to the given key and data
+    // 
+    // @param: key - key to set the value to
+    // @param: data - data to set the value to
+    // @return: void
+    // @side-effects: modifies the bucket
+    #[inline(always)]
+    pub(crate) fn set(&mut self, key: u32, data: T) {
+        self.key = key;
+        self.data = data;
+        self.dirty = true;
+    }
+
+    // clear clears the bucket to a clean state
     // 
     // @return: void
-    // @side-effects: modifies the entry
+    // @side-effects: modifies the bucket
+    #[inline(always)]
     pub(crate) fn clear(&mut self) {
-        for bucket in self.buckets.iter_mut() {
-            bucket.clear();
-        }
-    }
-
-    // size_of_mem returns the size of the memory occupied by the entry
-    // 
-    // @return: size of the memory occupied by the entry
-    #[inline(always)]
-    pub(crate) const fn size_of_mem() -> usize {
-        std::mem::size_of::<Bucket<T>>() * BUCKETS_PER_ENTRY
-    }
-
-    // num_buckets returns the number of buckets in the entry
-    // 
-    // @return: number of buckets in the entry
-    #[inline(always)]
-    pub(crate) const fn num_buckets() -> usize {
-        BUCKETS_PER_ENTRY
+        self.key = 0;
+        self.data = T::empty();
+        self.dirty = false;
     }
 }
 
 impl<T> Default for Entry<T>
 where
-    T: NodeData + Copy,
+    T: NodeData,
 {
     #[inline(always)]
     fn default() -> Self {
