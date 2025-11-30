@@ -1,0 +1,85 @@
+use crate::transposition::NodeData;
+
+#[derive(Clone, Copy)]
+pub struct Bucket<T: NodeData> {
+    dirty: bool,
+    key: u32,
+    data: T,
+}
+
+impl<T> Bucket<T>
+where
+    T: NodeData,
+{
+    // new creates a new bucket with the given key and data
+    // 
+    // @param: key - key to set the value to
+    // @param: data - data to set the value to
+    // @return: new bucket
+    #[inline(always)]
+    pub(crate) fn new() -> Self {
+        Self {
+            dirty: false,
+            key: 0,
+            data: T::empty(),
+        }
+    }
+
+    // is_dirty checks if the bucket is dirty
+    // 
+    // @return: true if the bucket is dirty, false otherwise
+    #[inline(always)]
+    pub(crate) const fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    // key returns the key of the bucket
+    // 
+    // @return: key of the bucket
+    #[inline(always)]
+    pub(crate) const fn key(&self) -> u32 {
+        self.key
+    }
+
+    // data returns a reference to the data in the bucket
+    // 
+    // @return: reference to the data in the bucket
+    #[inline(always)]
+    pub(crate) fn data(&self) -> &T {
+        &self.data
+    }
+
+    // set sets the value of the bucket to the given key and data
+    // 
+    // @param: key - key to set the value to
+    // @param: data - data to set the value to
+    // @return: void
+    // @side-effects: modifies the bucket
+    #[inline(always)]
+    pub(crate) fn set(&mut self, key: u32, data: T) {
+        self.dirty = true;
+        self.key = key;
+        self.data = data;
+    }
+
+    // clear clears the bucket to a clean state
+    // 
+    // @return: void
+    // @side-effects: modifies the bucket
+    #[inline(always)]
+    pub(crate) fn clear(&mut self) {
+        self.dirty = false;
+        self.key = 0;
+        self.data = T::empty();
+    }
+}
+
+impl<T> Default for Bucket<T>
+where
+    T: NodeData,
+{
+    #[inline(always)]
+    fn default() -> Self {
+        Self::new()
+    }
+}
