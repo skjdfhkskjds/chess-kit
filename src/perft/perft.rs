@@ -1,6 +1,6 @@
-use chess_kit::board::Board;
-use chess_kit::movegen::MoveGenerator;
-use chess_kit::primitives::{Move, MoveList, MoveType};
+use crate::board::Board;
+use crate::movegen::MoveGenerator;
+use crate::primitives::{Move, MoveList, MoveType};
 
 // perft calculates the number of leaf nodes at the given depth from the current
 // position

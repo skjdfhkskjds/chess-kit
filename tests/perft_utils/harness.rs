@@ -1,6 +1,7 @@
-use crate::perft::{PerftTest, perft, perft_divide_print};
+use crate::perft_utils::PerftTest;
 use chess_kit::board::Board;
 use chess_kit::movegen::MoveGenerator;
+use chess_kit::perft::{perft, perft_divide_print};
 use std::time::Instant;
 
 pub enum PerftHarnessMode {
