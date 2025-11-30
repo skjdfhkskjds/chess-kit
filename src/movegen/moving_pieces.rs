@@ -1,6 +1,6 @@
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, File, Rank, Side, Sides, Square, White, Black,
+    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, File, Rank, Side, Square,
 };
 
 impl MoveGenerator {

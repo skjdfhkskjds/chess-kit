@@ -1,7 +1,7 @@
 use crate::board::Board;
 use crate::movegen::{MoveGenerator, SideToMove};
 use crate::primitives::{
-    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Black, Move, MoveList, MoveType, Piece, Rank, Side,
+    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Black, Move, MoveList, MoveType, Piece, Side,
     SideRanks, Sides, Square, White,
 };
 
