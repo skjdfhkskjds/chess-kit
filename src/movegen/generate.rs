@@ -1,49 +1,67 @@
 use crate::board::Board;
-use crate::movegen::MoveGenerator;
+use crate::movegen::{MoveGenerator, SideToMove};
 use crate::primitives::{
-    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Move, MoveList, MoveType, Piece, Rank, Side, Square,
+    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Black, Move, MoveList, MoveType, Piece, Rank, Side,
+    SideRanks, Sides, Square, White,
 };
 
 // list of pieces that a pawn can promote to
 const PROMOTION_PIECES: [Piece; 4] = [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight];
 
 impl MoveGenerator {
-    // generate_moves generates all the pseudo-legal moves of the given move
-    // type from the current board and pushes them to the move list
+    // generate_moves generates all the pseudo-legal moves of the given move type
+    // from the current board state and pushes them to the move list
     //
-    // @param: self - immutable reference to the move generator
     // @param: board - immutable reference to the board
-    // @param: ml - mutable reference to the move list
-    // @param: mt - move type to generate moves for
+    // @param: list - mutable reference to the move list
+    // @param: move_type - move type to generate moves for
     // @return: void
     // @side-effects: modifies the `move list`
-    pub fn generate_moves(&self, board: &Board, moves: &mut MoveList, move_type: MoveType) {
-        self.generate_moves_for_piece(board, Piece::King, moves, move_type);
-        self.generate_moves_for_piece(board, Piece::Knight, moves, move_type);
-        self.generate_moves_for_piece(board, Piece::Rook, moves, move_type);
-        self.generate_moves_for_piece(board, Piece::Bishop, moves, move_type);
-        self.generate_moves_for_piece(board, Piece::Queen, moves, move_type);
-        self.generate_moves_for_piece(board, Piece::Pawn, moves, move_type);
-
-        if move_type == MoveType::All || move_type == MoveType::Quiet {
-            self.generate_castle_moves(board, moves);
+    pub fn generate_moves(&self, board: &Board, list: &mut MoveList, move_type: MoveType) {
+        match board.state.turn {
+            Sides::White => self.generate_moves_for_side::<White>(board, list, move_type),
+            Sides::Black => self.generate_moves_for_side::<Black>(board, list, move_type),
         }
     }
-}
 
-impl MoveGenerator {
+    // generate_moves_for_side generates all the pseudo-legal moves of the given
+    // move type for the side to move from the current board and pushes them to
+    // the move list
+    //
+    // @param: board - immutable reference to the board
+    // @param: list - mutable reference to the move list
+    // @param: move_type - move type to generate moves for
+    // @return: void
+    // @side-effects: modifies the `move list`
+    fn generate_moves_for_side<S: SideToMove>(
+        &self,
+        board: &Board,
+        list: &mut MoveList,
+        move_type: MoveType,
+    ) {
+        self.generate_moves_for_piece::<S>(board, Piece::King, list, move_type);
+        self.generate_moves_for_piece::<S>(board, Piece::Knight, list, move_type);
+        self.generate_moves_for_piece::<S>(board, Piece::Rook, list, move_type);
+        self.generate_moves_for_piece::<S>(board, Piece::Bishop, list, move_type);
+        self.generate_moves_for_piece::<S>(board, Piece::Queen, list, move_type);
+        self.generate_moves_for_piece::<S>(board, Piece::Pawn, list, move_type);
+
+        if move_type == MoveType::All || move_type == MoveType::Quiet {
+            self.generate_castle_moves::<S>(board, list);
+        }
+    }
+
     // generate_moves_for_piece generates all the pseudo-legal moves of the given
     // move type for the given piece from the current board and pushes them to
     // the move list
     //
-    // @param: self - immutable reference to the move generator
     // @param: board - immutable reference to the board
     // @param: piece - piece to generate moves of
     // @param: list - mutable reference to the move list
     // @param: move_type - move type to generate moves of
     // @return: void
     // @side-effects: modifies the `move list`
-    pub fn generate_moves_for_piece(
+    fn generate_moves_for_piece<S: SideToMove>(
         &self,
         board: &Board,
         piece: Piece,
@@ -52,17 +70,17 @@ impl MoveGenerator {
     ) {
         // if the piece is a pawn,
         if matches!(piece, Piece::Pawn) {
-            return self.generate_pawn_moves(board, list, move_type);
+            return self.generate_pawn_moves::<S>(board, list, move_type);
         }
 
         let occupancy = board.occupancy();
         let empty_squares = board.empty_squares();
-        let our_occupancy = board.sides[board.turn().idx()];
-        let opponent_occupancy = board.sides[board.opponent().idx()];
+        let our_occupancy = board.sides[S::INDEX];
+        let opponent_occupancy = board.sides[S::Other::INDEX];
 
         // generate moves from all positions of the piece for the current side
         // to move
-        let to_move = board.get_piece(board.turn(), piece);
+        let to_move = board.get_piece::<S>(piece);
         for from in to_move.iter() {
             let targets = match piece {
                 Piece::King => self.get_king_targets(from),
@@ -80,7 +98,7 @@ impl MoveGenerator {
                 MoveType::Capture => targets & opponent_occupancy,
             };
 
-            self.push_moves(board, piece, from, moves, list);
+            self.push_moves::<S>(board, piece, from, moves, list);
         }
     }
 
@@ -94,34 +112,34 @@ impl MoveGenerator {
     // @param: move_type - move type to generate moves of
     // @return: void
     // @side-effects: modifies the `move list`
-    fn generate_pawn_moves(&self, board: &Board, list: &mut MoveList, move_type: MoveType) {
+    fn generate_pawn_moves<S: SideToMove>(
+        &self,
+        board: &Board,
+        list: &mut MoveList,
+        move_type: MoveType,
+    ) {
         let empty_squares = board.empty_squares();
-        let double_step_rank = BITBOARD_RANKS[Rank::double_step_rank(board.turn()).idx()];
-        // TODO: figure out how to abstract this away appropriately
-        let direction = match board.turn() {
-            Side::White => 8,
-            Side::Black => -8,
-        };
-        let rotation_count = (Square::TOTAL as i8 + direction) as u32;
+        let double_step_rank = BITBOARD_RANKS[S::DOUBLE_STEP_RANK.idx()];
 
         // generate moves for each of the pawns
-        let pawn_squares = board.get_piece(board.turn(), Piece::Pawn);
+        let pawn_squares = board.get_piece::<S>(Piece::Pawn);
         for from in pawn_squares.iter() {
-            let to = (from.idx() as i8 + direction) as usize;
+            let to = (from.idx() as i8 + S::PAWN_PUSH_OFFSET) as usize;
             let mut moves = Bitboard::empty();
 
             // generate pawn pushes
             if move_type == MoveType::All || move_type == MoveType::Quiet {
                 let single_step = BITBOARD_SQUARES[to] & empty_squares;
-                let double_step =
-                    single_step.rotate_left(rotation_count) & empty_squares & double_step_rank;
+                let double_step = single_step.rotate_left(S::PAWN_DOUBLE_STEP_OFFSET)
+                    & empty_squares
+                    & double_step_rank;
                 moves |= single_step | double_step;
             }
 
             // generate pawn captures
             if move_type == MoveType::All || move_type == MoveType::Capture {
-                let targets = self.get_pawn_targets(from, board.turn());
-                let captures = targets & board.sides[board.opponent().idx()];
+                let targets = self.get_pawn_targets::<S>(from);
+                let captures = targets & board.sides[S::Other::INDEX];
                 let en_passant_captures = match board.state.en_passant {
                     Some(ep) => targets & BITBOARD_SQUARES[ep.idx()],
                     None => Bitboard::empty(),
@@ -129,7 +147,7 @@ impl MoveGenerator {
                 moves |= captures | en_passant_captures;
             }
 
-            self.push_moves(board, Piece::Pawn, from, moves, list);
+            self.push_moves::<S>(board, Piece::Pawn, from, moves, list);
         }
     }
 
@@ -137,95 +155,65 @@ impl MoveGenerator {
     // move type for the castling from the current board and pushes them to the
     // move list
     //
-    // @param: self - immutable reference to the move generator
     // @param: board - immutable reference to the board
     // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate moves of
     // @return: void
     // TODO: current implementation does not support chess960, as it assumes the
     //       squares along the path from the king and rook
-    fn generate_castle_moves(&self, board: &Board, list: &mut MoveList) {
-        let us = board.turn();
-        
+    fn generate_castle_moves<S: SideToMove>(&self, board: &Board, list: &mut MoveList) {
         // get the castling rights for the side to move
-        let (kingside, queenside) = match us {
-            Side::White => (
-                board.state.castling.kingside(Side::White),
-                board.state.castling.queenside(Side::White),
-            ),
-            Side::Black => (
-                board.state.castling.kingside(Side::Black),
-                board.state.castling.queenside(Side::Black),
-            ),
-        };
-        
+        let (kingside, queenside) = (
+            board.state.castling.kingside::<S>(),
+            board.state.castling.queenside::<S>(),
+        );
+
         // get the current king square
-        let from = board.king_square(us);
+        let from = board.king_square::<S>();
 
         // check if the side to move can castle
-        // 
+        //
         // Note: a side can castle iff they have either kingside or queenside
         //       permissions and they are not currently in check
-        if !(kingside || queenside) || self.is_attacked(board, us, from) {
+        if !(kingside || queenside) || self.is_attacked::<S>(board, from) {
             return;
         }
-        
+
         // generate castle moves depending on the side to move
         let occupancy = board.occupancy();
         let mut moves = Bitboard::empty();
 
         if kingside {
-            // get path information for the kingside castle
-            // 
-            // to: the destination square of the king
-            // intermediate: the intermediate square between the king and to
-            // blockers: the squares in between the king and the rook
-            let (to, intermediate, blockers) = match us {
-                Side::White => (
-                    Square::G1,
-                    Square::F1,
-                    BITBOARD_SQUARES[Square::F1.idx()] | BITBOARD_SQUARES[Square::G1.idx()],
-                ),
-                Side::Black => (
-                    Square::G8,
-                    Square::F8,
-                    BITBOARD_SQUARES[Square::F8.idx()] | BITBOARD_SQUARES[Square::G8.idx()],
-                ),
-            };
+            // get the blockers (squares in between the king and the rook)
+            let blockers = BITBOARD_SQUARES[S::KINGSIDE_DESTINATION.idx()]
+                | BITBOARD_SQUARES[S::KINGSIDE_ROOK_DESTINATION.idx()];
 
             // if the squares along the path are empty and the king is not moving
             // "through" check, we can castle
-            if (occupancy & blockers).is_empty() && !self.is_attacked(board, us, intermediate) {
-                moves |= BITBOARD_SQUARES[to.idx()];
+            if (occupancy & blockers).is_empty()
+                && !self.is_attacked::<S>(board, S::KINGSIDE_ROOK_DESTINATION)
+            {
+                moves |= BITBOARD_SQUARES[S::KINGSIDE_DESTINATION.idx()];
             }
         }
 
         if queenside {
-            // identical to the kingside implementation
-            let (to, intermediate, blockers) = match us {
-                Side::White => (
-                    Square::C1,
-                    Square::D1,
-                    BITBOARD_SQUARES[Square::B1.idx()]
-                        | BITBOARD_SQUARES[Square::C1.idx()]
-                        | BITBOARD_SQUARES[Square::D1.idx()],
-                ),
-                Side::Black => (
-                    Square::C8,
-                    Square::D8,
-                    BITBOARD_SQUARES[Square::B8.idx()]
-                        | BITBOARD_SQUARES[Square::C8.idx()]
-                        | BITBOARD_SQUARES[Square::D8.idx()],
-                ),
-            };
+            // same as in the kingside implementation
+            //
+            // Note: the queenside blockers include an additional square, see
+            //       `QUEENSIDE_ROOK_INTERMEDIATE` for more details.
+            let blockers = BITBOARD_SQUARES[S::QUEENSIDE_DESTINATION.idx()]
+                | BITBOARD_SQUARES[S::QUEENSIDE_ROOK_DESTINATION.idx()]
+                | BITBOARD_SQUARES[S::QUEENSIDE_ROOK_INTERMEDIATE.idx()];
 
-            if (occupancy & blockers).is_empty() && !self.is_attacked(board, us, intermediate) {
-                moves |= BITBOARD_SQUARES[to.idx()];
+            if (occupancy & blockers).is_empty()
+                && !self.is_attacked::<S>(board, S::QUEENSIDE_ROOK_DESTINATION)
+            {
+                moves |= BITBOARD_SQUARES[S::QUEENSIDE_DESTINATION.idx()];
             }
         }
 
         // push the castle moves to the move list
-        self.push_moves(board, Piece::King, from, moves, list);
+        self.push_moves::<S>(board, Piece::King, from, moves, list);
     }
 
     // push_moves pushes a set of moves to the move list as defined by the
@@ -239,7 +227,7 @@ impl MoveGenerator {
     // @param: list - mutable reference to the move list
     // @return: void
     // @side-effects: modifies the `move list`
-    fn push_moves(
+    fn push_moves<S: SideRanks>(
         &self,
         board: &Board,
         piece: Piece,
@@ -282,7 +270,7 @@ impl MoveGenerator {
                     } else if to.distance(from) == 16 {
                         // the move is a double step pawn push
                         mv = mv.with_double_step();
-                    } else if to.on_rank(Rank::promotion_rank(board.turn())) {
+                    } else if to.on_rank(S::PROMOTION_RANK) {
                         // generate all possible promotion moves
                         PROMOTION_PIECES.iter().for_each(|promotion_piece| {
                             list.push(mv.with_promotion(*promotion_piece));
@@ -320,7 +308,7 @@ impl MoveGenerator {
     // @param: side - side to check if is attacked
     // @param: square - square to check if is attacked
     // @return: true if the square is attacked, false otherwise
-    pub fn is_attacked(&self, board: &Board, side: Side, square: Square) -> bool {
+    pub fn is_attacked<S: Side>(&self, board: &Board, square: Square) -> bool {
         // idea: our square `T` is attacked iff the opponent has at least one
         //       piece in square `S` such that attack board generated from `T`
         //       includes `S`
@@ -337,12 +325,12 @@ impl MoveGenerator {
         let rook_attacks = self.get_rook_attacks(square, &occupancy);
         let bishop_attacks = self.get_bishop_attacks(square, &occupancy);
         let knight_attacks = self.get_knight_targets(square);
-        let pawn_attacks = self.get_pawn_targets(square, side);
+        let pawn_attacks = self.get_pawn_targets::<S>(square);
         let queen_attacks = rook_attacks | bishop_attacks;
 
         // check if there is an intersection between the attack board and that
         // piece's respective occupancy
-        let opponent = board.bitboards[side.other().idx()];
+        let opponent = board.bitboards[S::Other::INDEX];
         !(king_attacks & opponent[Piece::King.idx()]).is_empty()
             || !(rook_attacks & opponent[Piece::Rook.idx()]).is_empty()
             || !(queen_attacks & opponent[Piece::Queen.idx()]).is_empty()
@@ -358,7 +346,7 @@ impl MoveGenerator {
     // @param: side - side to check if is checked
     // @return: true if the side is checked, false otherwise
     #[inline(always)]
-    pub fn is_checked(&self, board: &Board, side: Side) -> bool {
-        self.is_attacked(board, side, board.king_square(side))
+    pub fn is_checked<S: Side>(&self, board: &Board) -> bool {
+        self.is_attacked::<S>(board, board.king_square::<S>())
     }
 }

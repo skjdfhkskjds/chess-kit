@@ -1,6 +1,6 @@
 use crate::movegen::MoveGenerator;
 use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, File, Rank, Side, Square,
+    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, File, Rank, Side, Sides, Square, White, Black,
 };
 
 impl MoveGenerator {
@@ -50,12 +50,12 @@ impl MoveGenerator {
     // @param: self - mutable reference to the move generator
     // @return: void
     #[rustfmt::skip]
-    pub(crate) fn init_pawn_table(&mut self) {
+    pub(crate) fn init_pawn_table<S: Side>(&mut self) {
         for sq in Square::ALL {
             let bitboard = BITBOARD_SQUARES[sq.idx()];
-            self.pawn_table[Side::White.idx()][sq.idx()] = ((bitboard & !BITBOARD_FILES[File::A.idx()]) << 7u8)
+            self.pawn_table[S::INDEX][sq.idx()] = ((bitboard & !BITBOARD_FILES[File::A.idx()]) << 7u8)
                 | ((bitboard & !BITBOARD_FILES[File::H.idx()]) << 9u8);
-            self.pawn_table[Side::Black.idx()][sq.idx()] = ((bitboard & !BITBOARD_FILES[File::A.idx()]) >> 9u8)
+            self.pawn_table[S::Other::INDEX][sq.idx()] = ((bitboard & !BITBOARD_FILES[File::A.idx()]) >> 9u8)
                 | ((bitboard & !BITBOARD_FILES[File::H.idx()]) >> 7u8);
         }
     }
@@ -87,10 +87,9 @@ impl MoveGenerator {
     //
     // @param: self - immutable reference to the move generator
     // @param: sq - square that the pawn is on
-    // @param: side - side to get the pawn moves for
     // @return: pawn targets from the given square
     #[inline(always)]
-    pub(crate) fn get_pawn_targets(&self, sq: Square, side: Side) -> Bitboard {
-        self.pawn_table[side.idx()][sq.idx()]
+    pub(crate) fn get_pawn_targets<S: Side>(&self, sq: Square) -> Bitboard {
+        self.pawn_table[S::INDEX][sq.idx()]
     }
 }

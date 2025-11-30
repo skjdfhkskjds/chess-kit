@@ -1,10 +1,9 @@
 use crate::board::board::Board;
-use crate::primitives::{Piece, Side, Square};
+use crate::primitives::{Piece, Sides, Square, White, Black};
 
 impl Board {
     // is_draw checks if the position is a draw
     //
-    // @param: self - immutable reference to the board
     // @return: true if the position is a draw, false otherwise
     pub fn is_draw(&self) -> bool {
         self.is_draw_by_fifty_moves() || !self.can_force_checkmate() || self.is_draw_by_repetition()
@@ -13,8 +12,8 @@ impl Board {
     // is_draw_by_fifty_moves checks if the position is a draw according to the
     // 50-move rule
     //
-    // @param: self - immutable reference to the board
     // @return: true if the position is a draw by the rule, false otherwise
+    #[inline(always)]
     pub fn is_draw_by_fifty_moves(&self) -> bool {
         // Note: 100 since we are using the halfmove clock
         self.state.halfmoves >= 100
@@ -23,12 +22,11 @@ impl Board {
     // is_draw_by_insufficient_material checks if the position is a draw according
     // to the draw by insufficient material rule
     //
-    // @param: self - immutable reference to the board
     // @return: true if the position is a draw by the rule, false otherwise
     pub fn is_draw_by_insufficient_material(&self) -> bool {
         // Get the piece bitboards for white and black.
-        let w = self.bitboards[Side::White.idx()];
-        let b = self.bitboards[Side::Black.idx()];
+        let w = self.bitboards[Sides::White.idx()];
+        let b = self.bitboards[Sides::Black.idx()];
 
         // check if either side has sufficient solo material to deliver
         // checkmate
@@ -78,7 +76,6 @@ impl Board {
     // is_draw_by_repetition checks if the position is a draw according to the
     // draw by repetition rule
     //
-    // @param: self - immutable reference to the board
     // @return: true if the position is a draw by the rule, false otherwise
     pub fn is_draw_by_repetition(&self) -> bool {
         let mut count = 0;
@@ -104,11 +101,10 @@ impl Board {
 
     // can_force_checkmate checks if either side can force checkmate
     //
-    // @param: self - immutable reference to the board
     // @return: true if either side can force checkmate, false otherwise
     pub fn can_force_checkmate(&self) -> bool {
-        let w = self.bitboards[Side::White.idx()];
-        let b = self.bitboards[Side::Black.idx()];
+        let w = self.bitboards[Sides::White.idx()];
+        let b = self.bitboards[Sides::Black.idx()];
 
         // check if either side has sufficient solo material to deliver
         // checkmate
@@ -124,8 +120,8 @@ impl Board {
         // if either side has sufficient solo material or a bishop pair,
         // then that side can force checkmate
         if sufficient_solo_material
-            || self.has_bishop_pair(Side::White)
-            || self.has_bishop_pair(Side::Black)
+            || self.has_bishop_pair::<White>()
+            || self.has_bishop_pair::<Black>()
         {
             return true;
         }

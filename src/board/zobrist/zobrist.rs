@@ -1,10 +1,12 @@
-use crate::primitives::{Bitboard, Castling, Piece, Side, Square};
+use crate::primitives::{
+    Bitboard, Black, CastleRights, Castling, Piece, Side, Sides, Square, White,
+};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
-type PieceRandoms = [[[u64; Square::TOTAL]; Piece::TOTAL]; Side::TOTAL];
-type CastlingRandoms = [u64; Castling::TOTAL];
-type SideRandoms = [u64; Side::TOTAL];
+type PieceRandoms = [[[u64; Square::TOTAL]; Piece::TOTAL]; Sides::TOTAL];
+type CastlingRandoms = [u64; CastleRights::TOTAL];
+type SideRandoms = [u64; Sides::TOTAL];
 type EnPassantRandoms = [u64; Square::TOTAL + 1];
 
 pub type ZobristKey = u64;
@@ -25,9 +27,9 @@ impl Zobrist {
     // @return: new Zobrist instance
     pub fn new() -> Self {
         Self {
-            piece_randoms: [[[0; Square::TOTAL]; Piece::TOTAL]; Side::TOTAL],
-            castling_randoms: [0; Castling::TOTAL],
-            side_randoms: [0; Side::TOTAL],
+            piece_randoms: [[[0; Square::TOTAL]; Piece::TOTAL]; Sides::TOTAL],
+            castling_randoms: [0; CastleRights::TOTAL],
+            side_randoms: [0; Sides::TOTAL],
             en_passant_randoms: [0; Square::TOTAL + 1],
         }
     }
@@ -70,16 +72,19 @@ impl Zobrist {
     // @return: zobrist key for the given position
     pub fn key(
         &self,
-        side: Side,
+        side: Sides,
         castling: Castling,
         en_passant: Option<Square>,
-        bitboards: [[Bitboard; Piece::TOTAL]; Side::TOTAL],
+        bitboards: [[Bitboard; Piece::TOTAL]; Sides::TOTAL],
     ) -> ZobristKey {
         let mut key = 0;
         for (side, bitboards) in bitboards.iter().enumerate() {
             for (piece, bitboard) in bitboards.iter().enumerate() {
                 for square in bitboard.iter() {
-                    key ^= self.piece(Side::from_idx(side), Piece::from_idx(piece), square);
+                    match Sides::from_idx(side) {
+                        Sides::White => key ^= self.piece::<White>(Piece::from_idx(piece), square),
+                        Sides::Black => key ^= self.piece::<Black>(Piece::from_idx(piece), square),
+                    }
                 }
             }
         }
@@ -91,12 +96,11 @@ impl Zobrist {
 
     // piece returns the random value for the given side, piece, and square
     //
-    // @param: side - side to get the piece for
     // @param: piece - piece to get the random value for
     // @param: square - square to get the random value for
     // @return: random value for the given side, piece, and square
-    pub fn piece(&self, side: Side, piece: Piece, square: Square) -> ZobristKey {
-        self.piece_randoms[side.idx()][piece.idx()][square.idx()]
+    pub fn piece<S: Side>(&self, piece: Piece, square: Square) -> ZobristKey {
+        self.piece_randoms[S::INDEX][piece.idx()][square.idx()]
     }
 
     // castling returns the random value for the given castling rights
@@ -111,7 +115,7 @@ impl Zobrist {
     //
     // @param: side - side to get the random value for
     // @return: random value for the given side
-    pub fn side(&self, side: Side) -> ZobristKey {
+    pub fn side(&self, side: Sides) -> ZobristKey {
         self.side_randoms[side.idx()]
     }
 

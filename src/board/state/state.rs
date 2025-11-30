@@ -1,9 +1,9 @@
 use crate::board::zobrist::ZobristKey;
-use crate::primitives::{Castling, Move, Side, Square};
+use crate::primitives::{Castling, Move, Sides, Square};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct State {
-    pub turn: Side,                 // side to move
+    pub turn: Sides,                 // side to move
     pub castling: Castling,         // castling rights
     pub en_passant: Option<Square>, // active en passant square, if any
     pub zobrist_key: ZobristKey,    // zobrist key for the current position
@@ -17,7 +17,7 @@ pub struct State {
 impl State {
     pub fn new() -> Self {
         Self {
-            turn: Side::White,
+            turn: Sides::White,
             castling: Castling::all(),
             en_passant: None,
             zobrist_key: 0,
@@ -31,7 +31,7 @@ impl State {
     //
     // @side-effects: modifies the `state`
     pub fn reset(&mut self) {
-        self.turn = Side::White;
+        self.turn = Sides::White;
         self.castling = Castling::all();
         self.en_passant = None;
         self.zobrist_key = 0;

@@ -1,5 +1,5 @@
 use crate::board::fen::{FENError, Parser};
-use crate::primitives::{Castling, Side};
+use crate::primitives::{Castling, White, Black};
 
 pub struct CastlingParser {
     pub castling: Castling,
@@ -14,10 +14,10 @@ impl Parser for CastlingParser {
         let mut castling = Castling::none();
         for c in segment.chars() {
             match c {
-                'K' => castling = castling.with_kingside(Side::White),
-                'Q' => castling = castling.with_queenside(Side::White),
-                'k' => castling = castling.with_kingside(Side::Black),
-                'q' => castling = castling.with_queenside(Side::Black),
+                'K' => castling = castling.with_kingside::<White>(),
+                'Q' => castling = castling.with_queenside::<White>(),
+                'k' => castling = castling.with_kingside::<Black>(),
+                'q' => castling = castling.with_queenside::<Black>(),
                 '-' => (),
                 _ => return Err(FENError::InvalidCastling),
             }
