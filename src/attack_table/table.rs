@@ -1,7 +1,7 @@
 use crate::attack_table::magics::{BISHOP_TABLE_SIZE, Magic, ROOK_TABLE_SIZE};
 use crate::attack_table::traits::{AttackTable, PieceTargetsTable};
 use crate::position::Position;
-use crate::primitives::{Bitboard, BitboardVec, Pieces, Side, Sides, Square, White};
+use crate::primitives::{Bitboard, BitboardVec, Pieces, Side, Sides, Square, State, White};
 
 type BitboardTable = [Bitboard; Square::TOTAL];
 type MagicTable = [Magic; Square::TOTAL];
@@ -60,7 +60,11 @@ impl AttackTable for DefaultAttackTable {
     //
     // @impl: AttackTable::is_attacked
     #[inline(always)]
-    fn is_attacked<S: Side>(&self, position: &Position, square: Square) -> bool {
+    fn is_attacked<SideT: Side, StateT: State>(
+        &self,
+        position: &Position<StateT>,
+        square: Square,
+    ) -> bool {
         // idea: our square `T` is attacked iff the opponent has at least one
         //       piece in square `S` such that attack board generated from `T`
         //       includes `S`
@@ -72,18 +76,18 @@ impl AttackTable for DefaultAttackTable {
         // opponent's
 
         // generate the attack boards for each piece
-        let occupancy = position.occupancy::<S>();
+        let occupancy = position.occupancy::<SideT>();
         let king_attacks = self.king_targets(square);
         let rook_attacks = self.rook_targets(square, &occupancy);
         let bishop_attacks = self.bishop_targets(square, &occupancy);
         let knight_attacks = self.knight_targets(square);
-        let pawn_attacks = self.pawn_targets::<S>(square);
+        let pawn_attacks = self.pawn_targets::<SideT>(square);
         // @opt: union of rook and bishop attacks instead of routine call
         let queen_attacks = rook_attacks | bishop_attacks;
 
         // check if there is an intersection between the attack board and that
         // piece's respective occupancy
-        let opponent = position.bitboards[S::Other::INDEX];
+        let opponent = position.bitboards[SideT::Other::INDEX];
         !(king_attacks & opponent[Pieces::King.idx()]).is_empty()
             || !(rook_attacks & opponent[Pieces::Rook.idx()]).is_empty()
             || !(queen_attacks & opponent[Pieces::Queen.idx()]).is_empty()
@@ -96,8 +100,8 @@ impl AttackTable for DefaultAttackTable {
     //
     // @impl: AttackTable::is_checked
     #[inline(always)]
-    fn is_checked<S: Side>(&self, position: &Position) -> bool {
-        self.is_attacked::<S>(position, position.king_square::<S>())
+    fn is_checked<SideT: Side, StateT: State>(&self, position: &Position<StateT>) -> bool {
+        self.is_attacked::<SideT, StateT>(position, position.king_square::<SideT>())
     }
 }
 
@@ -125,8 +129,8 @@ impl PieceTargetsTable for DefaultAttackTable {
     //
     // @impl: PieceTargetsTable::pawn_targets
     #[inline(always)]
-    fn pawn_targets<S: Side>(&self, sq: Square) -> Bitboard {
-        self.pawn_table[S::INDEX][sq.idx()]
+    fn pawn_targets<SideT: Side>(&self, sq: Square) -> Bitboard {
+        self.pawn_table[SideT::INDEX][sq.idx()]
     }
 
     // rook_targets returns the attacks for the given square and bitboard.

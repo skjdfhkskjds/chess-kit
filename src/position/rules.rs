@@ -1,7 +1,7 @@
 use crate::position::position::Position;
-use crate::primitives::{Pieces, Sides, Square, White, Black};
+use crate::primitives::{Pieces, Sides, Square, White, Black, State};
 
-impl Position {
+impl<S: State> Position<S> {
     // is_draw checks if the position is a draw
     //
     // @return: true if the position is a draw, false otherwise
@@ -16,7 +16,7 @@ impl Position {
     #[inline(always)]
     pub fn is_draw_by_fifty_moves(&self) -> bool {
         // Note: 100 since we are using the halfmove clock
-        self.state.halfmoves >= 100
+        self.state.halfmoves() >= 100
     }
 
     // is_draw_by_insufficient_material checks if the position is a draw according
@@ -83,14 +83,14 @@ impl Position {
         // walk backwards through the history
         for historic_state in self.history.iter().rev() {
             // if the zobrist keys match, we have a repetition
-            if historic_state.zobrist_key == self.state.zobrist_key {
+            if historic_state.key() == self.state.key() {
                 count += 1;
             }
 
             // if the halfmove clock is 0, the history position is a result
             // of a capture or a pawn move, so no previous positions can be
             // the same
-            if historic_state.halfmoves == 0 {
+            if historic_state.halfmoves() == 0 {
                 break;
             }
         }

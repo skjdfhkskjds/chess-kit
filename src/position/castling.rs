@@ -1,7 +1,7 @@
 use crate::position::position::Position;
-use crate::primitives::Castling;
+use crate::primitives::{Castling, State};
 
-impl Position {
+impl<S: State> Position<S> {
     // set_castling sets the castling rights for the given side
     //
     // @param: castling - castling rights to set
@@ -9,8 +9,9 @@ impl Position {
     // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_castling(&mut self, castling: Castling) {
-        self.state.zobrist_key ^= self.zobrist.castling(self.state.castling);
-        self.state.castling = castling;
-        self.state.zobrist_key ^= self.zobrist.castling(self.state.castling);
+        self.state
+            .update_key(self.zobrist.castling(self.state.castling()));
+        self.state.set_castling(castling);
+        self.state.update_key(self.zobrist.castling(castling));
     }
 }

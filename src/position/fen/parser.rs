@@ -1,6 +1,6 @@
 use crate::position::fen::FENError;
 use crate::position::fen::{
-    CastlingParser, EnPassantParser, FullmoveCountParser, HalfmoveCountParser, PiecesParser,
+    CastlingParser, EnPassantParser, FullmoveClockParser, HalfmoveClockParser, PiecesParser,
     TurnParser,
 };
 
@@ -13,8 +13,8 @@ pub struct FENParser {
     pub turn: TurnParser,
     pub castling: CastlingParser,
     pub en_passant: EnPassantParser,
-    pub halfmove_count: HalfmoveCountParser,
-    pub fullmove_count: FullmoveCountParser,
+    pub halfmove_parser: HalfmoveClockParser,
+    pub fullmove_parser: FullmoveClockParser,
 }
 
 impl Parser for FENParser {
@@ -28,16 +28,16 @@ impl Parser for FENParser {
         let turn = TurnParser::parse(segments[1])?;
         let castling = CastlingParser::parse(segments[2])?;
         let en_passant = EnPassantParser::parse(segments[3])?;
-        let halfmove_count = HalfmoveCountParser::parse(segments[4])?;
-        let fullmove_count = FullmoveCountParser::parse(segments[5])?;
+        let halfmove_parser = HalfmoveClockParser::parse(segments[4])?;
+        let fullmove_parser = FullmoveClockParser::parse(segments[5])?;
 
         Ok(Self {
             pieces,
             turn,
             castling,
             en_passant,
-            halfmove_count,
-            fullmove_count,
+            halfmove_parser,
+            fullmove_parser,
         })
     }
 }

@@ -3,6 +3,7 @@ use chess_kit::attack_table::{AttackTable, DefaultAttackTable};
 use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
 use chess_kit::position::Position;
+use chess_kit::primitives::DefaultState;
 use chess_kit::transposition::TranspositionTable;
 use std::time::Instant;
 
@@ -17,7 +18,7 @@ pub struct PerftHarness {
     test_cases: Vec<PerftTest>, // the test cases to run
     move_generator: MoveGenerator<DefaultAttackTable>, // global move generator, shared across tests
     tt: TranspositionTable<PerftData>, // global transposition table, shared across tests
-    position: Position,         // global position, shared across tests
+    position: Position<DefaultState>, // global position, shared across tests
 }
 
 impl PerftHarness {

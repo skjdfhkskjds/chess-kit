@@ -3,9 +3,9 @@ use crate::primitives::{Bitboard, History, Pieces, Side, Sides, Square, State, Z
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
-pub struct Position {
-    pub state: State,     // current state of the position
-    pub history: History, // history of the position state
+pub struct Position<S: State> {
+    pub state: S,            // current state of the position
+    pub history: History<S>, // history of the position state
 
     pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
@@ -14,14 +14,14 @@ pub struct Position {
     pub zobrist: ZobristTable, // zobrist random values for the position
 }
 
-impl Position {
+impl<S: State> Position<S> {
     // new creates a new position with all bitboards and pieces initialized to 0
     // and the zobrist random values set to 0
     //
     // @return: new position
     pub fn new() -> Self {
         Self {
-            state: State::new(),
+            state: S::default(),
             history: History::new(),
             sides: [Bitboard::empty(); Sides::TOTAL],
             bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
@@ -41,12 +41,12 @@ impl Position {
 
         self.init_sides();
         self.init_pieces();
-        self.state.zobrist_key = self.zobrist.new_key(
-            self.state.turn,
-            self.state.castling,
-            self.state.en_passant,
+        self.state.set_key(self.zobrist.new_key(
+            self.state.turn(),
+            self.state.castling(),
+            self.state.en_passant(),
             self.bitboards,
-        );
+        ));
         self.history.init(self.state);
     }
 
@@ -54,8 +54,8 @@ impl Position {
     // each side
     //
     // @return: void
-    // @requires: `bitboards` is initialized
     // @side-effects: modifies the `sides` bitboards
+    // @requires: `bitboards` is initialized
     fn init_sides(&mut self) {
         let white = self.bitboards[Sides::White.idx()];
         let black = self.bitboards[Sides::Black.idx()];
@@ -114,8 +114,8 @@ impl Position {
     //
     // @return: bitboard of all pieces in the position
     #[inline(always)]
-    pub fn occupancy<S: Side>(&self) -> Bitboard {
-        self.sides[S::INDEX] | self.sides[S::Other::INDEX]
+    pub fn occupancy<SideT: Side>(&self) -> Bitboard {
+        self.sides[SideT::INDEX] | self.sides[SideT::Other::INDEX]
     }
 
     // empty_squares gets the bitboard of all empty squares in the position
@@ -124,8 +124,8 @@ impl Position {
     //
     // @return: bitboard of all empty squares in the position
     #[inline(always)]
-    pub fn empty_squares<S: Side>(&self) -> Bitboard {
-        !self.occupancy::<S>()
+    pub fn empty_squares<SideT: Side>(&self) -> Bitboard {
+        !self.occupancy::<SideT>()
     }
 
     // turn gets the side to move
@@ -133,11 +133,11 @@ impl Position {
     // @return: side to move
     #[inline(always)]
     pub fn turn(&self) -> Sides {
-        self.state.turn
+        self.state.turn()
     }
 }
 
-impl TryFrom<&str> for Position {
+impl<S: State> TryFrom<&str> for Position<S> {
     type Error = FENError;
 
     // try_from creates a new position from the given FEN string
@@ -153,11 +153,11 @@ impl TryFrom<&str> for Position {
         let mut position = Self::new();
         let parsed = fen_parser.unwrap();
         position.bitboards = parsed.pieces.bitboards;
-        position.state.turn = parsed.turn.turn;
-        position.state.castling = parsed.castling.castling;
-        position.state.en_passant = parsed.en_passant.square;
-        position.state.halfmoves = parsed.halfmove_count.halfmove_count;
-        position.state.fullmoves = parsed.fullmove_count.fullmove_count;
+        position.state.set_turn(parsed.turn.turn);
+        position.state.set_castling(parsed.castling.castling);
+        position.state.set_en_passant(parsed.en_passant.square);
+        position.state.set_halfmoves(parsed.halfmove_parser.clock);
+        position.state.set_fullmoves(parsed.fullmove_parser.clock);
 
         // TODO: move the board initialization elsewhere
         position.init(None);

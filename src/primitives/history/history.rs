@@ -2,34 +2,41 @@ use crate::primitives::State;
 
 const MAX_FULLMOVES: usize = u8::MAX as usize;
 
-pub struct History {
-    current: usize,                 // index of the current state
-    states: [State; MAX_FULLMOVES], // stack of previous states
+pub struct History<S: State> {
+    current: usize,             // index of the current state
+    states: [S; MAX_FULLMOVES], // stack of previous states
 }
 
-impl History {
+impl<S: State> History<S> {
+    // new creates a new history with all states initialized to the default
+    // state
+    //
+    // @return: new history
     pub fn new() -> Self {
         Self {
             current: 0,
-            states: [State::default(); MAX_FULLMOVES],
+            states: [S::default(); MAX_FULLMOVES],
         }
     }
 
     // init initializes the history with the given state
     //
     // @param: state - state to initialize the history with
+    // @return: void
     // @side-effects: modifies the history
-    pub fn init(&mut self, state: State) {
+    pub fn init(&mut self, state: S) {
         self.clear();
         self.push(state);
     }
 
     // push adds a new state entry to the history
-    // 
+    //
     // @param: state - state to add to the history
+    // @return: void
     // @side-effects: modifies the history, increments the current index
     // @requires: the current index is less than the fullmove limit
-    pub fn push(&mut self, state: State) {
+    #[inline(always)]
+    pub fn push(&mut self, state: S) {
         assert!(self.current < MAX_FULLMOVES, "history is full");
         self.states[self.current] = state;
         self.current += 1;
@@ -39,7 +46,9 @@ impl History {
     //
     // @return: the last state entry, if any
     // @side-effects: modifies the history, decrements the current index
-    pub fn pop(&mut self) -> Option<State> {
+    // @requires: the current index is greater than 0
+    #[inline(always)]
+    pub fn pop(&mut self) -> Option<S> {
         if self.current == 0 {
             return None;
         }
@@ -50,6 +59,7 @@ impl History {
     // size returns the number of state entries in the history
     //
     // @return: the number of state entries in the history
+    #[inline(always)]
     pub fn size(&self) -> usize {
         self.current
     }
@@ -57,6 +67,7 @@ impl History {
     // is_empty returns true if the history is empty
     //
     // @return: true if the history is empty
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.current == 0
     }
@@ -64,31 +75,30 @@ impl History {
     // is_full returns true if the history is full
     //
     // @return: true if the history is full
+    #[inline(always)]
     pub fn is_full(&self) -> bool {
         self.current == MAX_FULLMOVES
     }
 
     // clear resets the history to an empty state
-    // 
-    // Note: this technically doesn't reset the states array, but for all
-    // intents and purposes, clears the history since the states array is
-    // indexed and accessed only by the current index
     //
+    // @return: void
     // @side-effects: sets the current index to 0
+    #[inline(always)]
     pub fn clear(&mut self) {
         self.current = 0;
     }
 }
 
 // HistoryIter is a double-ended iterator over the history
-pub struct HistoryIter<'a> {
-    history: &'a History,
+pub struct HistoryIter<'a, S: State> {
+    history: &'a History<S>,
     front: usize,
     back: usize,
 }
 
-impl<'a> Iterator for HistoryIter<'a> {
-    type Item = &'a State;
+impl<'a, S: State> Iterator for HistoryIter<'a, S> {
+    type Item = &'a S;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.front >= self.back {
@@ -101,7 +111,7 @@ impl<'a> Iterator for HistoryIter<'a> {
     }
 }
 
-impl<'a> DoubleEndedIterator for HistoryIter<'a> {
+impl<'a, S: State> DoubleEndedIterator for HistoryIter<'a, S> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.front > self.back {
             return None;
@@ -113,8 +123,8 @@ impl<'a> DoubleEndedIterator for HistoryIter<'a> {
     }
 }
 
-impl History {
-    pub fn iter(&self) -> HistoryIter<'_> {
+impl<S: State> History<S> {
+    pub fn iter(&self) -> HistoryIter<'_, S> {
         HistoryIter {
             history: self,
             front: 0,

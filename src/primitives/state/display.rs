@@ -1,7 +1,7 @@
-use crate::primitives::State;
+use crate::primitives::DefaultState;
 use std::fmt;
 
-impl fmt::Display for State {
+impl fmt::Display for DefaultState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{} to move", self.turn)?;
         writeln!(f, "Castling rights: {}", self.castling)?;

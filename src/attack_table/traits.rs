@@ -1,5 +1,5 @@
 use crate::position::Position;
-use crate::primitives::{Bitboard, Side, Square};
+use crate::primitives::{Bitboard, Side, Square, State};
 
 // AttackTable is a table that provides information about targeting/targetted
 // squares for the board.
@@ -13,17 +13,19 @@ pub trait AttackTable: PieceTargetsTable {
     // by the opponent.
     //
     // @param: position - immutable reference to the position
-    // @param: side - side to check if is attacked
     // @param: square - square to check if is attacked
     // @return: true if the square is attacked, false otherwise
-    fn is_attacked<S: Side>(&self, position: &Position, square: Square) -> bool;
+    fn is_attacked<SideT: Side, StateT: State>(
+        &self,
+        position: &Position<StateT>,
+        square: Square,
+    ) -> bool;
 
     // is_checked returns true if the given side is checked
     //
     // @param: position - immutable reference to the position
-    // @param: side - side to check if is checked
     // @return: true if the side is checked, false otherwise
-    fn is_checked<S: Side>(&self, position: &Position) -> bool;
+    fn is_checked<SideT: Side, StateT: State>(&self, position: &Position<StateT>) -> bool;
 }
 
 // PieceTargetsTable is a table that provides information about the squares that
@@ -50,7 +52,7 @@ pub trait PieceTargetsTable {
     //
     // @param: sq - square that the pawn is on
     // @return: a bitboard of the pawn's targets from the given square
-    fn pawn_targets<S: Side>(&self, square: Square) -> Bitboard;
+    fn pawn_targets<SideT: Side>(&self, square: Square) -> Bitboard;
 
     // rook_targets returns the squares that the rook targets from the given
     // square

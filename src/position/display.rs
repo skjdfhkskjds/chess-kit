@@ -1,8 +1,8 @@
 use crate::position::Position;
-use crate::primitives::{File, Pieces, Rank, Sides};
+use crate::primitives::{File, Pieces, Rank, Sides, State};
 use std::fmt;
 
-impl fmt::Display for Position {
+impl<S: State> fmt::Display for Position<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut board = [['.'; File::TOTAL]; Rank::TOTAL];
 
