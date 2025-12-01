@@ -78,8 +78,6 @@ impl ZobristTable {
             Sides::Black => key ^= self.side::<Black>(),
         }
         key ^= self.en_passant(en_passant);
-
-        println!("key: {:#x}", key);
         key
     }
 
