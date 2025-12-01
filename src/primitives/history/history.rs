@@ -1,4 +1,4 @@
-use crate::board::state::State;
+use crate::primitives::State;
 
 const MAX_FULLMOVES: usize = u8::MAX as usize;
 

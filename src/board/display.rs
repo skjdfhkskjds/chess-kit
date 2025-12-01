@@ -1,5 +1,5 @@
 use crate::board::Board;
-use crate::primitives::{File, Piece, Rank, Side};
+use crate::primitives::{File, Pieces, Rank, Sides};
 use std::fmt;
 
 impl fmt::Display for Board {
@@ -8,16 +8,16 @@ impl fmt::Display for Board {
 
         // construct the ascii representation of the board
         for (side_idx, bitboards) in self.bitboards.iter().enumerate() {
-            let side = Side::from_idx(side_idx);
+            let side = Sides::from_idx(side_idx);
             for (piece_idx, bitboard) in bitboards.iter().enumerate() {
-                let base_char = Piece::from_idx(piece_idx)
+                let base_char = Pieces::from_idx(piece_idx)
                     .to_string()
                     .chars()
                     .next()
                     .unwrap();
                 let piece_char = match side {
-                    Side::White => base_char,
-                    Side::Black => base_char.to_ascii_lowercase(),
+                    Sides::White => base_char,
+                    Sides::Black => base_char.to_ascii_lowercase(),
                 };
 
                 for square in bitboard.iter() {

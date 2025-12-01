@@ -1,13 +1,23 @@
 pub mod bitboard;
 pub mod castling;
+pub mod files;
 pub mod moves;
 pub mod pieces;
+pub mod ranks;
 pub mod sides;
 pub mod squares;
+pub mod zobrist;
+pub mod state;
+pub mod history;
 
 pub use bitboard::{BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, BitboardVec};
-pub use castling::Castling;
+pub use castling::{CastleRights, Castling, SideCastling};
+pub use files::File;
 pub use moves::{Move, MoveList, MoveType, ShortMove};
-pub use pieces::Piece;
-pub use sides::Side;
-pub use squares::{File, Rank, Square};
+pub use pieces::Pieces;
+pub use ranks::{Rank, SideRanks};
+pub use sides::{Black, Side, Sides, White};
+pub use squares::Square;
+pub use zobrist::{ZobristTable, ZobristKey};
+pub use state::State;
+pub use history::History;

@@ -1,4 +1,4 @@
-use crate::board::state::State;
+use crate::primitives::State;
 use std::fmt;
 
 impl fmt::Display for State {

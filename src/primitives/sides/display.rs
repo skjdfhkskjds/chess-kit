@@ -1,11 +1,11 @@
-use crate::primitives::Side;
+use crate::primitives::Sides;
 use std::fmt;
 
-impl fmt::Display for Side {
+impl fmt::Display for Sides {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Side::White => write!(f, "White"),
-            Side::Black => write!(f, "Black"),
+            Sides::White => write!(f, "White"),
+            Sides::Black => write!(f, "Black"),
         }
     }
 }

@@ -1,5 +1,5 @@
-mod perft;
-use perft::{PerftHarness, PerftHarnessMode, PerftTest};
+mod perft_utils;
+use perft_utils::{PerftHarness, PerftHarnessMode, PerftTest};
 
 // run_perft_tests runs the perft tests
 #[test]
