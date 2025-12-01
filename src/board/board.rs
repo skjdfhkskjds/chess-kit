@@ -1,5 +1,5 @@
 use crate::board::fen::{FENError, FENParser, Parser};
-use crate::primitives::{Bitboard, History, Piece, Sides, Square, State, ZobristTable};
+use crate::primitives::{Bitboard, History, Piece, Side, Sides, Square, State, ZobristTable};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
@@ -110,23 +110,26 @@ impl Board {
     }
 
     // occupancy gets the bitboard of all pieces on the board
+    // 
+    // Note: this value is not actually dependent on the side parameter, but
+    //       it is included to provide compile-time resolution of the indices
     //
     // @param: self - immutable reference to the board
     // @return: bitboard of all pieces on the board
     #[inline(always)]
-    pub fn occupancy(&self) -> Bitboard {
-        self.sides[Sides::White.idx()] | self.sides[Sides::Black.idx()]
+    pub fn occupancy<S: Side>(&self) -> Bitboard {
+        self.sides[S::INDEX] | self.sides[S::Other::INDEX]
     }
 
     // empty_squares gets the bitboard of all empty squares on the board
     //
-    // @note: logically equivalent to `!(self.occupancy())`
+    // Note: logically equivalent to `!(self.occupancy())`
     //
     // @param: self - immutable reference to the board
     // @return: bitboard of all empty squares on the board
     #[inline(always)]
-    pub fn empty_squares(&self) -> Bitboard {
-        !self.occupancy()
+    pub fn empty_squares<S: Side>(&self) -> Bitboard {
+        !self.occupancy::<S>()
     }
 
     // turn gets the side to move

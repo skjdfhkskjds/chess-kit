@@ -73,8 +73,8 @@ impl MoveGenerator {
             return self.generate_pawn_moves::<S>(board, list, move_type);
         }
 
-        let occupancy = board.occupancy();
-        let empty_squares = board.empty_squares();
+        let occupancy = board.occupancy::<S>();
+        let empty_squares = board.empty_squares::<S>();
         let our_occupancy = board.sides[S::INDEX];
         let opponent_occupancy = board.sides[S::Other::INDEX];
 
@@ -118,7 +118,7 @@ impl MoveGenerator {
         list: &mut MoveList,
         move_type: MoveType,
     ) {
-        let empty_squares = board.empty_squares();
+        let empty_squares = board.empty_squares::<S>();
         let double_step_rank = BITBOARD_RANKS[S::DOUBLE_STEP_RANK.idx()];
 
         // generate moves for each of the pawns
@@ -179,7 +179,7 @@ impl MoveGenerator {
         }
 
         // generate castle moves depending on the side to move
-        let occupancy = board.occupancy();
+        let occupancy = board.occupancy::<S>();
         let mut moves = Bitboard::empty();
 
         if kingside {
@@ -320,7 +320,7 @@ impl MoveGenerator {
         // opponent's
 
         // generate the attack boards for each piece
-        let occupancy = board.occupancy();
+        let occupancy = board.occupancy::<S>();
         let king_attacks = self.get_king_targets(square);
         let rook_attacks = self.get_rook_attacks(square, &occupancy);
         let bishop_attacks = self.get_bishop_attacks(square, &occupancy);
