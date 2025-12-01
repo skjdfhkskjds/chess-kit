@@ -1,5 +1,5 @@
-use crate::board::fen::FENError;
-use crate::board::fen::{
+use crate::position::fen::FENError;
+use crate::position::fen::{
     CastlingParser, EnPassantParser, FullmoveCountParser, HalfmoveCountParser, PiecesParser,
     TurnParser,
 };

@@ -1,4 +1,4 @@
-use crate::board::fen::{FENError, Parser};
+use crate::position::fen::{FENError, Parser};
 use crate::primitives::{BITBOARD_SQUARES, Bitboard, File, Pieces, Rank, Sides};
 
 const VALID_PIECES: &str = "kqrbnpKQRBNP";

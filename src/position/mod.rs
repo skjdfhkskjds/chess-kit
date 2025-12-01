@@ -1,4 +1,4 @@
-pub mod board;
+pub mod position;
 pub mod castling;
 pub mod display;
 pub mod fen;
@@ -7,7 +7,7 @@ pub mod pieces;
 pub mod rules;
 pub mod sides;
 
-pub use board::Board;
+pub use position::Position;
 pub use fen::{FENError, FENParser, Parser};
 
 use crate::primitives::{Black, SideCastling, Square, White};

@@ -1,24 +1,24 @@
-use crate::board::fen::{FENError, FENParser, Parser};
+use crate::position::fen::{FENError, FENParser, Parser};
 use crate::primitives::{Bitboard, History, Pieces, Side, Sides, Square, State, ZobristTable};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
-pub struct Board {
-    pub state: State,     // current state of the board
-    pub history: History, // history of the board state
+pub struct Position {
+    pub state: State,     // current state of the position
+    pub history: History, // history of the position state
 
     pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
-    pub pieces: [Pieces; Square::TOTAL],  // piece type on each square
+    pub pieces: [Pieces; Square::TOTAL], // piece type on each square
 
-    pub zobrist: ZobristTable, // zobrist random values for the board
+    pub zobrist: ZobristTable, // zobrist random values for the position
 }
 
-impl Board {
-    // new creates a new board with all bitboards and pieces initialized to 0
+impl Position {
+    // new creates a new position with all bitboards and pieces initialized to 0
     // and the zobrist random values set to 0
     //
-    // @return: new board
+    // @return: new position
     pub fn new() -> Self {
         Self {
             state: State::new(),
@@ -30,7 +30,7 @@ impl Board {
         }
     }
 
-    // init initializes the board with the given rng
+    // init initializes the position with the given rng
     //
     // @param: rng - an optional, mutable reference to the rng, useful for seeding
     pub fn init(&mut self, rng: Option<&mut StdRng>) {
@@ -53,7 +53,6 @@ impl Board {
     // init_sides initializes the `sides` bitboards by ORing the bitboards of
     // each side
     //
-    // @param: self - mutable reference to the board
     // @return: void
     // @requires: `bitboards` is initialized
     // @side-effects: modifies the `sides` bitboards
@@ -70,7 +69,6 @@ impl Board {
     // init_pieces initializes the `pieces` array by iterating through the
     // bitboards of each side and setting the piece type on each square
     //
-    // @param: self - mutable reference to the board
     // @return: void
     // @requires: `bitboards` is initialized
     // @side-effects: modifies the `pieces` array
@@ -98,9 +96,9 @@ impl Board {
         }
     }
 
-    // reset resets the board to a new initial state
+    // reset resets the position to a new initial state
     //
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     pub fn reset(&mut self) {
         self.state.reset();
         self.history.clear();
@@ -109,24 +107,22 @@ impl Board {
         self.pieces = [Pieces::None; Square::TOTAL];
     }
 
-    // occupancy gets the bitboard of all pieces on the board
-    // 
+    // occupancy gets the bitboard of all pieces in the position
+    //
     // Note: this value is not actually dependent on the side parameter, but
     //       it is included to provide compile-time resolution of the indices
     //
-    // @param: self - immutable reference to the board
-    // @return: bitboard of all pieces on the board
+    // @return: bitboard of all pieces in the position
     #[inline(always)]
     pub fn occupancy<S: Side>(&self) -> Bitboard {
         self.sides[S::INDEX] | self.sides[S::Other::INDEX]
     }
 
-    // empty_squares gets the bitboard of all empty squares on the board
+    // empty_squares gets the bitboard of all empty squares in the position
     //
     // Note: logically equivalent to `!(self.occupancy())`
     //
-    // @param: self - immutable reference to the board
-    // @return: bitboard of all empty squares on the board
+    // @return: bitboard of all empty squares in the position
     #[inline(always)]
     pub fn empty_squares<S: Side>(&self) -> Bitboard {
         !self.occupancy::<S>()
@@ -134,7 +130,6 @@ impl Board {
 
     // turn gets the side to move
     //
-    // @param: self - immutable reference to the board
     // @return: side to move
     #[inline(always)]
     pub fn turn(&self) -> Sides {
@@ -142,30 +137,30 @@ impl Board {
     }
 }
 
-impl TryFrom<&str> for Board {
+impl TryFrom<&str> for Position {
     type Error = FENError;
 
-    // try_from creates a new board from the given FEN string
+    // try_from creates a new position from the given FEN string
     //
-    // @param: fen - FEN string to create the board from
-    // @return: new board, or an error if the FEN string is invalid
+    // @param: fen - FEN string to create the position from
+    // @return: new position, or an error if the FEN string is invalid
     fn try_from(fen: &str) -> Result<Self, Self::Error> {
         let fen_parser = FENParser::parse(fen);
         if fen_parser.is_err() {
             return Err(fen_parser.err().unwrap());
         }
 
-        let mut board = Self::new();
+        let mut position = Self::new();
         let parsed = fen_parser.unwrap();
-        board.bitboards = parsed.pieces.bitboards;
-        board.state.turn = parsed.turn.turn;
-        board.state.castling = parsed.castling.castling;
-        board.state.en_passant = parsed.en_passant.square;
-        board.state.halfmoves = parsed.halfmove_count.halfmove_count;
-        board.state.fullmoves = parsed.fullmove_count.fullmove_count;
+        position.bitboards = parsed.pieces.bitboards;
+        position.state.turn = parsed.turn.turn;
+        position.state.castling = parsed.castling.castling;
+        position.state.en_passant = parsed.en_passant.square;
+        position.state.halfmoves = parsed.halfmove_count.halfmove_count;
+        position.state.fullmoves = parsed.fullmove_count.fullmove_count;
 
         // TODO: move the board initialization elsewhere
-        board.init(None);
-        Ok(board)
+        position.init(None);
+        Ok(position)
     }
 }

@@ -1,7 +1,7 @@
-use crate::board::board::Board;
+use crate::position::position::Position;
 use crate::primitives::{Pieces, Sides, Square, White, Black};
 
-impl Board {
+impl Position {
     // is_draw checks if the position is a draw
     //
     // @return: true if the position is a draw, false otherwise

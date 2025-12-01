@@ -1,7 +1,7 @@
-use crate::board::Board;
+use crate::position::Position;
 use crate::primitives::{Bitboard, Pieces, Side, Square};
 
-impl Board {
+impl Position {
     // king_square gets the square of the king for the given side
     //
     // @return: square of the king for the given side
@@ -26,7 +26,7 @@ impl Board {
     // @param: piece - piece to remove
     // @param: square - square to remove the piece from
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn remove_piece_no_incrementals<S: Side>(&mut self, piece: Pieces, square: Square) {
         self.bitboards[S::INDEX][piece.idx()].remove_at(square);
@@ -39,7 +39,7 @@ impl Board {
     // @param: piece - piece to remove
     // @param: square - square to remove the piece from
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn remove_piece<S: Side>(&mut self, piece: Pieces, square: Square) {
         self.remove_piece_no_incrementals::<S>(piece, square);
@@ -54,7 +54,7 @@ impl Board {
     // @param: piece - piece to set on the board
     // @param: square - square to set the piece on
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_piece_no_incrementals<S: Side>(&mut self, piece: Pieces, square: Square) {
         self.bitboards[S::INDEX][piece.idx()].set_at(square);
@@ -67,7 +67,7 @@ impl Board {
     // @param: piece - piece to put on the board
     // @param: square - square to put the piece on
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_piece<S: Side>(&mut self, piece: Pieces, square: Square) {
         self.set_piece_no_incrementals::<S>(piece, square);
@@ -80,7 +80,7 @@ impl Board {
     //
     // @param: square - square to set the en passant square for
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_en_passant(&mut self, square: Square) {
         self.state.zobrist_key ^= self.zobrist.en_passant(self.state.en_passant);
@@ -91,7 +91,7 @@ impl Board {
     // clear_en_passant clears the en passant square for the given side
     //
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn clear_en_passant(&mut self) {
         self.state.zobrist_key ^= self.zobrist.en_passant(self.state.en_passant);

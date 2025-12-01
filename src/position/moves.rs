@@ -1,12 +1,12 @@
-use crate::board::{Board, SideCastlingSquares};
+use crate::position::{Position, SideCastlingSquares};
 use crate::primitives::{Black, Move, Pieces, Side, Sides, Square, White};
 
-impl Board {
-    // make_move makes the given move on the board
+impl Position {
+    // make_move makes the given move from the current position
     //
     // @param: mv - move to make
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     // @side-effects: modifies incremental game state
     pub fn make_move(&mut self, mv: Move) {
         match self.turn() {
@@ -18,10 +18,10 @@ impl Board {
     // unmake_move unmakes the last move on the board
     //
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     // @side-effects: reverts the `state` back
     pub fn unmake_move(&mut self) {
-        // revert the last move on the board
+        // revert the last move on the position
         if let Some(state) = self.history.pop() {
             self.state = state;
         } else {
@@ -42,7 +42,7 @@ impl Board {
     // @param: from - square to move the piece from
     // @param: to - square to move the piece to
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     #[inline(always)]
     fn move_piece_no_incrementals<S: Side>(&mut self, piece: Pieces, from: Square, to: Square) {
         self.remove_piece_no_incrementals::<S>(piece, from);
@@ -55,7 +55,7 @@ impl Board {
     // @param: from - square to move the piece from
     // @param: to - square to move the piece to
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     // @side-effects: revokes castling permissions if needed
     fn move_piece<S: SideCastlingSquares>(&mut self, piece: Pieces, from: Square, to: Square) {
         self.remove_piece::<S>(piece, from);
@@ -79,7 +79,7 @@ impl Board {
     // @param: piece - piece to capture
     // @param: square - square that the captured piece is on
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     // @side-effects: resets the halfmove clock
     // @side-effects: updates castling permissions (if applicable)
     fn capture_piece<S: SideCastlingSquares>(&mut self, piece: Pieces, square: Square) {
@@ -101,11 +101,12 @@ impl Board {
         }
     }
 
-    // make_move_for_side makes the given move on the board for the given side
+    // make_move_for_side makes the given move from the current position for
+    // the given side
     //
     // @param: mv - move to make
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     // @side-effects: modifies incremental game state
     fn make_move_for_side<S>(&mut self, mv: Move)
     where
@@ -189,15 +190,14 @@ impl Board {
         self.swap_sides::<S>();
     }
 
-    // unmake_move_for_side unmakes the last move on the board for the given
-    // side
+    // unmake_move_for_side unmakes the last move from the current position for
+    // the given side
     //
     // Note: since unmake pops from the history, we don't need to recompute
     //       any incremental game state since those are retrieved directly
     //
-    // @param: self - mutable reference to the board
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     fn unmake_move_for_side<S>(&mut self, mv: Move)
     where
         S: SideCastlingSquares,

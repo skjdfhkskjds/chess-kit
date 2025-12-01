@@ -1,12 +1,12 @@
-use crate::board::board::Board;
+use crate::position::position::Position;
 use crate::primitives::Castling;
 
-impl Board {
+impl Position {
     // set_castling sets the castling rights for the given side
     //
     // @param: castling - castling rights to set
     // @return: void
-    // @side-effects: modifies the `board`
+    // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_castling(&mut self, castling: Castling) {
         self.state.zobrist_key ^= self.zobrist.castling(self.state.castling);

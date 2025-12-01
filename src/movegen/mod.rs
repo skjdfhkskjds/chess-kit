@@ -6,7 +6,7 @@ pub mod sliding_pieces;
 
 pub use movegen::MoveGenerator;
 
-use crate::board::SideCastlingSquares;
+use crate::position::SideCastlingSquares;
 use crate::primitives::{Black, SideRanks, Square, White};
 
 // `SideToMove` is a trait that defines the contract required for a side to be

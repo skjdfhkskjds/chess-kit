@@ -1,4 +1,4 @@
-pub mod board;
+pub mod position;
 pub mod movegen;
 pub mod perft;
 pub mod primitives;

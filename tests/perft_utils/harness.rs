@@ -1,7 +1,7 @@
 use crate::perft_utils::PerftTest;
-use chess_kit::board::Board;
 use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
+use chess_kit::position::Position;
 use chess_kit::transposition::TranspositionTable;
 use std::time::Instant;
 
@@ -16,7 +16,7 @@ pub struct PerftHarness {
     test_cases: Vec<PerftTest>,        // the test cases to run
     move_generator: MoveGenerator,     // global move generator, shared across tests
     tt: TranspositionTable<PerftData>, // global transposition table, shared across tests
-    board: Board,                      // global board, shared across tests
+    position: Position,                // global position, shared across tests
 }
 
 impl PerftHarness {
@@ -37,7 +37,7 @@ impl PerftHarness {
             test_cases,
             move_generator: MoveGenerator::new(),
             tt,
-            board: Board::new(),
+            position: Position::new(),
         }
     }
 
@@ -46,28 +46,28 @@ impl PerftHarness {
     // @param: test - the test case to run
     fn run_test(&mut self, test: &PerftTest) {
         // setup the board from the FEN string
-        let board = Board::try_from(test.fen);
-        if board.is_err() {
+        let position = Position::try_from(test.fen);
+        if position.is_err() {
             println!(
                 "Error: {} in parsing the FEN-string, skipping...",
-                board.err().unwrap()
+                position.err().unwrap()
             );
             return;
         }
-        self.board = board.unwrap();
+        self.position = position.unwrap();
 
         // run the test case per depth
         for expected in test.iter() {
             let now = Instant::now();
             let nodes = match self.mode {
                 PerftHarnessMode::Default => perft(
-                    &mut self.board,
+                    &mut self.position,
                     &self.move_generator,
                     &mut self.tt,
                     expected.depth(),
                 ),
                 PerftHarnessMode::Divide => perft_divide_print(
-                    &mut self.board,
+                    &mut self.position,
                     &self.move_generator,
                     &mut self.tt,
                     expected.depth(),

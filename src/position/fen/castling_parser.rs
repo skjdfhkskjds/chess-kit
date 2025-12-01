@@ -1,4 +1,4 @@
-use crate::board::fen::{FENError, Parser};
+use crate::position::fen::{FENError, Parser};
 use crate::primitives::{Castling, White, Black};
 
 pub struct CastlingParser {

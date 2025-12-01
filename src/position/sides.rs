@@ -1,8 +1,8 @@
-use crate::board::board::Board;
+use crate::position::position::Position;
 use crate::primitives::Side;
 
-impl Board {
-    // swap_sides swaps the sides of the board
+impl Position {
+    // swap_sides swaps the sides of the position
     //
     // @return: void
     // @side-effects: modifies the game state

@@ -1,4 +1,4 @@
-use crate::board::fen::{FENError, Parser};
+use crate::position::fen::{FENError, Parser};
 
 pub struct HalfmoveCountParser {
     pub halfmove_count: u16,
