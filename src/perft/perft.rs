@@ -24,11 +24,11 @@ pub fn perft(
     }
 
     // check if we have a cached result in the transposition table
-    // if let Some(data) = tt.probe(board.state.zobrist_key)
-    //     && data.depth() == depth
-    // {
-    //     return data.node_count();
-    // }
+    if let Some(data) = tt.probe(board.state.zobrist_key)
+        && data.depth() == depth
+    {
+        return data.node_count();
+    }
 
     // get all the possible moves from the current position
     let mut moves = MoveList::new();
@@ -57,7 +57,7 @@ pub fn perft(
     }
 
     // cache the result in the transposition table
-    // tt.insert(board.state.zobrist_key, PerftData::new(depth, nodes));
+    tt.insert(board.state.zobrist_key, PerftData::new(depth, nodes));
 
     nodes
 }

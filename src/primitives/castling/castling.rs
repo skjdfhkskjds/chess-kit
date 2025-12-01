@@ -1,6 +1,10 @@
 use crate::primitives::{Castling, CastleRights, SideCastling};
 
 impl Castling {
+    // bits returns the bits of the castling rights
+    //
+    // @return: bits of the castling rights
+    #[inline(always)]
     pub fn bits(&self) -> u8 {
         self.0
     }
@@ -8,6 +12,7 @@ impl Castling {
     // none returns a castling rights value with no castling rights
     //
     // @return: castling rights value with no castling rights
+    #[inline(always)]
     pub const fn none() -> Self {
         Self(CastleRights::None as u8)
     }
@@ -15,6 +20,7 @@ impl Castling {
     // all returns a castling rights value with all castling rights
     //
     // @return: castling rights value with all castling rights
+    #[inline(always)]
     pub const fn all() -> Self {
         Self(CastleRights::All as u8)
     }

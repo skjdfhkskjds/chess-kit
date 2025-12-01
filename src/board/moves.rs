@@ -43,6 +43,7 @@ impl Board {
     // @param: to - square to move the piece to
     // @return: void
     // @side-effects: modifies the `board`
+    #[inline(always)]
     fn move_piece_no_incrementals<S: Side>(&mut self, piece: Pieces, from: Square, to: Square) {
         self.remove_piece_no_incrementals::<S>(piece, from);
         self.set_piece_no_incrementals::<S>(piece, to);
@@ -245,5 +246,4 @@ impl Board {
             self.set_piece_no_incrementals::<S::Other>(Pieces::Pawn, to ^ 8);
         }
     }
-
 }

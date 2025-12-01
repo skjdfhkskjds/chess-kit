@@ -72,12 +72,14 @@ impl ZobristTable {
                 }
             }
         }
+        key ^= self.castling(castling);
         match side {
             Sides::White => key ^= self.side::<White>(),
             Sides::Black => key ^= self.side::<Black>(),
         }
-        key ^= self.castling(castling);
         key ^= self.en_passant(en_passant);
+
+        println!("key: {:#x}", key);
         key
     }
 

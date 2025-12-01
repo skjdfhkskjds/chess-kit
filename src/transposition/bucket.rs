@@ -43,7 +43,7 @@ where
     // @return: true if an entry was set for the first time, false otherwise
     pub(crate) fn set(&mut self, key: u32, data: T) -> bool {
         // find the index of the entry with the lowest depth
-        let mut min_depth = 0;
+        let mut min_depth = i8::MAX;
         let mut min_depth_idx = 0;
         for i in 0..ENTRIES_PER_BUCKET {
             let depth = self.entries[i].data().depth();
