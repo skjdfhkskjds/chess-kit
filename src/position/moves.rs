@@ -57,24 +57,10 @@ impl<S: State> Position<S> {
     // @param: to - square to move the piece to
     // @return: void
     // @side-effects: modifies the `position`
-    // @side-effects: revokes castling permissions if needed
+    #[inline(always)]
     fn move_piece<SideT: SideCastlingSquares>(&mut self, piece: Pieces, from: Square, to: Square) {
         self.remove_piece::<SideT>(piece, from);
         self.set_piece::<SideT>(piece, to);
-
-        // revoke castling permissions if king/rook leaves from starting
-        // square
-        if (piece == Pieces::King || piece == Pieces::Rook)
-            && self.state.castling().can_castle::<SideT>()
-        {
-            if from == SideT::KING {
-                self.set_castling(self.state.castling().revoke::<SideT>());
-            } else if from == SideT::KINGSIDE_ROOK {
-                self.set_castling(self.state.castling().revoke_kingside::<SideT>());
-            } else if from == SideT::QUEENSIDE_ROOK {
-                self.set_castling(self.state.castling().revoke_queenside::<SideT>());
-            }
-        }
     }
 
     // capture_piece captures the side's piece at the given square
@@ -85,6 +71,7 @@ impl<S: State> Position<S> {
     // @side-effects: modifies the `position`
     // @side-effects: resets the halfmove clock
     // @side-effects: updates castling permissions (if applicable)
+    #[inline(always)]
     fn capture_piece<SideT: SideCastlingSquares>(&mut self, piece: Pieces, square: Square) {
         // remove the piece from the board
         self.remove_piece::<SideT>(piece, square);
@@ -111,6 +98,7 @@ impl<S: State> Position<S> {
     // @return: void
     // @side-effects: modifies the `position`
     // @side-effects: modifies incremental game state
+    #[inline(always)]
     fn make_move_for_side<SideT>(&mut self, mv: Move)
     where
         SideT: SideCastlingSquares,
@@ -145,23 +133,42 @@ impl<S: State> Position<S> {
             // if the moving piece is not a pawn, just perform a regular move
             self.move_piece::<SideT>(piece, from, to);
 
-            // if the move is a castle, move the appropriate rook as well
-            //
-            // TODO: consider asserting that the destination square matches either
-            //       possible destination square
-            if mv.is_castle() {
-                if to == SideT::KINGSIDE_DESTINATION {
-                    self.move_piece::<SideT>(
-                        Pieces::Rook,
-                        SideT::KINGSIDE_ROOK,
-                        SideT::KINGSIDE_ROOK_DESTINATION,
-                    );
-                } else if to == SideT::QUEENSIDE_DESTINATION {
-                    self.move_piece::<SideT>(
-                        Pieces::Rook,
-                        SideT::QUEENSIDE_ROOK,
-                        SideT::QUEENSIDE_ROOK_DESTINATION,
-                    );
+            // if the moving piece is a king or a rook, we need to do some extra
+            // work to handle castling and revoke castling permissions if needed
+            if matches!(piece, Pieces::King) {
+                // if the move is a castle, move the appropriate rook as well
+                if mv.is_castle() {
+                    if to == SideT::KINGSIDE_DESTINATION {
+                        // kingside castle
+                        self.move_piece::<SideT>(
+                            Pieces::Rook,
+                            SideT::KINGSIDE_ROOK,
+                            SideT::KINGSIDE_ROOK_DESTINATION,
+                        );
+                    } else {
+                        // queenside castle
+                        self.move_piece::<SideT>(
+                            Pieces::Rook,
+                            SideT::QUEENSIDE_ROOK,
+                            SideT::QUEENSIDE_ROOK_DESTINATION,
+                        );
+                    }
+
+                    // always revoke castling permissions after castling
+                    self.set_castling(self.state.castling().revoke::<SideT>());
+                } else if self.state.castling().can_castle::<SideT>() {
+                    // if the side can still castle, revoke it since the king
+                    // left the starting square
+                    self.set_castling(self.state.castling().revoke::<SideT>());
+                }
+            } else if matches!(piece, Pieces::Rook) && self.state.castling().can_castle::<SideT>() {
+                // if the moving piece is a rook and that side can still castle,
+                // revoke the appropriate castling permissions if the rook is
+                // leaving the starting square
+                if from == SideT::KINGSIDE_ROOK {
+                    self.set_castling(self.state.castling().revoke_kingside::<SideT>());
+                } else if from == SideT::QUEENSIDE_ROOK {
+                    self.set_castling(self.state.castling().revoke_queenside::<SideT>());
                 }
             }
         } else {
@@ -183,7 +190,7 @@ impl<S: State> Position<S> {
 
         // if the move is a double step, set the en passant square, otherwise
         // clear it
-        if mv.is_double_step() {
+        if matches!(piece, Pieces::Pawn) && mv.is_double_step() {
             self.set_en_passant(to ^ 8);
         } else {
             self.clear_en_passant();
@@ -201,6 +208,7 @@ impl<S: State> Position<S> {
     //
     // @return: void
     // @side-effects: modifies the `position`
+    #[inline(always)]
     fn unmake_move_for_side<SideT>(&mut self, mv: Move)
     where
         SideT: SideCastlingSquares,
@@ -222,7 +230,7 @@ impl<S: State> Position<S> {
         }
 
         // if the move was a castle, move the appropriate rook back as well
-        if mv.is_castle() {
+        if matches!(piece, Pieces::King) && mv.is_castle() {
             if to == SideT::KINGSIDE_DESTINATION {
                 self.move_piece_no_incrementals::<SideT>(
                     Pieces::Rook,
@@ -245,7 +253,7 @@ impl<S: State> Position<S> {
         }
 
         // if the move was an en passant capture, restore the opponent's pawn
-        if mv.is_en_passant() {
+        if matches!(piece, Pieces::Pawn) && mv.is_en_passant() {
             self.set_piece_no_incrementals::<SideT::Other>(Pieces::Pawn, to ^ 8);
         }
     }
