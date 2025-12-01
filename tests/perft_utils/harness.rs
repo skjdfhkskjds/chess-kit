@@ -7,6 +7,12 @@ use chess_kit::primitives::DefaultState;
 use chess_kit::transposition::TranspositionTable;
 use std::time::Instant;
 
+#[cfg(feature = "no_tt")]
+const TT_SIZE: usize = 0;
+
+#[cfg(not(feature = "no_tt"))]
+const TT_SIZE: usize = 32;
+
 pub enum PerftHarnessMode {
     Default,
     Divide,
@@ -27,7 +33,7 @@ impl PerftHarness {
     // @param: test_cases - the test cases to run
     // @return: a new perft harness
     pub fn new(mode: PerftHarnessMode, test_cases: Vec<PerftTest>) -> Self {
-        let tt = TranspositionTable::<PerftData>::new(32); // TODO: make configurable
+        let tt = TranspositionTable::<PerftData>::new(TT_SIZE);
         println!(
             "tt config: [{} buckets, {} entries]",
             tt.buckets(),
