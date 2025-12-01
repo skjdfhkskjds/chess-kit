@@ -1,5 +1,5 @@
 use crate::board::{Board, SideCastlingSquares};
-use crate::primitives::{Black, Move, Piece, Side, Sides, Square, White};
+use crate::primitives::{Black, Move, Pieces, Side, Sides, Square, White};
 
 impl Board {
     // make_move makes the given move on the board
@@ -43,7 +43,7 @@ impl Board {
     // @param: to - square to move the piece to
     // @return: void
     // @side-effects: modifies the `board`
-    fn move_piece_no_incrementals<S: Side>(&mut self, piece: Piece, from: Square, to: Square) {
+    fn move_piece_no_incrementals<S: Side>(&mut self, piece: Pieces, from: Square, to: Square) {
         self.remove_piece_no_incrementals::<S>(piece, from);
         self.set_piece_no_incrementals::<S>(piece, to);
     }
@@ -56,13 +56,13 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     // @side-effects: revokes castling permissions if needed
-    fn move_piece<S: SideCastlingSquares>(&mut self, piece: Piece, from: Square, to: Square) {
+    fn move_piece<S: SideCastlingSquares>(&mut self, piece: Pieces, from: Square, to: Square) {
         self.remove_piece::<S>(piece, from);
         self.set_piece::<S>(piece, to);
 
         // revoke castling permissions if king/rook leaves from starting
         // square
-        if (piece == Piece::King || piece == Piece::Rook) && self.state.castling.can_castle::<S>() {
+        if (piece == Pieces::King || piece == Pieces::Rook) && self.state.castling.can_castle::<S>() {
             if from == S::KING {
                 self.set_castling(self.state.castling.revoke::<S>());
             } else if from == S::KINGSIDE_ROOK {
@@ -81,7 +81,7 @@ impl Board {
     // @side-effects: modifies the `board`
     // @side-effects: resets the halfmove clock
     // @side-effects: updates castling permissions (if applicable)
-    fn capture_piece<S: SideCastlingSquares>(&mut self, piece: Piece, square: Square) {
+    fn capture_piece<S: SideCastlingSquares>(&mut self, piece: Pieces, square: Square) {
         // remove the piece from the board
         self.remove_piece::<S>(piece, square);
 
@@ -91,7 +91,7 @@ impl Board {
         // if the captured piece is a rook (king captures are invalid), and
         // the side has castling permissions, then revoke the appropriate
         // castling permissions
-        if piece == Piece::Rook && self.state.castling.can_castle::<S>() {
+        if piece == Pieces::Rook && self.state.castling.can_castle::<S>() {
             if square == S::QUEENSIDE_ROOK {
                 self.set_castling(self.state.castling.revoke_queenside::<S>());
             } else if square == S::KINGSIDE_ROOK {
@@ -131,12 +131,12 @@ impl Board {
 
         // handle a piece capture
         let captured = mv.captured();
-        if captured != Piece::None {
+        if captured != Pieces::None {
             self.capture_piece::<S::Other>(captured, to);
         }
 
         // move the piece
-        if piece != Piece::Pawn {
+        if piece != Pieces::Pawn {
             // if the moving piece is not a pawn, just perform a regular move
             self.move_piece::<S>(piece, from, to);
 
@@ -147,13 +147,13 @@ impl Board {
             if mv.is_castle() {
                 if to == S::KINGSIDE_DESTINATION {
                     self.move_piece::<S>(
-                        Piece::Rook,
+                        Pieces::Rook,
                         S::KINGSIDE_ROOK,
                         S::KINGSIDE_ROOK_DESTINATION,
                     );
                 } else if to == S::QUEENSIDE_DESTINATION {
                     self.move_piece::<S>(
-                        Piece::Rook,
+                        Pieces::Rook,
                         S::QUEENSIDE_ROOK,
                         S::QUEENSIDE_ROOK_DESTINATION,
                     );
@@ -163,13 +163,13 @@ impl Board {
             // if the move is a pawn move, check if the move is a promotion and
             // handle the piece move accordingly
             let promoted = mv.promoted();
-            let is_promotion = promoted != Piece::None;
+            let is_promotion = promoted != Pieces::None;
             self.remove_piece::<S>(piece, from);
             self.set_piece::<S>(if !is_promotion { piece } else { promoted }, to);
 
             // if the move is an en passant capture, remove the opponent's pawn
             if mv.is_en_passant() {
-                self.remove_piece::<S::Other>(Piece::Pawn, to ^ 8);
+                self.remove_piece::<S::Other>(Pieces::Pawn, to ^ 8);
             }
 
             // reset the halfmove clock since a pawn moved
@@ -210,24 +210,24 @@ impl Board {
         // move the piece back to the original square, or restore the pawn if
         // it was promoted
         let promoted = mv.promoted();
-        if matches!(promoted, Piece::None) {
+        if matches!(promoted, Pieces::None) {
             self.move_piece_no_incrementals::<S>(piece, to, from);
         } else {
             self.remove_piece_no_incrementals::<S>(promoted, to);
-            self.set_piece_no_incrementals::<S>(Piece::Pawn, from);
+            self.set_piece_no_incrementals::<S>(Pieces::Pawn, from);
         }
 
         // if the move was a castle, move the appropriate rook back as well
         if mv.is_castle() {
             if to == S::KINGSIDE_DESTINATION {
                 self.move_piece_no_incrementals::<S>(
-                    Piece::Rook,
+                    Pieces::Rook,
                     S::KINGSIDE_ROOK_DESTINATION,
                     S::KINGSIDE_ROOK,
                 );
             } else if to == S::QUEENSIDE_DESTINATION {
                 self.move_piece_no_incrementals::<S>(
-                    Piece::Rook,
+                    Pieces::Rook,
                     S::QUEENSIDE_ROOK_DESTINATION,
                     S::QUEENSIDE_ROOK,
                 );
@@ -236,13 +236,13 @@ impl Board {
 
         // if the move was a capture, restore the captured piece
         let captured = mv.captured();
-        if !matches!(captured, Piece::None) {
+        if !matches!(captured, Pieces::None) {
             self.set_piece_no_incrementals::<S::Other>(captured, to);
         }
 
         // if the move was an en passant capture, restore the opponent's pawn
         if mv.is_en_passant() {
-            self.set_piece_no_incrementals::<S::Other>(Piece::Pawn, to ^ 8);
+            self.set_piece_no_incrementals::<S::Other>(Pieces::Pawn, to ^ 8);
         }
     }
 

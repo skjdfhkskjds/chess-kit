@@ -1,5 +1,5 @@
 use crate::board::Board;
-use crate::primitives::{Bitboard, Piece, Side, Square};
+use crate::primitives::{Bitboard, Pieces, Side, Square};
 
 impl Board {
     // king_square gets the square of the king for the given side
@@ -8,7 +8,7 @@ impl Board {
     #[inline(always)]
     pub fn king_square<S: Side>(&self) -> Square {
         // TODO: refactor into bitboard.first() or something
-        Square::from_idx(self.get_piece::<S>(Piece::King).trailing_zeros() as usize)
+        Square::from_idx(self.get_piece::<S>(Pieces::King).trailing_zeros() as usize)
     }
 
     // get_piece returns the bitboard of the given side and piece
@@ -16,7 +16,7 @@ impl Board {
     // @param: piece - piece to get the bitboard for
     // @return: bitboard of the piece for the given side
     #[inline(always)]
-    pub(crate) fn get_piece<S: Side>(&self, piece: Piece) -> Bitboard {
+    pub(crate) fn get_piece<S: Side>(&self, piece: Pieces) -> Bitboard {
         self.bitboards[S::INDEX][piece.idx()]
     }
 
@@ -28,10 +28,10 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     #[inline(always)]
-    pub(crate) fn remove_piece_no_incrementals<S: Side>(&mut self, piece: Piece, square: Square) {
+    pub(crate) fn remove_piece_no_incrementals<S: Side>(&mut self, piece: Pieces, square: Square) {
         self.bitboards[S::INDEX][piece.idx()].remove_at(square);
         self.sides[S::INDEX].remove_at(square);
-        self.pieces[square.idx()] = Piece::None;
+        self.pieces[square.idx()] = Pieces::None;
     }
 
     // remove_piece removes the piece from the given side and square
@@ -41,7 +41,7 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     #[inline(always)]
-    pub(crate) fn remove_piece<S: Side>(&mut self, piece: Piece, square: Square) {
+    pub(crate) fn remove_piece<S: Side>(&mut self, piece: Pieces, square: Square) {
         self.remove_piece_no_incrementals::<S>(piece, square);
         self.state.zobrist_key ^= self.zobrist.piece::<S>(piece, square);
 
@@ -56,7 +56,7 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     #[inline(always)]
-    pub(crate) fn set_piece_no_incrementals<S: Side>(&mut self, piece: Piece, square: Square) {
+    pub(crate) fn set_piece_no_incrementals<S: Side>(&mut self, piece: Pieces, square: Square) {
         self.bitboards[S::INDEX][piece.idx()].set_at(square);
         self.sides[S::INDEX].set_at(square);
         self.pieces[square.idx()] = piece;
@@ -69,7 +69,7 @@ impl Board {
     // @return: void
     // @side-effects: modifies the `board`
     #[inline(always)]
-    pub(crate) fn set_piece<S: Side>(&mut self, piece: Piece, square: Square) {
+    pub(crate) fn set_piece<S: Side>(&mut self, piece: Pieces, square: Square) {
         self.set_piece_no_incrementals::<S>(piece, square);
         self.state.zobrist_key ^= self.zobrist.piece::<S>(piece, square);
 
@@ -103,7 +103,7 @@ impl Board {
     //
     // @return: true if the given side has a bishop pair, false otherwise
     pub(crate) fn has_bishop_pair<S: Side>(&self) -> bool {
-        let bitboard = self.get_piece::<S>(Piece::Bishop);
+        let bitboard = self.get_piece::<S>(Pieces::Bishop);
         let mut white_bishops = 0;
         let mut black_bishops = 0;
 

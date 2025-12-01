@@ -14,7 +14,7 @@ pub use bitboard::{BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, B
 pub use castling::{CastleRights, Castling, SideCastling};
 pub use files::File;
 pub use moves::{Move, MoveList, MoveType, ShortMove};
-pub use pieces::Piece;
+pub use pieces::Pieces;
 pub use ranks::{Rank, SideRanks};
 pub use sides::{Black, Side, Sides, White};
 pub use squares::Square;

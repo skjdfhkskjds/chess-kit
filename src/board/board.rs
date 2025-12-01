@@ -1,5 +1,5 @@
 use crate::board::fen::{FENError, FENParser, Parser};
-use crate::primitives::{Bitboard, History, Piece, Side, Sides, Square, State, ZobristTable};
+use crate::primitives::{Bitboard, History, Pieces, Side, Sides, Square, State, ZobristTable};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
@@ -8,8 +8,8 @@ pub struct Board {
     pub history: History, // history of the board state
 
     pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
-    pub bitboards: [[Bitboard; Piece::TOTAL]; Sides::TOTAL], // bitboard per piece per side
-    pub pieces: [Piece; Square::TOTAL],  // piece type on each square
+    pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
+    pub pieces: [Pieces; Square::TOTAL],  // piece type on each square
 
     pub zobrist: ZobristTable, // zobrist random values for the board
 }
@@ -24,8 +24,8 @@ impl Board {
             state: State::new(),
             history: History::new(),
             sides: [Bitboard::empty(); Sides::TOTAL],
-            bitboards: [[Bitboard::empty(); Piece::TOTAL]; Sides::TOTAL],
-            pieces: [Piece::None; Square::TOTAL],
+            bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
+            pieces: [Pieces::None; Square::TOTAL],
             zobrist: ZobristTable::new(),
         }
     }
@@ -80,16 +80,16 @@ impl Board {
 
         // set the piece type on each square
         for square in 0..Square::TOTAL {
-            let mut on_square: Piece = Piece::None;
+            let mut on_square: Pieces = Pieces::None;
 
             let mask = 1u64 << square; // bitmask for the square
             for (piece, (w, b)) in white.iter().zip(black.iter()).enumerate() {
                 if !(w & mask).is_empty() {
-                    on_square = Piece::from_idx(piece);
+                    on_square = Pieces::from_idx(piece);
                     break; // enforce exclusivity
                 }
                 if !(b & mask).is_empty() {
-                    on_square = Piece::from_idx(piece);
+                    on_square = Pieces::from_idx(piece);
                     break; // enforce exclusivity
                 }
             }
@@ -105,8 +105,8 @@ impl Board {
         self.state.reset();
         self.history.clear();
         self.sides = [Bitboard::empty(); Sides::TOTAL];
-        self.bitboards = [[Bitboard::empty(); Piece::TOTAL]; Sides::TOTAL];
-        self.pieces = [Piece::None; Square::TOTAL];
+        self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
+        self.pieces = [Pieces::None; Square::TOTAL];
     }
 
     // occupancy gets the bitboard of all pieces on the board

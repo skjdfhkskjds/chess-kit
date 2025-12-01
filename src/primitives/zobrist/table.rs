@@ -1,5 +1,5 @@
 use crate::primitives::{
-    Bitboard, Black, CastleRights, Castling, Piece, Side, Sides, Square, White, ZobristKey,
+    Bitboard, Black, CastleRights, Castling, Pieces, Side, Sides, Square, White, ZobristKey,
     ZobristTable,
 };
 use rand::prelude::*;
@@ -11,7 +11,7 @@ impl ZobristTable {
     // @return: new instance of a zobrist table
     pub fn new() -> Self {
         Self {
-            pieces: [[[0; Square::TOTAL]; Piece::TOTAL]; Sides::TOTAL],
+            pieces: [[[0; Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL],
             castling: [0; CastleRights::TOTAL],
             sides: [0; Sides::TOTAL],
             en_passant: [0; Square::TOTAL + 1],
@@ -59,15 +59,15 @@ impl ZobristTable {
         side: Sides,
         castling: Castling,
         en_passant: Option<Square>,
-        bitboards: [[Bitboard; Piece::TOTAL]; Sides::TOTAL],
+        bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL],
     ) -> ZobristKey {
         let mut key = 0;
         for (side, bitboards) in bitboards.iter().enumerate() {
             for (piece, bitboard) in bitboards.iter().enumerate() {
                 for square in bitboard.iter() {
                     match Sides::from_idx(side) {
-                        Sides::White => key ^= self.piece::<White>(Piece::from_idx(piece), square),
-                        Sides::Black => key ^= self.piece::<Black>(Piece::from_idx(piece), square),
+                        Sides::White => key ^= self.piece::<White>(Pieces::from_idx(piece), square),
+                        Sides::Black => key ^= self.piece::<Black>(Pieces::from_idx(piece), square),
                     }
                 }
             }
@@ -87,7 +87,7 @@ impl ZobristTable {
     // @param: square - square to get the random value for
     // @return: random value for the given side, piece, and square
     #[inline(always)]
-    pub fn piece<S: Side>(&self, piece: Piece, square: Square) -> ZobristKey {
+    pub fn piece<S: Side>(&self, piece: Pieces, square: Square) -> ZobristKey {
         self.pieces[S::INDEX][piece.idx()][square.idx()]
     }
 

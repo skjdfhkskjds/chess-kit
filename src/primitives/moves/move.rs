@@ -42,7 +42,7 @@ Storing the "To" square: Shift LEFT 9 bits, then XOR with "data".
 Note: credits to https://codeberg.org/mvanthoor/rustic
 */
 
-use crate::primitives::{Piece, Square};
+use crate::primitives::{Pieces, Square};
 use std::fmt::{self, Display};
 
 // bit-shift offsets to parse the move data according to the schema above
@@ -75,7 +75,7 @@ impl Move {
     // @param: from - square to move from
     // @param: to - square to move to
     // @return: new move value
-    pub fn new(piece: Piece, from: Square, to: Square) -> Self {
+    pub fn new(piece: Pieces, from: Square, to: Square) -> Self {
         let data =
             piece.idx() as u64 | (from.idx() as u64) << FROM_SHIFT | (to.idx() as u64) << TO_SHIFT;
 
@@ -88,7 +88,7 @@ impl Move {
     // @param: captured - piece that was captured
     // @return: move with the captured piece set
     #[inline(always)]
-    pub fn with_capture(mut self, captured: Piece) -> Self {
+    pub fn with_capture(mut self, captured: Pieces) -> Self {
         self.data |= (captured.idx() as u64) << CAPTURED_SHIFT;
         self
     }
@@ -98,7 +98,7 @@ impl Move {
     // @param: self - mutable reference to the move
     // @return: move with the promotion flag set
     #[inline(always)]
-    pub fn with_promotion(mut self, promoted: Piece) -> Self {
+    pub fn with_promotion(mut self, promoted: Pieces) -> Self {
         self.data |= (promoted.idx() as u64) << PROMOTED_SHIFT;
         self
     }
@@ -138,8 +138,8 @@ impl Move {
     // @param: self - immutable reference to the move
     // @return: piece that is moving
     #[inline(always)]
-    pub fn piece(&self) -> Piece {
-        Piece::from_idx(((self.data >> PIECE_SHIFT) & PIECE_MASK) as usize)
+    pub fn piece(&self) -> Pieces {
+        Pieces::from_idx(((self.data >> PIECE_SHIFT) & PIECE_MASK) as usize)
     }
 
     // from returns the square that the piece is moving from
@@ -165,7 +165,7 @@ impl Move {
     // @param: self - immutable reference to the move
     // @return: piece that was captured
     #[inline(always)]
-    pub fn captured(&self) -> Piece {
+    pub fn captured(&self) -> Pieces {
         Self::to_piece(self.data >> CAPTURED_SHIFT)
     }
 
@@ -174,7 +174,7 @@ impl Move {
     // @param: self - immutable reference to the move
     // @return: piece that the pawn promoted to
     #[inline(always)]
-    pub fn promoted(&self) -> Piece {
+    pub fn promoted(&self) -> Pieces {
         Self::to_piece(self.data >> PROMOTED_SHIFT)
     }
 
@@ -184,7 +184,7 @@ impl Move {
     // @return: true if the move is a promotion, false otherwise
     #[inline(always)]
     pub fn is_promotion(&self) -> bool {
-        self.promoted() != Piece::None
+        self.promoted() != Pieces::None
     }
 
     // is_en_passant returns whether the move is an en passant capture
@@ -272,8 +272,8 @@ impl Move {
     // @param: value - bit-shifted data value to convert to a piece
     // @return: piece
     #[inline(always)]
-    fn to_piece(value: u64) -> Piece {
-        Piece::from_idx((value & PIECE_MASK) as usize)
+    fn to_piece(value: u64) -> Pieces {
+        Pieces::from_idx((value & PIECE_MASK) as usize)
     }
 
     // to_bool is a helper routine that converts the shifted value to a boolean

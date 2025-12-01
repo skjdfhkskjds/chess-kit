@@ -1,8 +1,8 @@
 mod table;
 
-use crate::primitives::{CastleRights, Piece, Sides, Square};
+use crate::primitives::{CastleRights, Pieces, Sides, Square};
 
-type PieceRandoms = [[[u64; Square::TOTAL]; Piece::TOTAL]; Sides::TOTAL];
+type PieceRandoms = [[[u64; Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL];
 type CastlingRandoms = [u64; CastleRights::TOTAL];
 type SideRandoms = [u64; Sides::TOTAL];
 type EnPassantRandoms = [u64; Square::TOTAL + 1];

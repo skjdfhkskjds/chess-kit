@@ -1,4 +1,4 @@
-use crate::primitives::{Bitboard, Square, Sides, Piece, White};
+use crate::primitives::{Bitboard, Square, Sides, Pieces, White};
 use crate::movegen::magics::{Magic, ROOK_TABLE_SIZE, BISHOP_TABLE_SIZE};
 
 pub struct MoveGenerator {
@@ -32,8 +32,8 @@ impl MoveGenerator {
         mg.init_king_table();
         mg.init_knight_table();
         mg.init_pawn_table::<White>();
-        mg.init_magics(Piece::Rook);
-        mg.init_magics(Piece::Bishop);
+        mg.init_magics(Pieces::Rook);
+        mg.init_magics(Pieces::Bishop);
         mg
     }
 }

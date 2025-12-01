@@ -1,16 +1,16 @@
-use crate::primitives::Piece;
+use crate::primitives::Pieces;
 use std::fmt;
 
-impl fmt::Display for Piece {
+impl fmt::Display for Pieces {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Piece::Pawn => write!(f, "P"),
-            Piece::Knight => write!(f, "N"),
-            Piece::Bishop => write!(f, "B"),
-            Piece::Rook => write!(f, "R"),
-            Piece::Queen => write!(f, "Q"),
-            Piece::King => write!(f, "K"),
-            Piece::None => write!(f, "."),
+            Pieces::Pawn => write!(f, "P"),
+            Pieces::Knight => write!(f, "N"),
+            Pieces::Bishop => write!(f, "B"),
+            Pieces::Rook => write!(f, "R"),
+            Pieces::Queen => write!(f, "Q"),
+            Pieces::King => write!(f, "K"),
+            Pieces::None => write!(f, "."),
         }
     }
 }

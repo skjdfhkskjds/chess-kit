@@ -1,5 +1,5 @@
 use crate::board::Board;
-use crate::primitives::{File, Piece, Rank, Sides};
+use crate::primitives::{File, Pieces, Rank, Sides};
 use std::fmt;
 
 impl fmt::Display for Board {
@@ -10,7 +10,7 @@ impl fmt::Display for Board {
         for (side_idx, bitboards) in self.bitboards.iter().enumerate() {
             let side = Sides::from_idx(side_idx);
             for (piece_idx, bitboard) in bitboards.iter().enumerate() {
-                let base_char = Piece::from_idx(piece_idx)
+                let base_char = Pieces::from_idx(piece_idx)
                     .to_string()
                     .chars()
                     .next()

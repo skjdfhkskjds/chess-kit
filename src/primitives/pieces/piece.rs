@@ -2,7 +2,7 @@ use chess_kit_derive::IndexableEnum;
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, IndexableEnum)]
-pub enum Piece {
+pub enum Pieces {
     None,
     Pawn,
     Knight,
@@ -12,7 +12,6 @@ pub enum Piece {
     King,
 }
 
-impl Piece {
+impl Pieces {
     pub const TOTAL: usize = 7;
 }
- 
