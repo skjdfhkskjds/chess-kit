@@ -1,8 +1,5 @@
 use crate::board::fen::{FENError, FENParser, Parser};
-use crate::board::history::History;
-use crate::board::state::State;
-use crate::board::zobrist::Zobrist;
-use crate::primitives::{Bitboard, Piece, Sides, Square};
+use crate::primitives::{Bitboard, History, Piece, Sides, Square, State, ZobristTable};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
@@ -12,9 +9,9 @@ pub struct Board {
 
     pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Piece::TOTAL]; Sides::TOTAL], // bitboard per piece per side
-    pub pieces: [Piece; Square::TOTAL], // piece type on each square
+    pub pieces: [Piece; Square::TOTAL],  // piece type on each square
 
-    pub zobrist: Zobrist, // zobrist random values for the board
+    pub zobrist: ZobristTable, // zobrist random values for the board
 }
 
 impl Board {
@@ -29,7 +26,7 @@ impl Board {
             sides: [Bitboard::empty(); Sides::TOTAL],
             bitboards: [[Bitboard::empty(); Piece::TOTAL]; Sides::TOTAL],
             pieces: [Piece::None; Square::TOTAL],
-            zobrist: Zobrist::new(),
+            zobrist: ZobristTable::new(),
         }
     }
 
@@ -44,7 +41,7 @@ impl Board {
 
         self.init_sides();
         self.init_pieces();
-        self.state.zobrist_key = self.zobrist.key(
+        self.state.zobrist_key = self.zobrist.new_key(
             self.state.turn,
             self.state.castling,
             self.state.en_passant,

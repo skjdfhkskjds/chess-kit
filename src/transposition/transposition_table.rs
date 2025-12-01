@@ -1,4 +1,4 @@
-use crate::board::ZobristKey;
+use crate::primitives::ZobristKey;
 use crate::transposition::{NodeData, bucket::Bucket};
 
 const MB_TO_BYTES: usize = 1024 * 1024;

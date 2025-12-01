@@ -1,9 +1,8 @@
-use crate::board::zobrist::ZobristKey;
-use crate::primitives::{Castling, Move, Sides, Square};
+use crate::primitives::{Castling, Move, Sides, Square, ZobristKey};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct State {
-    pub turn: Sides,                 // side to move
+    pub turn: Sides,                // side to move
     pub castling: Castling,         // castling rights
     pub en_passant: Option<Square>, // active en passant square, if any
     pub zobrist_key: ZobristKey,    // zobrist key for the current position

@@ -185,7 +185,7 @@ impl Board {
         }
 
         // swap the side to move
-        self.swap_sides();
+        self.swap_sides::<S>();
     }
 
     // unmake_move_for_side unmakes the last move on the board for the given
