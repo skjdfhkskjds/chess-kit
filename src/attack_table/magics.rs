@@ -73,12 +73,12 @@ pub struct Magic {
 }
 
 impl Magic {
-    // index_of gets the magic index for the given occupancy
+    // idx gets the magic index for the given occupancy
     //
     // @param: occupancy - occupancy to get the magic index for
     // @return: magic index for the given occupancy
     #[inline(always)]
-    pub fn index_of(&self, occupancy: &Bitboard) -> usize {
+    pub fn idx(&self, occupancy: &Bitboard) -> usize {
         let blockerboard = occupancy & self.mask;
         u64::from((blockerboard.wrapping_mul(self.num) >> self.shift) + self.offset) as usize
     }
@@ -154,7 +154,7 @@ impl DefaultAttackTable {
         // index the attack boards for the given piece and square
         for i in 0..permutations {
             let next = i as usize;
-            let index = magic.index_of(&blocker_boards[next]);
+            let index = magic.idx(&blocker_boards[next]);
 
             // assert that the attack table index is currently empty
             assert!(

@@ -1,5 +1,5 @@
 use crate::attack_table::magics::{BISHOP_TABLE_SIZE, Magic, ROOK_TABLE_SIZE};
-use crate::attack_table::traits::{AttackTable, PieceTargetsTable};
+use crate::attack_table::{AttackTable, PieceTargetsTable};
 use crate::position::Position;
 use crate::primitives::{Bitboard, BitboardVec, Pieces, Side, Sides, Square, State, White};
 
@@ -138,7 +138,7 @@ impl PieceTargetsTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::rook_targets
     #[inline(always)]
     fn rook_targets(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
-        self.rook_table[self.rook_magics[square.idx()].index_of(bitboard)]
+        self.rook_table[self.rook_magics[square.idx()].idx(bitboard)]
     }
 
     // bishop_targets returns the attacks for the given square and bitboard.
@@ -146,7 +146,7 @@ impl PieceTargetsTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::bishop_targets
     #[inline(always)]
     fn bishop_targets(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
-        self.bishop_table[self.bishop_magics[square.idx()].index_of(bitboard)]
+        self.bishop_table[self.bishop_magics[square.idx()].idx(bitboard)]
     }
 
     // queen_targets returns the attacks for the given square and bitboard.
