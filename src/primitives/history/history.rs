@@ -37,23 +37,23 @@ impl<S: State> History<S> {
     // @requires: the current index is less than the fullmove limit
     #[inline(always)]
     pub fn push(&mut self, state: S) {
-        assert!(self.current < MAX_FULLMOVES, "history is full");
+        debug_assert!(self.current < MAX_FULLMOVES, "history is full");
         self.states[self.current] = state;
         self.current += 1;
     }
 
     // pop removes the last state entry from the history and returns it
     //
-    // @return: the last state entry, if any
+    // note: this function will return invalid memory if the history is empty
+    // 
+    // @return: the last state entry
     // @side-effects: modifies the history, decrements the current index
     // @requires: the current index is greater than 0
     #[inline(always)]
-    pub fn pop(&mut self) -> Option<S> {
-        if self.current == 0 {
-            return None;
-        }
+    pub fn pop(&mut self) -> S {
+        debug_assert!(self.current > 0, "history is empty");
         self.current -= 1;
-        Some(self.states[self.current])
+        self.states[self.current]
     }
 
     // size returns the number of state entries in the history

@@ -27,7 +27,7 @@ impl State for DefaultState {
             en_passant: None,
             halfmoves: 0,
             fullmoves: 0,
-            zobrist_key: 0,
+            zobrist_key: ZobristKey::default(),
             next_move: Move::default(),
         }
     }
@@ -42,7 +42,7 @@ impl State for DefaultState {
         self.en_passant = None;
         self.halfmoves = 0;
         self.fullmoves = 0;
-        self.zobrist_key = 0;
+        self.zobrist_key = ZobristKey::default();
         self.next_move = Move::default();
     }
 }

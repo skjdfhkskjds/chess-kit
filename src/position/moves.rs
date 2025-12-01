@@ -22,11 +22,10 @@ impl<S: State> Position<S> {
     // @side-effects: reverts the `state` back
     pub fn unmake_move(&mut self) {
         // revert the last move on the position
-        if let Some(state) = self.history.pop() {
-            self.state = state;
-        } else {
+        if self.history.is_empty() {
             return;
         }
+        self.state = self.history.pop();
 
         // unmake the move for the side that moved
         let next_move = self.state.next_move();

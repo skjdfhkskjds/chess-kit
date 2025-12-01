@@ -35,8 +35,40 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
     let name = struct_ident;
     let inner = inner_ty;
 
+    let inner_is_u64 = is_primitive_type(inner_ty, "u64");
     let inner_is_u32 = is_primitive_type(inner_ty, "u32");
     let inner_is_u8 = is_primitive_type(inner_ty, "u8");
+
+    let shl_u64_impls = if !inner_is_u64 {
+        quote! {
+            impl ::core::ops::Shl<u64> for #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shl(self, rhs: u64) -> Self::Output {
+                    #name(self.0 << rhs)
+                }
+            }
+
+            impl<'a> ::core::ops::Shl<u64> for &'a #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shl(self, rhs: u64) -> Self::Output {
+                    #name(self.0 << rhs)
+                }
+            }
+
+            impl ::core::ops::ShlAssign<u64> for #name {
+                #[inline(always)]
+                fn shl_assign(&mut self, rhs: u64) {
+                    self.0 <<= rhs;
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
 
     let shl_u32_impls = if !inner_is_u32 {
         quote! {
@@ -100,6 +132,37 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         quote! {}
     };
 
+    let shr_u64_impls = if !inner_is_u64 {
+        quote! {
+            impl ::core::ops::Shr<u64> for #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shr(self, rhs: u64) -> Self::Output {
+                    #name(self.0 >> rhs)
+                }
+            }
+
+            impl<'a> ::core::ops::Shr<u64> for &'a #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shr(self, rhs: u64) -> Self::Output {
+                    #name(self.0 >> rhs)
+                }
+            }
+
+            impl ::core::ops::ShrAssign<u64> for #name {
+                #[inline(always)]
+                fn shr_assign(&mut self, rhs: u64) {
+                    self.0 >>= rhs;
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
     let shr_u32_impls = if !inner_is_u32 {
         quote! {
             impl ::core::ops::Shr<u32> for #name {
@@ -155,6 +218,66 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
                 #[inline(always)]
                 fn shr_assign(&mut self, rhs: u8) {
                     self.0 >>= rhs;
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let from_into_u64_impls = if !inner_is_u64 {
+        quote! {
+            impl ::core::convert::From<u64> for #name {
+                #[inline(always)]
+                fn from(value: u64) -> Self {
+                    #name(value as #inner)
+                }
+            }
+
+            impl ::core::convert::From<#name> for u64 {
+                #[inline(always)]
+                fn from(value: #name) -> Self {
+                    value.0 as u64
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let from_into_u32_impls = if !inner_is_u32 {
+        quote! {
+            impl ::core::convert::From<u32> for #name {
+                #[inline(always)]
+                fn from(value: u32) -> Self {
+                    #name(value as #inner)
+                }
+            }
+
+            impl ::core::convert::From<#name> for u32 {
+                #[inline(always)]
+                fn from(value: #name) -> Self {
+                    value.0 as u32
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let from_into_u8_impls = if !inner_is_u8 {
+        quote! {
+            impl ::core::convert::From<u8> for #name {
+                #[inline(always)]
+                fn from(value: u8) -> Self {
+                    #name(value as #inner)
+                }
+            }
+
+            impl ::core::convert::From<#name> for u8 {
+                #[inline(always)]
+                fn from(value: #name) -> Self {
+                    value.0 as u8
                 }
             }
         }
@@ -439,6 +562,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             }
         }
 
+        #shl_u64_impls
         #shl_u32_impls
         #shl_u8_impls
 
@@ -496,8 +620,31 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             }
         }
 
+        #shr_u64_impls
         #shr_u32_impls
         #shr_u8_impls
+
+        // ================================================
+        //                   FROM/INTO
+        // ================================================
+
+        impl ::core::convert::From<#inner> for #name {
+            #[inline(always)]
+            fn from(value: #inner) -> Self {
+                #name(value)
+            }
+        }
+
+        impl ::core::convert::From<#name> for #inner {
+            #[inline(always)]
+            fn from(value: #name) -> Self {
+                value.0
+            }
+        }
+
+        #from_into_u64_impls
+        #from_into_u32_impls
+        #from_into_u8_impls
     };
 
     Ok(output)

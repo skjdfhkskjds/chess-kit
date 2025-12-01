@@ -146,8 +146,8 @@ where
         //       key is an alias/wrapper around a u64 and relies on the fact that
         //       the `as` cast truncates the superfluous upper bits
         // TODO: make a choice as to whether or not that invariant is reasonable
-        let index = ((zobrist_key >> 32) as u32) as usize % self.max_buckets;
-        let key = zobrist_key as u32;
+        let index = u32::from(zobrist_key >> 32u64) as usize % self.max_buckets;
+        let key = u32::from(zobrist_key);
         (index, key)
     }
 
