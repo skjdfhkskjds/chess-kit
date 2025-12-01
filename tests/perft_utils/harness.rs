@@ -1,4 +1,5 @@
 use crate::perft_utils::PerftTest;
+use chess_kit::attack_table::{AttackTable, DefaultAttackTable};
 use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
 use chess_kit::position::Position;
@@ -12,11 +13,11 @@ pub enum PerftHarnessMode {
 
 // PerftHarness is a test harness for running perft tests
 pub struct PerftHarness {
-    mode: PerftHarnessMode,            // the mode to run the harness in
-    test_cases: Vec<PerftTest>,        // the test cases to run
-    move_generator: MoveGenerator,     // global move generator, shared across tests
+    mode: PerftHarnessMode,     // the mode to run the harness in
+    test_cases: Vec<PerftTest>, // the test cases to run
+    move_generator: MoveGenerator<DefaultAttackTable>, // global move generator, shared across tests
     tt: TranspositionTable<PerftData>, // global transposition table, shared across tests
-    position: Position,                // global position, shared across tests
+    position: Position,         // global position, shared across tests
 }
 
 impl PerftHarness {
@@ -35,7 +36,7 @@ impl PerftHarness {
         Self {
             mode,
             test_cases,
-            move_generator: MoveGenerator::new(),
+            move_generator: MoveGenerator::new(DefaultAttackTable::new()),
             tt,
             position: Position::new(),
         }

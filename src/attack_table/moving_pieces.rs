@@ -1,12 +1,11 @@
-use crate::movegen::MoveGenerator;
+use crate::attack_table::DefaultAttackTable;
 use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, File, Rank, Side, Square,
+    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, File, Rank, Side, Square,
 };
 
-impl MoveGenerator {
+impl DefaultAttackTable {
     // init_king_table initializes the king move table
     //
-    // @param: self - mutable reference to the move generator
     // @return: void
     #[rustfmt::skip]
     pub(crate) fn init_king_table(&mut self) {
@@ -58,38 +57,5 @@ impl MoveGenerator {
             self.pawn_table[S::Other::INDEX][sq.idx()] = ((bitboard & !BITBOARD_FILES[File::A.idx()]) >> 9u8)
                 | ((bitboard & !BITBOARD_FILES[File::H.idx()]) >> 7u8);
         }
-    }
-
-    // get_king_targets returns the squares that the king targets from the given
-    // square
-    //
-    // @param: self - immutable reference to the move generator
-    // @param: sq - square that the king is on
-    // @return: king targets from the given square
-    #[inline(always)]
-    pub(crate) fn get_king_targets(&self, sq: Square) -> Bitboard {
-        self.king_table[sq.idx()]
-    }
-
-    // get_knight_targets returns the squares that the knight targets from the
-    // given square
-    //
-    // @param: self - immutable reference to the move generator
-    // @param: sq - square that the knight is on
-    // @return: knight targets from the given square
-    #[inline(always)]
-    pub(crate) fn get_knight_targets(&self, sq: Square) -> Bitboard {
-        self.knight_table[sq.idx()]
-    }
-
-    // get_pawn_targets returns the squares that the pawn targets from the given
-    // square for the given side
-    //
-    // @param: self - immutable reference to the move generator
-    // @param: sq - square that the pawn is on
-    // @return: pawn targets from the given square
-    #[inline(always)]
-    pub(crate) fn get_pawn_targets<S: Side>(&self, sq: Square) -> Bitboard {
-        self.pawn_table[S::INDEX][sq.idx()]
     }
 }

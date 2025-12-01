@@ -1,3 +1,4 @@
+use crate::attack_table::AttackTable;
 use crate::movegen::{MoveGenerator, SideToMove};
 use crate::position::Position;
 use crate::primitives::{
@@ -8,7 +9,7 @@ use crate::primitives::{
 // list of pieces that a pawn can promote to
 const PROMOTION_PIECES: [Pieces; 4] = [Pieces::Queen, Pieces::Rook, Pieces::Bishop, Pieces::Knight];
 
-impl MoveGenerator {
+impl<A: AttackTable> MoveGenerator<A> {
     // generate_moves generates all the pseudo-legal moves of the given move type
     // from the current position and pushes them to the move list
     //
@@ -83,11 +84,11 @@ impl MoveGenerator {
         let to_move = position.get_piece::<S>(piece);
         for from in to_move.iter() {
             let targets = match piece {
-                Pieces::King => self.get_king_targets(from),
-                Pieces::Knight => self.get_knight_targets(from),
-                Pieces::Bishop => self.get_bishop_attacks(from, &occupancy),
-                Pieces::Rook => self.get_rook_attacks(from, &occupancy),
-                Pieces::Queen => self.get_queen_attacks(from, &occupancy),
+                Pieces::King => self.attack_table.king_targets(from),
+                Pieces::Knight => self.attack_table.knight_targets(from),
+                Pieces::Bishop => self.attack_table.bishop_targets(from, &occupancy),
+                Pieces::Rook => self.attack_table.rook_targets(from, &occupancy),
+                Pieces::Queen => self.attack_table.queen_targets(from, &occupancy),
                 _ => unreachable!("Not a valid piece: {piece}"),
             };
 
@@ -137,7 +138,7 @@ impl MoveGenerator {
 
             // generate pawn captures
             if move_type == MoveType::All || move_type == MoveType::Capture {
-                let targets = self.get_pawn_targets::<S>(from);
+                let targets = self.attack_table.pawn_targets::<S>(from);
                 let captures = targets & position.sides[S::Other::INDEX];
                 let en_passant_captures = match position.state.en_passant {
                     Some(ep) => targets & BITBOARD_SQUARES[ep.idx()],
@@ -173,7 +174,7 @@ impl MoveGenerator {
         //
         // Note: a side can castle iff they have either kingside or queenside
         //       permissions and they are not currently in check
-        if !(kingside || queenside) || self.is_attacked::<S>(position, from) {
+        if !(kingside || queenside) || self.attack_table.is_attacked::<S>(position, from) {
             return;
         }
 
@@ -189,7 +190,9 @@ impl MoveGenerator {
             // if the squares along the path are empty and the king is not moving
             // "through" check, we can castle
             if (occupancy & blockers).is_empty()
-                && !self.is_attacked::<S>(position, S::KINGSIDE_ROOK_DESTINATION)
+                && !self
+                    .attack_table
+                    .is_attacked::<S>(position, S::KINGSIDE_ROOK_DESTINATION)
             {
                 moves |= BITBOARD_SQUARES[S::KINGSIDE_DESTINATION.idx()];
             }
@@ -205,7 +208,9 @@ impl MoveGenerator {
                 | BITBOARD_SQUARES[S::QUEENSIDE_ROOK_INTERMEDIATE.idx()];
 
             if (occupancy & blockers).is_empty()
-                && !self.is_attacked::<S>(position, S::QUEENSIDE_ROOK_DESTINATION)
+                && !self
+                    .attack_table
+                    .is_attacked::<S>(position, S::QUEENSIDE_ROOK_DESTINATION)
             {
                 moves |= BITBOARD_SQUARES[S::QUEENSIDE_DESTINATION.idx()];
             }
@@ -294,55 +299,5 @@ impl MoveGenerator {
             // push the move to the list
             list.push(mv);
         }
-    }
-}
-
-impl MoveGenerator {
-    // is_attacked returns true if the given square on the given side is attacked
-    // by the opponent.
-    //
-    // @param: position - immutable reference to the position
-    // @param: side - side to check if is attacked
-    // @param: square - square to check if is attacked
-    // @return: true if the square is attacked, false otherwise
-    pub fn is_attacked<S: Side>(&self, position: &Position, square: Square) -> bool {
-        // idea: our square `T` is attacked iff the opponent has at least one
-        //       piece in square `S` such that attack board generated from `T`
-        //       includes `S`
-        //
-        // effectively relies on this idea of, if i can see you, you can see me
-        //
-        // the nuance not covered above is pawn attacks are not symmetric, so we
-        // reconcile this by checking the pawn attacks for our side instead of the
-        // opponent's
-
-        // generate the attack boards for each piece
-        let occupancy = position.occupancy::<S>();
-        let king_attacks = self.get_king_targets(square);
-        let rook_attacks = self.get_rook_attacks(square, &occupancy);
-        let bishop_attacks = self.get_bishop_attacks(square, &occupancy);
-        let knight_attacks = self.get_knight_targets(square);
-        let pawn_attacks = self.get_pawn_targets::<S>(square);
-        let queen_attacks = rook_attacks | bishop_attacks;
-
-        // check if there is an intersection between the attack board and that
-        // piece's respective occupancy
-        let opponent = position.bitboards[S::Other::INDEX];
-        !(king_attacks & opponent[Pieces::King.idx()]).is_empty()
-            || !(rook_attacks & opponent[Pieces::Rook.idx()]).is_empty()
-            || !(queen_attacks & opponent[Pieces::Queen.idx()]).is_empty()
-            || !(bishop_attacks & opponent[Pieces::Bishop.idx()]).is_empty()
-            || !(knight_attacks & opponent[Pieces::Knight.idx()]).is_empty()
-            || !(pawn_attacks & opponent[Pieces::Pawn.idx()]).is_empty()
-    }
-
-    // is_checked returns true if the given side is checked
-    //
-    // @param: position - immutable reference to the position
-    // @param: side - side to check if is checked
-    // @return: true if the side is checked, false otherwise
-    #[inline(always)]
-    pub fn is_checked<S: Side>(&self, position: &Position) -> bool {
-        self.is_attacked::<S>(position, position.king_square::<S>())
     }
 }

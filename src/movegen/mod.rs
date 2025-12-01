@@ -1,8 +1,5 @@
-pub mod generate;
-pub mod magics;
-pub mod movegen;
-pub mod moving_pieces;
-pub mod sliding_pieces;
+mod generate;
+mod movegen;
 
 pub use movegen::MoveGenerator;
 
