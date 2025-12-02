@@ -97,7 +97,7 @@ impl ZobristTable {
     // @return: random value for the given castling rights
     #[inline(always)]
     pub fn castling(&self, castling: Castling) -> ZobristKey {
-        self.castling[castling.bits() as usize]
+        self.castling[u8::from(castling) as usize]
     }
 
     // side returns the random value for the given side

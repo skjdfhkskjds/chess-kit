@@ -4,7 +4,7 @@ use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
 use chess_kit::position::Position;
 use chess_kit::primitives::DefaultState;
-use chess_kit::transposition::TranspositionTable;
+use chess_kit::transposition::{DefaultTranspositionTable, TranspositionTable};
 use std::time::Instant;
 
 #[cfg(feature = "no_tt")]
@@ -23,7 +23,7 @@ pub struct PerftHarness {
     mode: PerftHarnessMode,     // the mode to run the harness in
     test_cases: Vec<PerftTest>, // the test cases to run
     move_generator: MoveGenerator<DefaultAttackTable>, // global move generator, shared across tests
-    tt: TranspositionTable<PerftData>, // global transposition table, shared across tests
+    tt: DefaultTranspositionTable<PerftData>, // global transposition table, shared across tests
     position: Position<DefaultState>, // global position, shared across tests
 }
 
@@ -33,7 +33,7 @@ impl PerftHarness {
     // @param: test_cases - the test cases to run
     // @return: a new perft harness
     pub fn new(mode: PerftHarnessMode, test_cases: Vec<PerftTest>) -> Self {
-        let tt = TranspositionTable::<PerftData>::new(TT_SIZE);
+        let tt = DefaultTranspositionTable::<PerftData>::new(TT_SIZE);
         println!(
             "tt config: [{} buckets, {} entries]",
             tt.buckets(),

@@ -16,7 +16,7 @@ use crate::transposition::TranspositionTable;
 pub fn perft<A: AttackTable, S: State>(
     position: &mut Position<S>,
     move_generator: &MoveGenerator<A>,
-    tt: &mut TranspositionTable<PerftData>,
+    tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
 ) -> NodeCount {
     // base case: if the depth is 0, return 1
@@ -74,7 +74,7 @@ pub fn perft<A: AttackTable, S: State>(
 fn perft_divide<A: AttackTable, S: State>(
     position: &mut Position<S>,
     move_generator: &MoveGenerator<A>,
-    tt: &mut TranspositionTable<PerftData>,
+    tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
 ) -> Vec<(Move, NodeCount)> {
     assert!(depth > 0);
@@ -119,7 +119,7 @@ fn perft_divide<A: AttackTable, S: State>(
 pub fn perft_divide_print<A: AttackTable, S: State>(
     position: &mut Position<S>,
     move_generator: &MoveGenerator<A>,
-    tt: &mut TranspositionTable<PerftData>,
+    tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
 ) -> NodeCount {
     let entries = perft_divide(position, move_generator, tt, depth);

@@ -1,14 +1,6 @@
 use crate::primitives::{Castling, CastleRights, SideCastling};
 
 impl Castling {
-    // bits returns the bits of the castling rights
-    //
-    // @return: bits of the castling rights
-    #[inline(always)]
-    pub fn bits(&self) -> u8 {
-        self.0
-    }
-
     // none returns a castling rights value with no castling rights
     //
     // @return: castling rights value with no castling rights
