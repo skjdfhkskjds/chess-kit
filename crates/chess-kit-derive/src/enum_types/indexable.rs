@@ -34,12 +34,12 @@ pub fn expand_indexable_enum(input: &DeriveInput) -> Result<TokenStream> {
             }
 
             #[inline(always)]
-            pub fn from_idx(idx: usize) -> Self {
+            pub const fn from_idx(idx: usize) -> Self {
                 unsafe { ::core::mem::transmute::<#repr_ty, Self>(idx as #repr_ty) }
             }
 
             #[inline(always)]
-            pub fn from_idx_safe(idx: usize) -> ::core::option::Option<Self> {
+            pub const fn from_idx_safe(idx: usize) -> ::core::option::Option<Self> {
                 if idx < #variant_count {
                     Some(unsafe { ::core::mem::transmute::<#repr_ty, Self>(idx as #repr_ty) })
                 } else {
@@ -51,4 +51,3 @@ pub fn expand_indexable_enum(input: &DeriveInput) -> Result<TokenStream> {
 
     Ok(output)
 }
-

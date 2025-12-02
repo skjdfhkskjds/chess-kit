@@ -129,22 +129,26 @@ impl DefaultAttackTable {
     // attack_ray returns the attack ray from the current square in the given
     // direction based on the given bitboard.
     //
+    // note: we unwrap the bitboards to u64 as a hack to enable const bitwise
+    //       operations
+    // 
     // @param: bitboard - bitboard to use as the base for the attack ray
     // @param: square - square to start the attack ray from
     // @param: direction - direction to attack in
     // @return: attack ray bitboard
-    fn attack_ray(bitboard: &Bitboard, square: Square, direction: Direction) -> Bitboard {
+    pub const fn attack_ray(bitboard: &Bitboard, square: Square, direction: Direction) -> Bitboard {
         // get the file and rank and the square to analyze
         let mut file = square.file();
         let mut rank = square.rank();
-        let mut square = BITBOARD_SQUARES[square.idx()];
+        let mut square = BITBOARD_SQUARES[square.idx()].const_unwrap();
 
         // build the ray bitboard in the given direction
-        let mut ray = Bitboard::empty();
+        let mut ray = 0u64;
+        let occupancy = bitboard.const_unwrap();
         loop {
             match direction {
                 Direction::Up => {
-                    if rank == Rank::R8 {
+                    if rank.const_eq(Rank::R8) {
                         break;
                     }
 
@@ -153,7 +157,7 @@ impl DefaultAttackTable {
                     rank.inc();
                 }
                 Direction::Right => {
-                    if file == File::H {
+                    if file.const_eq(File::H) {
                         break;
                     }
 
@@ -162,7 +166,7 @@ impl DefaultAttackTable {
                     file.inc();
                 }
                 Direction::Down => {
-                    if rank == Rank::R1 {
+                    if rank.const_eq(Rank::R1) {
                         break;
                     }
 
@@ -171,7 +175,7 @@ impl DefaultAttackTable {
                     rank.dec();
                 }
                 Direction::Left => {
-                    if file == File::A {
+                    if file.const_eq(File::A) {
                         break;
                     }
 
@@ -180,7 +184,7 @@ impl DefaultAttackTable {
                     file.dec();
                 }
                 Direction::UpLeft => {
-                    if rank == Rank::R8 || file == File::A {
+                    if rank.const_eq(Rank::R8) || file.const_eq(File::A) {
                         break;
                     }
 
@@ -190,7 +194,7 @@ impl DefaultAttackTable {
                     file.dec();
                 }
                 Direction::UpRight => {
-                    if rank == Rank::R8 || file == File::H {
+                    if rank.const_eq(Rank::R8) || file.const_eq(File::H) {
                         break;
                     }
 
@@ -200,7 +204,7 @@ impl DefaultAttackTable {
                     file.inc();
                 }
                 Direction::DownRight => {
-                    if rank == Rank::R1 || file == File::H {
+                    if rank.const_eq(Rank::R1) || file.const_eq(File::H) {
                         break;
                     }
 
@@ -210,7 +214,7 @@ impl DefaultAttackTable {
                     file.inc();
                 }
                 Direction::DownLeft => {
-                    if rank == Rank::R1 || file == File::A {
+                    if rank.const_eq(Rank::R1) || file.const_eq(File::A) {
                         break;
                     }
 
@@ -223,11 +227,11 @@ impl DefaultAttackTable {
 
             // if the square is blocked, we have built the full ray in this
             // direction, so we can stop
-            if !(square & bitboard).is_empty() {
+            if square & occupancy != 0 {
                 break;
             }
         }
 
-        ray
+        Bitboard::new(ray)
     }
 }

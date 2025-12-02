@@ -1,5 +1,5 @@
+use crate::primitives::{BITBOARD_BETWEEN, BITBOARD_SQUARES, Square};
 use chess_kit_derive::{Arithmetic, BitOps};
-use crate::primitives::{BITBOARD_SQUARES, Square};
 
 pub type BitboardVec = Vec<Bitboard>;
 
@@ -23,6 +23,17 @@ impl Bitboard {
     #[inline(always)]
     pub const fn empty() -> Self {
         Self(0)
+    }
+
+    // between returns the between bitboard for the given start (exclusive) and
+    // end (inclusive) squares
+    //
+    // @param: start - start square (exclusive)
+    // @param: end - end square (inclusive)
+    // @return: between bitboard
+    #[inline(always)]
+    pub const fn between(start: Square, end: Square) -> Self {
+        BITBOARD_BETWEEN[start.idx()][end.idx()]
     }
 
     // is_empty checks if the bitboard is empty

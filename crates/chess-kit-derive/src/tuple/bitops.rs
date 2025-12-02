@@ -645,6 +645,13 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         #from_into_u64_impls
         #from_into_u32_impls
         #from_into_u8_impls
+
+        impl #name {
+            #[inline(always)]
+            pub const fn const_unwrap(self) -> #inner {
+                self.0
+            }
+        }
     };
 
     Ok(output)

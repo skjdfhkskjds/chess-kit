@@ -4,6 +4,7 @@ mod sliding_pieces;
 mod magics;
 
 pub use table::DefaultAttackTable;
+pub(crate) use sliding_pieces::Direction;
 
 use crate::position::Position;
 use crate::primitives::{Bitboard, Side, Square, State};
