@@ -89,17 +89,19 @@ impl AttackTable for DefaultAttackTable {
 
         // check if there is an intersection between an attack board and that
         // piece's respective occupancy
-        let opponent = position.bitboards[SideT::Other::INDEX];
-        king_attacks & opponent[Pieces::King.idx()]
-            | rook_attacks & opponent[Pieces::Rook.idx()]
-            | queen_attacks & opponent[Pieces::Queen.idx()]
-            | bishop_attacks & opponent[Pieces::Bishop.idx()]
-            | knight_attacks & opponent[Pieces::Knight.idx()]
-            | pawn_attacks & opponent[Pieces::Pawn.idx()]
+        king_attacks & position.get_piece::<SideT::Other>(Pieces::King)
+            | rook_attacks & position.get_piece::<SideT::Other>(Pieces::Rook)
+            | queen_attacks & position.get_piece::<SideT::Other>(Pieces::Queen)
+            | bishop_attacks & position.get_piece::<SideT::Other>(Pieces::Bishop)
+            | knight_attacks & position.get_piece::<SideT::Other>(Pieces::Knight)
+            | pawn_attacks & position.get_piece::<SideT::Other>(Pieces::Pawn)
     }
 
     // is_attacked returns true if the given square on the given side is attacked
     // by the opponent
+    //
+    // note: this is the same implementation as `attacked_by`, but we leverage
+    //       early termination to improve performance
     //
     // @impl: AttackTable::is_attacked
     #[inline(always)]
@@ -108,9 +110,24 @@ impl AttackTable for DefaultAttackTable {
         position: &Position<StateT>,
         square: Square,
     ) -> bool {
-        !self
-            .attacked_by::<SideT, StateT>(position, square)
-            .is_empty()
+        // generate the attack boards for each piece
+        let occupancy = position.total_occupancy();
+        let king_attacks = self.king_targets(square);
+        let rook_attacks = self.rook_targets(square, occupancy);
+        let bishop_attacks = self.bishop_targets(square, occupancy);
+        let knight_attacks = self.knight_targets(square);
+        let pawn_attacks = self.pawn_targets::<SideT>(square);
+        // @opt: union of rook and bishop attacks instead of routine call
+        let queen_attacks = rook_attacks | bishop_attacks;
+
+        // check if there is an intersection between an attack board and that
+        // piece's respective occupancy
+        !(rook_attacks & position.get_piece::<SideT::Other>(Pieces::Rook)).is_empty()
+            || !(queen_attacks & position.get_piece::<SideT::Other>(Pieces::Queen)).is_empty()
+            || !(bishop_attacks & position.get_piece::<SideT::Other>(Pieces::Bishop)).is_empty()
+            || !(knight_attacks & position.get_piece::<SideT::Other>(Pieces::Knight)).is_empty()
+            || !(pawn_attacks & position.get_piece::<SideT::Other>(Pieces::Pawn)).is_empty()
+            || !(king_attacks & position.get_piece::<SideT::Other>(Pieces::King)).is_empty()
     }
 
     // is_checked returns true if the given side is checked
