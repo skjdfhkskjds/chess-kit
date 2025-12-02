@@ -1,8 +1,10 @@
+use crate::attack_table::AttackTable;
 use crate::position::position::Position;
 use crate::primitives::{GameStateExt, Side, State};
 
-impl<S> Position<S>
+impl<AT, S> Position<AT, S>
 where
+    AT: AttackTable,
     S: State + GameStateExt,
 {
     // swap_sides swaps the sides of the position

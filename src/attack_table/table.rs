@@ -64,7 +64,7 @@ impl AttackTable for DefaultAttackTable {
     #[inline(always)]
     fn attacked_by<SideT: Side, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<Self, StateT>,
         square: Square,
     ) -> Bitboard {
         // idea: our square `T` is attacked iff the opponent has at least one
@@ -107,7 +107,7 @@ impl AttackTable for DefaultAttackTable {
     #[inline(always)]
     fn is_attacked<SideT: Side, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<Self, StateT>,
         square: Square,
     ) -> bool {
         // generate the attack boards for each piece
@@ -136,7 +136,7 @@ impl AttackTable for DefaultAttackTable {
     #[inline(always)]
     fn is_checked<SideT: Side, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<Self, StateT>,
     ) -> bool {
         self.is_attacked::<SideT, StateT>(position, position.king_square::<SideT>())
     }
@@ -148,7 +148,7 @@ impl AttackTable for DefaultAttackTable {
     #[inline(always)]
     fn sniped_by<SideT: Side, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<Self, StateT>,
         square: Square,
     ) -> Bitboard {
         let queens = position.get_piece::<SideT::Other>(Pieces::Queen);

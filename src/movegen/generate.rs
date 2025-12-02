@@ -3,10 +3,10 @@ use crate::movegen::{MoveGenerator, SideToMove};
 use crate::position::Position;
 use crate::primitives::{
     BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Black, GameStateExt, MoveList, MoveType, Pieces,
-    Side, Sides, State, White,
+    Sides, State, White,
 };
 
-impl<A: AttackTable> MoveGenerator<A> {
+impl<AT: AttackTable> MoveGenerator<AT> {
     // generate_moves generates all the pseudo-legal moves of the given move type
     // from the current position and pushes them to the move list
     //
@@ -17,7 +17,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @side-effects: modifies the `move list`
     pub fn generate_moves<StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<AT, StateT>,
         list: &mut MoveList,
         move_type: MoveType,
     ) {
@@ -42,7 +42,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @side-effects: modifies the `move list`
     fn generate_moves_for_side<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<AT, StateT>,
         list: &mut MoveList,
         move_type: MoveType,
     ) {
@@ -70,7 +70,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @side-effects: modifies the `move list`
     fn generate_moves_for_piece<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<AT, StateT>,
         piece: Pieces,
         list: &mut MoveList,
         move_type: MoveType,
@@ -120,7 +120,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @side-effects: modifies the `move list`
     fn generate_pawn_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<AT, StateT>,
         list: &mut MoveList,
         move_type: MoveType,
     ) {
@@ -169,7 +169,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     //       squares along the path from the king and rook
     fn generate_castle_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<AT, StateT>,
         list: &mut MoveList,
     ) {
         // get the castling rights for the side to move

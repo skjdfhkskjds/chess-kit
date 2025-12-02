@@ -1,5 +1,5 @@
 use crate::perft_utils::PerftTest;
-use chess_kit::attack_table::{AttackTable, DefaultAttackTable};
+use chess_kit::attack_table::{default_attack_table, DefaultAttackTable};
 use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
 use chess_kit::position::Position;
@@ -20,11 +20,12 @@ pub enum PerftHarnessMode {
 
 // PerftHarness is a test harness for running perft tests
 pub struct PerftHarness {
-    mode: PerftHarnessMode,     // the mode to run the harness in
-    test_cases: Vec<PerftTest>, // the test cases to run
+    mode: PerftHarnessMode,                   // the mode to run the harness in
+    test_cases: Vec<PerftTest>,               // the test cases to run
+    attack_table: &'static DefaultAttackTable, // global attack table, shared across tests
     move_generator: MoveGenerator<DefaultAttackTable>, // global move generator, shared across tests
     tt: DefaultTranspositionTable<PerftData>, // global transposition table, shared across tests
-    position: Position<DefaultState>, // global position, shared across tests
+    position: Position<DefaultAttackTable, DefaultState>, // global position, shared across tests
 }
 
 impl PerftHarness {
@@ -40,12 +41,14 @@ impl PerftHarness {
             tt.capacity()
         );
 
+        let attack_table = default_attack_table();
         Self {
             mode,
             test_cases,
-            move_generator: MoveGenerator::new(DefaultAttackTable::new()),
+            attack_table,
+            move_generator: MoveGenerator::<DefaultAttackTable>::new(attack_table),
             tt,
-            position: Position::new(),
+            position: Position::<DefaultAttackTable, DefaultState>::new(attack_table),
         }
     }
 
@@ -54,15 +57,15 @@ impl PerftHarness {
     // @param: test - the test case to run
     fn run_test(&mut self, test: &PerftTest) {
         // setup the board from the FEN string
-        let position = Position::try_from(test.fen);
-        if position.is_err() {
+        self.position = Position::<DefaultAttackTable, DefaultState>::new(self.attack_table);
+        let result = self.position.load_fen(test.fen);
+        if result.is_err() {
             println!(
                 "Error: {} in parsing the FEN-string, skipping...",
-                position.err().unwrap()
+                result.err().unwrap()
             );
             return;
         }
-        self.position = position.unwrap();
 
         // run the test case per depth
         for expected in test.iter() {

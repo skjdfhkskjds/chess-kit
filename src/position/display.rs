@@ -1,9 +1,11 @@
+use crate::attack_table::AttackTable;
 use crate::position::Position;
 use crate::primitives::{File, GameStateExt, Pieces, Rank, Sides, State};
 use std::fmt;
 
-impl<S> fmt::Display for Position<S>
+impl<AT, S> fmt::Display for Position<AT, S>
 where
+    AT: AttackTable,
     S: State + GameStateExt,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

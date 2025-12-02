@@ -1,3 +1,4 @@
+use crate::attack_table::AttackTable;
 use crate::position::fen::{FENError, FENParser, Parser};
 use crate::primitives::{
     Bitboard, GameStateExt, History, Pieces, Side, Sides, Square, State, ZobristTable,
@@ -5,9 +6,10 @@ use crate::primitives::{
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
-pub struct Position<S: State + GameStateExt> {
-    pub state: S,            // current state of the position
-    pub history: History<S>, // history of the position state
+pub struct Position<AT: AttackTable, S: State + GameStateExt> {
+    pub attack_table: &'static AT, // attack table for the position
+    pub state: S,                  // current state of the position
+    pub history: History<S>,       // history of the position state
 
     pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
@@ -16,16 +18,18 @@ pub struct Position<S: State + GameStateExt> {
     pub zobrist: ZobristTable, // zobrist random values for the position
 }
 
-impl<S> Position<S>
+impl<AT, S> Position<AT, S>
 where
+    AT: AttackTable,
     S: State + GameStateExt,
 {
     // new creates a new position with all bitboards and pieces initialized to 0
     // and the zobrist random values set to 0
     //
     // @return: new position
-    pub fn new() -> Self {
+    pub fn new(attack_table: &'static AT) -> Self {
         Self {
+            attack_table,
             state: S::default(),
             history: History::new(),
             sides: [Bitboard::empty(); Sides::TOTAL],
@@ -149,33 +153,31 @@ where
     }
 }
 
-impl<S> TryFrom<&str> for Position<S>
+impl<AT, S> Position<AT, S>
 where
+    AT: AttackTable,
     S: State + GameStateExt,
 {
-    type Error = FENError;
-
     // try_from creates a new position from the given FEN string
     //
     // @param: fen - FEN string to create the position from
     // @return: new position, or an error if the FEN string is invalid
-    fn try_from(fen: &str) -> Result<Self, Self::Error> {
+    pub fn load_fen(&mut self, fen: &str) -> Result<(), FENError> {
         let fen_parser = FENParser::parse(fen);
         if fen_parser.is_err() {
             return Err(fen_parser.err().unwrap());
         }
 
-        let mut position = Self::new();
         let parsed = fen_parser.unwrap();
-        position.bitboards = parsed.pieces.bitboards;
-        position.state.set_turn(parsed.turn.turn);
-        position.state.set_castling(parsed.castling.castling);
-        position.state.set_en_passant(parsed.en_passant.square);
-        position.state.set_halfmoves(parsed.halfmove_parser.clock);
-        position.state.set_fullmoves(parsed.fullmove_parser.clock);
+        self.bitboards = parsed.pieces.bitboards;
+        self.state.set_turn(parsed.turn.turn);
+        self.state.set_castling(parsed.castling.castling);
+        self.state.set_en_passant(parsed.en_passant.square);
+        self.state.set_halfmoves(parsed.halfmove_parser.clock);
+        self.state.set_fullmoves(parsed.fullmove_parser.clock);
 
         // TODO: move the board initialization elsewhere
-        position.init(None);
-        Ok(position)
+        self.init(None);
+        Ok(())
     }
 }

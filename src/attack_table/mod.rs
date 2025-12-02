@@ -3,15 +3,23 @@ mod moving_pieces;
 mod sliding_pieces;
 mod table;
 
+use std::sync::OnceLock;
+
 pub(crate) use sliding_pieces::Direction;
 pub use table::DefaultAttackTable;
 
 use crate::position::Position;
 use crate::primitives::{Bitboard, GameStateExt, Side, Square, State};
 
+static DEFAULT_ATTACK_TABLE: OnceLock<DefaultAttackTable> = OnceLock::new();
+
+pub fn default_attack_table() -> &'static DefaultAttackTable {
+    DEFAULT_ATTACK_TABLE.get_or_init(DefaultAttackTable::new)
+}
+
 // AttackTable is a table that provides information about targeting/targetted
 // squares for the board.
-pub trait AttackTable: PieceTargetsTable {
+pub trait AttackTable: PieceTargetsTable + Sized + 'static {
     // new creates and initializes a new attack table
     //
     // @return: a new, initialized attack table
@@ -25,7 +33,7 @@ pub trait AttackTable: PieceTargetsTable {
     // @return: a bitboard of the squares of the opposing side that attack `square`
     fn attacked_by<SideT: Side, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<Self, StateT>,
         square: Square,
     ) -> Bitboard;
 
@@ -37,7 +45,7 @@ pub trait AttackTable: PieceTargetsTable {
     // @return: true if the square is attacked, false otherwise
     fn is_attacked<SideT: Side, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<Self, StateT>,
         square: Square,
     ) -> bool;
 
@@ -47,7 +55,7 @@ pub trait AttackTable: PieceTargetsTable {
     // @return: true if the side is checked, false otherwise
     fn is_checked<SideT: Side, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<Self, StateT>,
     ) -> bool;
 
     // sniped_by returns a bitboard containing the squares of the opposing
@@ -59,7 +67,7 @@ pub trait AttackTable: PieceTargetsTable {
     // @return: a bitboard of the squares that the given side can sniper at the given square
     fn sniped_by<SideT: Side, StateT: State + GameStateExt>(
         &self,
-        position: &Position<StateT>,
+        position: &Position<Self, StateT>,
         square: Square,
     ) -> Bitboard;
 }

@@ -1,8 +1,10 @@
+use crate::attack_table::AttackTable;
 use crate::position::position::Position;
 use crate::primitives::{Black, GameStateExt, Pieces, Sides, Square, State, White};
 
-impl<S> Position<S>
+impl<AT, S> Position<AT, S>
 where
+    AT: AttackTable,
     S: State + GameStateExt,
 {
     // is_draw checks if the position is a draw

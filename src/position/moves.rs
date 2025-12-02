@@ -1,8 +1,10 @@
+use crate::attack_table::AttackTable;
 use crate::position::{Position, SideCastlingSquares};
 use crate::primitives::{Black, GameStateExt, Move, Pieces, Side, Sides, Square, State, White};
 
-impl<S> Position<S>
+impl<AT, S> Position<AT, S>
 where
+    AT: AttackTable,
     S: State + GameStateExt,
 {
     // make_move makes the given move from the current position
@@ -91,6 +93,9 @@ where
                 self.set_castling(self.state.castling().revoke_kingside::<SideT>());
             }
         }
+    }
+
+    fn update_blockers<SideT: Side>(&mut self, square: Square) {
     }
 
     // make_move_for_side makes the given move from the current position for
