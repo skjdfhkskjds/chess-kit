@@ -1,7 +1,10 @@
 use crate::position::{Position, SideCastlingSquares};
-use crate::primitives::{Black, Move, Pieces, Side, Sides, Square, State, White};
+use crate::primitives::{Black, GameStateExt, Move, Pieces, Side, Sides, Square, State, White};
 
-impl<S: State> Position<S> {
+impl<S> Position<S>
+where
+    S: State + GameStateExt,
+{
     // make_move makes the given move from the current position
     //
     // @param: mv - move to make

@@ -1,7 +1,10 @@
 use crate::position::position::Position;
-use crate::primitives::{Pieces, Sides, Square, White, Black, State};
+use crate::primitives::{Black, GameStateExt, Pieces, Sides, Square, State, White};
 
-impl<S: State> Position<S> {
+impl<S> Position<S>
+where
+    S: State + GameStateExt,
+{
     // is_draw checks if the position is a draw
     //
     // @return: true if the position is a draw, false otherwise
@@ -63,7 +66,7 @@ impl<S: State> Position<S> {
                 }
 
                 // check if both bishops are on the same colour
-                // 
+                //
                 // TODO: refactor into bitboard.first() or something
                 let wb_sq = Square::from_idx(w[Pieces::Bishop.idx()].trailing_zeros() as usize);
                 let bb_sq = Square::from_idx(b[Pieces::Bishop.idx()].trailing_zeros() as usize);

@@ -7,7 +7,7 @@ pub(crate) use sliding_pieces::Direction;
 pub use table::DefaultAttackTable;
 
 use crate::position::Position;
-use crate::primitives::{Bitboard, Side, Square, State};
+use crate::primitives::{Bitboard, GameStateExt, Side, Square, State};
 
 // AttackTable is a table that provides information about targeting/targetted
 // squares for the board.
@@ -23,7 +23,7 @@ pub trait AttackTable: PieceTargetsTable {
     // @param: position - immutable reference to the position
     // @param: square - square to check if is attacked
     // @return: a bitboard of the squares of the opposing side that attack `square`
-    fn attacked_by<SideT: Side, StateT: State>(
+    fn attacked_by<SideT: Side, StateT: State + GameStateExt>(
         &self,
         position: &Position<StateT>,
         square: Square,
@@ -35,7 +35,7 @@ pub trait AttackTable: PieceTargetsTable {
     // @param: position - immutable reference to the position
     // @param: square - square to check if is attacked
     // @return: true if the square is attacked, false otherwise
-    fn is_attacked<SideT: Side, StateT: State>(
+    fn is_attacked<SideT: Side, StateT: State + GameStateExt>(
         &self,
         position: &Position<StateT>,
         square: Square,
@@ -45,7 +45,10 @@ pub trait AttackTable: PieceTargetsTable {
     //
     // @param: position - immutable reference to the position
     // @return: true if the side is checked, false otherwise
-    fn is_checked<SideT: Side, StateT: State>(&self, position: &Position<StateT>) -> bool;
+    fn is_checked<SideT: Side, StateT: State + GameStateExt>(
+        &self,
+        position: &Position<StateT>,
+    ) -> bool;
 
     // sniped_by returns a bitboard containing the squares of the opposing
     // side that can "snipe" (a sliding piece that can theoretically, without
@@ -54,7 +57,7 @@ pub trait AttackTable: PieceTargetsTable {
     // @param: position - immutable reference to the position
     // @param: square - square to check if can sniper
     // @return: a bitboard of the squares that the given side can sniper at the given square
-    fn sniped_by<SideT: Side, StateT: State>(
+    fn sniped_by<SideT: Side, StateT: State + GameStateExt>(
         &self,
         position: &Position<StateT>,
         square: Square,

@@ -3,7 +3,7 @@ mod state;
 
 pub use state::DefaultState;
 
-use crate::primitives::{Castling, Move, Sides, Square, ZobristKey};
+use crate::primitives::{Bitboard, Castling, Move, Side, Sides, Square, ZobristKey};
 use std::fmt::Display;
 
 pub type Clock = u16;
@@ -156,4 +156,44 @@ pub trait WriteOnlyState {
     // @return: void
     // @side-effects: modifies the `state`
     fn set_next_move(&mut self, next_move: Move);
+}
+
+// GameStateExt is an optional extension trait for a State implementation that
+// provides additional game state information
+// 
+// @trait
+pub trait GameStateExt {
+    // king_blocker_pieces returns the bitboard of the side's king's blocker
+    // pieces
+    // 
+    // note: a blocker piece is not necessarily on the same side as the king it
+    //       is blocking
+    //
+    // @return: bitboard of the side's king's blocker pieces
+    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard;
+
+    // set_king_blocker_pieces sets the bitboard of the side's king's blocker
+    // pieces
+    // 
+    // note: a blocker piece is not necessarily on the same side as the king it
+    //       is blocking
+    //
+    // @param: pieces - side's king's blocker pieces
+    // @return: void
+    // @side-effects: modifies the `state`
+    fn set_king_blocker_pieces<SideT: Side>(&mut self, pieces: Bitboard);
+
+    // pinning_pieces returns the bitboard of the pieces that are pinning the
+    // opponent's king
+    //
+    // @return: bitboard of the pieces that are pinning the opponent's king
+    fn pinning_pieces<SideT: Side>(&self) -> Bitboard;
+
+    // set_pinning_pieces sets the bitboard of the pieces that are pinning the
+    // opponent's king
+    //
+    // @param: pieces - pieces that are pinning the opponent's king
+    // @return: void
+    // @side-effects: modifies the `state`
+    fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard);
 }

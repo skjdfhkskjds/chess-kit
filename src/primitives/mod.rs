@@ -21,5 +21,5 @@ pub use pieces::Pieces;
 pub use ranks::{Rank, SideRanks};
 pub use sides::{Black, Side, Sides, White};
 pub use squares::Square;
-pub use state::{Clock, DefaultState, ReadOnlyState, State, WriteOnlyState};
+pub use state::{Clock, DefaultState, GameStateExt, ReadOnlyState, State, WriteOnlyState};
 pub use zobrist::{ZobristKey, ZobristTable};

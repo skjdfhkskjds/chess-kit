@@ -1,18 +1,25 @@
 use crate::primitives::{
-    Castling, Clock, Move, ReadOnlyState, Sides, Square, State, WriteOnlyState, ZobristKey,
+    Bitboard, Castling, Clock, GameStateExt, Move, ReadOnlyState, Side, Sides, Square, State,
+    WriteOnlyState, ZobristKey,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DefaultState {
-    pub turn: Sides,                // side to move
-    pub castling: Castling,         // castling rights
-    pub en_passant: Option<Square>, // active en passant square, if any
+    pub(crate) turn: Sides,                // side to move
+    pub(crate) castling: Castling,         // castling rights
+    pub(crate) en_passant: Option<Square>, // active en passant square, if any
 
-    pub halfmoves: Clock, // halfmove clock
-    pub fullmoves: Clock, // fullmove clock
+    pub(crate) halfmoves: Clock, // halfmove clock
+    pub(crate) fullmoves: Clock, // fullmove clock
 
-    pub zobrist_key: ZobristKey, // zobrist key for the current position
-    pub next_move: Move,         // next move to be made
+    pub(crate) zobrist_key: ZobristKey, // zobrist key for the current position
+    pub(crate) next_move: Move,         // next move to be made
+
+    // ==============================
+    //     Game State Extensions
+    // ==============================
+    pub(crate) king_blockers: [Bitboard; Sides::TOTAL], // bitboard of the side's king's blockers
+    pub(crate) pinners: [Bitboard; Sides::TOTAL], // bitboard of the pieces that are pinning the opponent's king
 }
 
 impl State for DefaultState {
@@ -29,6 +36,8 @@ impl State for DefaultState {
             fullmoves: 0,
             zobrist_key: ZobristKey::default(),
             next_move: Move::default(),
+            king_blockers: [Bitboard::empty(); Sides::TOTAL],
+            pinners: [Bitboard::empty(); Sides::TOTAL],
         }
     }
 
@@ -44,6 +53,8 @@ impl State for DefaultState {
         self.fullmoves = 0;
         self.zobrist_key = ZobristKey::default();
         self.next_move = Move::default();
+        self.king_blockers = [Bitboard::empty(); Sides::TOTAL];
+        self.pinners = [Bitboard::empty(); Sides::TOTAL];
     }
 }
 
@@ -202,6 +213,44 @@ impl WriteOnlyState for DefaultState {
     #[inline(always)]
     fn set_next_move(&mut self, next_move: Move) {
         self.next_move = next_move;
+    }
+}
+
+impl GameStateExt for DefaultState {
+    // king_blocker_pieces returns the bitboard of the side's king's blocker
+    // pieces
+    //
+    // @impl: GameStateExt::king_blocker_pieces
+    #[inline(always)]
+    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
+        self.king_blockers[SideT::INDEX]
+    }
+
+    // set_king_blocker_pieces sets the bitboard of the side's king's blocker
+    // pieces
+    //
+    // @impl: GameStateExt::set_king_blocker_pieces
+    #[inline(always)]
+    fn set_king_blocker_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
+        self.king_blockers[SideT::INDEX] = pieces;
+    }
+
+    // pinning_pieces returns the bitboard of the pieces that are pinning the
+    // opponent's king
+    //
+    // @impl: GameStateExt::pinning_pieces
+    #[inline(always)]
+    fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
+        self.pinners[SideT::INDEX]
+    }
+
+    // set_pinning_pieces sets the bitboard of the pieces that are pinning the
+    // opponent's king
+    //
+    // @impl: GameStateExt::set_pinning_pieces
+    #[inline(always)]
+    fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
+        self.pinners[SideT::INDEX] = pieces;
     }
 }
 

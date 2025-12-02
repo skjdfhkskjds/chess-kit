@@ -1,7 +1,10 @@
 use crate::position::position::Position;
-use crate::primitives::{Side, State};
+use crate::primitives::{GameStateExt, Side, State};
 
-impl<S: State> Position<S> {
+impl<S> Position<S>
+where
+    S: State + GameStateExt,
+{
     // swap_sides swaps the sides of the position
     //
     // @return: void

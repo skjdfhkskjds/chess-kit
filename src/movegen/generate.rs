@@ -2,8 +2,8 @@ use crate::attack_table::AttackTable;
 use crate::movegen::{MoveGenerator, SideToMove};
 use crate::position::Position;
 use crate::primitives::{
-    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Black, MoveList, MoveType, Pieces, Side, Sides,
-    State, White,
+    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Black, GameStateExt, MoveList, MoveType, Pieces,
+    Side, Sides, State, White,
 };
 
 impl<A: AttackTable> MoveGenerator<A> {
@@ -15,7 +15,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @param: move_type - move type to generate moves for
     // @return: void
     // @side-effects: modifies the `move list`
-    pub fn generate_moves<StateT: State>(
+    pub fn generate_moves<StateT: State + GameStateExt>(
         &self,
         position: &Position<StateT>,
         list: &mut MoveList,
@@ -40,7 +40,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @param: move_type - move type to generate moves for
     // @return: void
     // @side-effects: modifies the `move list`
-    fn generate_moves_for_side<SideT: SideToMove, StateT: State>(
+    fn generate_moves_for_side<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<StateT>,
         list: &mut MoveList,
@@ -68,7 +68,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @param: move_type - move type to generate moves of
     // @return: void
     // @side-effects: modifies the `move list`
-    fn generate_moves_for_piece<SideT: SideToMove, StateT: State>(
+    fn generate_moves_for_piece<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<StateT>,
         piece: Pieces,
@@ -80,10 +80,10 @@ impl<A: AttackTable> MoveGenerator<A> {
             return self.generate_pawn_moves::<SideT, StateT>(position, list, move_type);
         }
 
-        let occupancy = position.occupancy::<SideT>();
-        let empty_squares = position.empty_squares::<SideT>();
-        let our_occupancy = position.sides[SideT::INDEX];
-        let opponent_occupancy = position.sides[SideT::Other::INDEX];
+        let occupancy = position.total_occupancy();
+        let empty_squares = position.empty_squares();
+        let our_occupancy = position.occupancy::<SideT>();
+        let opponent_occupancy = position.occupancy::<SideT::Other>();
 
         // generate moves from all positions of the piece for the current side
         // to move
@@ -118,14 +118,14 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @param: move_type - move type to generate moves of
     // @return: void
     // @side-effects: modifies the `move list`
-    fn generate_pawn_moves<SideT: SideToMove, StateT: State>(
+    fn generate_pawn_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<StateT>,
         list: &mut MoveList,
         move_type: MoveType,
     ) {
         let en_passant = position.state.en_passant();
-        let empty_squares = position.empty_squares::<SideT>();
+        let empty_squares = position.empty_squares();
         let double_step_rank = BITBOARD_RANKS[SideT::DOUBLE_STEP_RANK.idx()];
 
         // generate moves for each of the pawns
@@ -146,7 +146,7 @@ impl<A: AttackTable> MoveGenerator<A> {
             // generate pawn captures
             if move_type == MoveType::All || move_type == MoveType::Capture {
                 let targets = self.attack_table.pawn_targets::<SideT>(from);
-                let captures = targets & position.sides[SideT::Other::INDEX];
+                let captures = targets & position.occupancy::<SideT::Other>();
                 let en_passant_captures = match en_passant {
                     Some(ep) => targets & BITBOARD_SQUARES[ep.idx()],
                     None => Bitboard::empty(),
@@ -167,7 +167,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @return: void
     // TODO: current implementation does not support chess960, as it assumes the
     //       squares along the path from the king and rook
-    fn generate_castle_moves<SideT: SideToMove, StateT: State>(
+    fn generate_castle_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<StateT>,
         list: &mut MoveList,
@@ -192,11 +192,13 @@ impl<A: AttackTable> MoveGenerator<A> {
         }
 
         // generate castle moves depending on the side to move
-        let occupancy = position.occupancy::<SideT>();
+        let occupancy = position.total_occupancy();
         let mut moves = Bitboard::empty();
 
         if kingside {
             // get the blockers (squares in between the king and the rook)
+            //
+            // TOOD: refactor this call to use Bitboard::between
             let blockers = BITBOARD_SQUARES[SideT::KINGSIDE_DESTINATION.idx()]
                 | BITBOARD_SQUARES[SideT::KINGSIDE_ROOK_DESTINATION.idx()];
 

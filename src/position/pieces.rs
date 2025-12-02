@@ -1,7 +1,10 @@
 use crate::position::Position;
-use crate::primitives::{Bitboard, Pieces, Side, Square, State};
+use crate::primitives::{Bitboard, GameStateExt, Pieces, Side, Square, State};
 
-impl<S: State> Position<S> {
+impl<S> Position<S>
+where
+    S: State + GameStateExt,
+{
     // king_square gets the square of the king for the given side
     //
     // @return: square of the king for the given side

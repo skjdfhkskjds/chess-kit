@@ -1,7 +1,10 @@
 use crate::position::position::Position;
-use crate::primitives::{Castling, State};
+use crate::primitives::{Castling, GameStateExt, State};
 
-impl<S: State> Position<S> {
+impl<S> Position<S>
+where
+    S: State + GameStateExt,
+{
     // set_castling sets the castling rights for the given side
     //
     // @param: castling - castling rights to set

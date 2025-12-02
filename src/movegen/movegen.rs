@@ -1,6 +1,6 @@
 use crate::attack_table::AttackTable;
 use crate::position::Position;
-use crate::primitives::{Bitboard, Move, MoveList, Pieces, SideRanks, Square, State};
+use crate::primitives::{Bitboard, GameStateExt, Move, MoveList, Pieces, SideRanks, Square, State};
 
 // list of pieces that a pawn can promote to
 const PROMOTION_PIECES: [Pieces; 4] = [Pieces::Queen, Pieces::Rook, Pieces::Bishop, Pieces::Knight];
@@ -29,7 +29,7 @@ impl<A: AttackTable> MoveGenerator<A> {
     // @param: list - mutable reference to the move list
     // @return: void
     // @side-effects: modifies the `move list`
-    pub(crate) fn push_moves<SideT: SideRanks, StateT: State>(
+    pub(crate) fn push_moves<SideT: SideRanks, StateT: State + GameStateExt>(
         &self,
         position: &Position<StateT>,
         piece: Pieces,

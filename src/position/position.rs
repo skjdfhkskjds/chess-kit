@@ -1,9 +1,11 @@
 use crate::position::fen::{FENError, FENParser, Parser};
-use crate::primitives::{Bitboard, History, Pieces, Side, Sides, Square, State, ZobristTable};
+use crate::primitives::{
+    Bitboard, GameStateExt, History, Pieces, Side, Sides, Square, State, ZobristTable,
+};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
-pub struct Position<S: State> {
+pub struct Position<S: State + GameStateExt> {
     pub state: S,            // current state of the position
     pub history: History<S>, // history of the position state
 
@@ -14,7 +16,10 @@ pub struct Position<S: State> {
     pub zobrist: ZobristTable, // zobrist random values for the position
 }
 
-impl<S: State> Position<S> {
+impl<S> Position<S>
+where
+    S: State + GameStateExt,
+{
     // new creates a new position with all bitboards and pieces initialized to 0
     // and the zobrist random values set to 0
     //
@@ -107,25 +112,32 @@ impl<S: State> Position<S> {
         self.pieces = [Pieces::None; Square::TOTAL];
     }
 
-    // occupancy gets the bitboard of all pieces in the position
+    // occupancy gets the bitboard of the given side's pieces in the position
     //
-    // Note: this value is not actually dependent on the side parameter, but
-    //       it is included to provide compile-time resolution of the indices
+    // @param: side - side to get the occupancy for
+    // @return: bitboard of the given side's pieces in the position
+    #[inline(always)]
+    pub fn occupancy<SideT: Side>(&self) -> Bitboard {
+        self.sides[SideT::INDEX]
+    }
+
+    // total_occupancy gets the bitboard of all pieces in the position
+    //
     //
     // @return: bitboard of all pieces in the position
     #[inline(always)]
-    pub fn occupancy<SideT: Side>(&self) -> Bitboard {
-        self.sides[SideT::INDEX] | self.sides[SideT::Other::INDEX]
+    pub fn total_occupancy(&self) -> Bitboard {
+        self.sides[Sides::White.idx()] | self.sides[Sides::Black.idx()]
     }
 
     // empty_squares gets the bitboard of all empty squares in the position
     //
-    // Note: logically equivalent to `!(self.occupancy())`
+    // note: logically equivalent to `!(self.occupancy())`
     //
     // @return: bitboard of all empty squares in the position
     #[inline(always)]
-    pub fn empty_squares<SideT: Side>(&self) -> Bitboard {
-        !self.occupancy::<SideT>()
+    pub fn empty_squares(&self) -> Bitboard {
+        !self.total_occupancy()
     }
 
     // turn gets the side to move
@@ -137,7 +149,10 @@ impl<S: State> Position<S> {
     }
 }
 
-impl<S: State> TryFrom<&str> for Position<S> {
+impl<S> TryFrom<&str> for Position<S>
+where
+    S: State + GameStateExt,
+{
     type Error = FENError;
 
     // try_from creates a new position from the given FEN string
