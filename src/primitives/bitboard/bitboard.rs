@@ -45,6 +45,15 @@ impl Bitboard {
         self.0 == 0
     }
 
+    // more_than_one checks if the bitboard has more than one bit set
+    //
+    // @param: self - immutable reference to the bitboard
+    // @return: true if the bitboard has more than one bit set, false otherwise
+    #[inline(always)]
+    pub const fn more_than_one(&self) -> bool {
+        self.0 > 1
+    }
+
     // remove_at removes the piece at the given square
     //
     // @param: self - mutable reference to the bitboard

@@ -92,9 +92,9 @@ impl<A: AttackTable> MoveGenerator<A> {
             let targets = match piece {
                 Pieces::King => self.attack_table.king_targets(from),
                 Pieces::Knight => self.attack_table.knight_targets(from),
-                Pieces::Bishop => self.attack_table.bishop_targets(from, &occupancy),
-                Pieces::Rook => self.attack_table.rook_targets(from, &occupancy),
-                Pieces::Queen => self.attack_table.queen_targets(from, &occupancy),
+                Pieces::Bishop => self.attack_table.bishop_targets(from, occupancy),
+                Pieces::Rook => self.attack_table.rook_targets(from, occupancy),
+                Pieces::Queen => self.attack_table.queen_targets(from, occupancy),
                 _ => unreachable!("Not a valid piece: {piece}"),
             };
 

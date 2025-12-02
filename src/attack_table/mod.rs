@@ -1,10 +1,10 @@
-mod table;
+mod magics;
 mod moving_pieces;
 mod sliding_pieces;
-mod magics;
+mod table;
 
-pub use table::DefaultAttackTable;
 pub(crate) use sliding_pieces::Direction;
+pub use table::DefaultAttackTable;
 
 use crate::position::Position;
 use crate::primitives::{Bitboard, Side, Square, State};
@@ -16,6 +16,18 @@ pub trait AttackTable: PieceTargetsTable {
     //
     // @return: a new, initialized attack table
     fn new() -> Self;
+
+    // attacked_by returns a bitboard containing the squares that the given side
+    // is attacked by at the given square
+    //
+    // @param: position - immutable reference to the position
+    // @param: square - square to check if is attacked
+    // @return: a bitboard of the squares of the opposing side that attack `square`
+    fn attacked_by<SideT: Side, StateT: State>(
+        &self,
+        position: &Position<StateT>,
+        square: Square,
+    ) -> Bitboard;
 
     // is_attacked returns true if the given square on the given side is attacked
     // by the opponent.
@@ -34,6 +46,19 @@ pub trait AttackTable: PieceTargetsTable {
     // @param: position - immutable reference to the position
     // @return: true if the side is checked, false otherwise
     fn is_checked<SideT: Side, StateT: State>(&self, position: &Position<StateT>) -> bool;
+
+    // sniped_by returns a bitboard containing the squares of the opposing
+    // side that can "snipe" (a sliding piece that can theoretically, without
+    // being blocked, attack a given square) the given square
+    //
+    // @param: position - immutable reference to the position
+    // @param: square - square to check if can sniper
+    // @return: a bitboard of the squares that the given side can sniper at the given square
+    fn sniped_by<SideT: Side, StateT: State>(
+        &self,
+        position: &Position<StateT>,
+        square: Square,
+    ) -> Bitboard;
 }
 
 // PieceTargetsTable is a table that provides information about the squares that
@@ -67,19 +92,19 @@ pub trait PieceTargetsTable {
     //
     // @param: sq - square that the rook is on
     // @return: a bitboard of the rook's targets from the given square
-    fn rook_targets(&self, square: Square, occupancy: &Bitboard) -> Bitboard;
+    fn rook_targets(&self, square: Square, occupancy: Bitboard) -> Bitboard;
 
     // bishop_targets returns the squares that the bishop targets from the given
     // square
     //
     // @param: sq - square that the bishop is on
     // @return: a bitboard of the bishop's targets from the given square
-    fn bishop_targets(&self, square: Square, occupancy: &Bitboard) -> Bitboard;
+    fn bishop_targets(&self, square: Square, occupancy: Bitboard) -> Bitboard;
 
     // queen_targets returns the squares that the queen targets from the given
     // square
     //
     // @param: sq - square that the queen is on
     // @return: a bitboard of the queen's targets from the given square
-    fn queen_targets(&self, square: Square, occupancy: &Bitboard) -> Bitboard;
+    fn queen_targets(&self, square: Square, occupancy: Bitboard) -> Bitboard;
 }

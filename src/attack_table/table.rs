@@ -55,16 +55,16 @@ impl AttackTable for DefaultAttackTable {
         attack_table
     }
 
-    // is_attacked returns true if the given square on the given side is attacked
-    // by the opponent
+    // attacked_by returns a bitboard containing the squares that the given side
+    // is attacked by at the given square
     //
-    // @impl: AttackTable::is_attacked
+    // @impl: AttackTable::attacked_by
     #[inline(always)]
-    fn is_attacked<SideT: Side, StateT: State>(
+    fn attacked_by<SideT: Side, StateT: State>(
         &self,
         position: &Position<StateT>,
         square: Square,
-    ) -> bool {
+    ) -> Bitboard {
         // idea: our square `T` is attacked iff the opponent has at least one
         //       piece in square `S` such that attack board generated from `T`
         //       includes `S`
@@ -78,22 +78,36 @@ impl AttackTable for DefaultAttackTable {
         // generate the attack boards for each piece
         let occupancy = position.occupancy::<SideT>();
         let king_attacks = self.king_targets(square);
-        let rook_attacks = self.rook_targets(square, &occupancy);
-        let bishop_attacks = self.bishop_targets(square, &occupancy);
+        let rook_attacks = self.rook_targets(square, occupancy);
+        let bishop_attacks = self.bishop_targets(square, occupancy);
         let knight_attacks = self.knight_targets(square);
         let pawn_attacks = self.pawn_targets::<SideT>(square);
         // @opt: union of rook and bishop attacks instead of routine call
         let queen_attacks = rook_attacks | bishop_attacks;
 
-        // check if there is an intersection between the attack board and that
+        // check if there is an intersection between an attack board and that
         // piece's respective occupancy
-        let opponent = position.bitboards[SideT::Other::INDEX];
-        !(king_attacks & opponent[Pieces::King.idx()]).is_empty()
-            || !(rook_attacks & opponent[Pieces::Rook.idx()]).is_empty()
-            || !(queen_attacks & opponent[Pieces::Queen.idx()]).is_empty()
-            || !(bishop_attacks & opponent[Pieces::Bishop.idx()]).is_empty()
-            || !(knight_attacks & opponent[Pieces::Knight.idx()]).is_empty()
-            || !(pawn_attacks & opponent[Pieces::Pawn.idx()]).is_empty()
+        king_attacks & position.get_piece::<SideT::Other>(Pieces::King)
+            | rook_attacks & position.get_piece::<SideT::Other>(Pieces::Rook)
+            | queen_attacks & position.get_piece::<SideT::Other>(Pieces::Queen)
+            | bishop_attacks & position.get_piece::<SideT::Other>(Pieces::Bishop)
+            | knight_attacks & position.get_piece::<SideT::Other>(Pieces::Knight)
+            | pawn_attacks & position.get_piece::<SideT::Other>(Pieces::Pawn)
+    }
+
+    // is_attacked returns true if the given square on the given side is attacked
+    // by the opponent
+    //
+    // @impl: AttackTable::is_attacked
+    #[inline(always)]
+    fn is_attacked<SideT: Side, StateT: State>(
+        &self,
+        position: &Position<StateT>,
+        square: Square,
+    ) -> bool {
+        !self
+            .attacked_by::<SideT, StateT>(position, square)
+            .is_empty()
     }
 
     // is_checked returns true if the given side is checked
@@ -102,6 +116,27 @@ impl AttackTable for DefaultAttackTable {
     #[inline(always)]
     fn is_checked<SideT: Side, StateT: State>(&self, position: &Position<StateT>) -> bool {
         self.is_attacked::<SideT, StateT>(position, position.king_square::<SideT>())
+    }
+
+    // sniped_by returns a bitboard containing the squares of the opposing
+    // side that can "snipe" the given square
+    //
+    // @impl: AttackTable::sniped_by
+    #[inline(always)]
+    fn sniped_by<SideT: Side, StateT: State>(
+        &self,
+        position: &Position<StateT>,
+        square: Square,
+    ) -> Bitboard {
+        let queens = position.get_piece::<SideT::Other>(Pieces::Queen);
+
+        // the snipers are the union of the opponent's rooks/queens that can
+        // see the square on an empty board and the opponent's bishops/queens
+        // that can see the square on an empty board
+        (self.rook_targets(square, Bitboard::empty())
+            & (queens | position.get_piece::<SideT::Other>(Pieces::Rook)))
+            | (self.bishop_targets(square, Bitboard::empty())
+                & (queens | position.get_piece::<SideT::Other>(Pieces::Bishop)))
     }
 }
 
@@ -137,7 +172,7 @@ impl PieceTargetsTable for DefaultAttackTable {
     //
     // @impl: PieceTargetsTable::rook_targets
     #[inline(always)]
-    fn rook_targets(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+    fn rook_targets(&self, square: Square, bitboard: Bitboard) -> Bitboard {
         self.rook_table[self.rook_magics[square.idx()].idx(bitboard)]
     }
 
@@ -145,7 +180,7 @@ impl PieceTargetsTable for DefaultAttackTable {
     //
     // @impl: PieceTargetsTable::bishop_targets
     #[inline(always)]
-    fn bishop_targets(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+    fn bishop_targets(&self, square: Square, bitboard: Bitboard) -> Bitboard {
         self.bishop_table[self.bishop_magics[square.idx()].idx(bitboard)]
     }
 
@@ -153,7 +188,7 @@ impl PieceTargetsTable for DefaultAttackTable {
     //
     // @impl: PieceTargetsTable::queen_targets
     #[inline(always)]
-    fn queen_targets(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
+    fn queen_targets(&self, square: Square, bitboard: Bitboard) -> Bitboard {
         self.rook_targets(square, bitboard) ^ self.bishop_targets(square, bitboard)
     }
 }

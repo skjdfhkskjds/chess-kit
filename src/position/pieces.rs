@@ -16,7 +16,7 @@ impl<S: State> Position<S> {
     // @param: piece - piece to get the bitboard for
     // @return: bitboard of the piece for the given side
     #[inline(always)]
-    pub(crate) fn get_piece<SideT: Side>(&self, piece: Pieces) -> Bitboard {
+    pub fn get_piece<SideT: Side>(&self, piece: Pieces) -> Bitboard {
         self.bitboards[SideT::INDEX][piece.idx()]
     }
 
