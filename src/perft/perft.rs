@@ -53,8 +53,10 @@ where
             Sides::White => position.is_checked::<Black>(),
             Sides::Black => position.is_checked::<White>(),
         };
-        if !is_checked {
+        if !is_checked && depth > 1 {
             nodes += perft(position, move_generator, tt, depth - 1);
+        } else if !is_checked {
+            nodes += 1;
         }
 
         // undo the move
