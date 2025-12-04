@@ -37,7 +37,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         to_squares: Bitboard,
         list: &mut MoveList,
     ) {
-        let en_passant = position.state.en_passant();
+        let en_passant = position.state().en_passant();
 
         // push a move for each of the `to` squares
         for to in to_squares.iter() {
@@ -48,7 +48,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
             // Note: a captured piece is the piece that currently occupies the
             //       target square. Notice that this definition excludes en-passant
             //       captures.
-            let captured = position.pieces[to.idx()];
+            let captured = position.piece_at(to);
             if !matches!(captured, Pieces::None) {
                 mv = mv.with_capture(captured);
             }

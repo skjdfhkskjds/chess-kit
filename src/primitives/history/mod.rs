@@ -91,3 +91,9 @@ impl<S: State> History<S> {
         self.current = 0;
     }
 }
+
+impl<S: State> Default for History<S> {
+    fn default() -> Self {
+        Self::new()
+    }
+}

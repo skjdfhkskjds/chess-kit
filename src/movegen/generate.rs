@@ -124,7 +124,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         list: &mut MoveList,
         move_type: MoveType,
     ) {
-        let en_passant = position.state.en_passant();
+        let en_passant = position.state().en_passant();
         let empty_squares = position.empty_squares();
         let double_step_rank = BITBOARD_RANKS[SideT::DOUBLE_STEP_RANK.idx()];
 
@@ -173,7 +173,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         list: &mut MoveList,
     ) {
         // get the castling rights for the side to move
-        let castling = position.state.castling();
+        let castling = position.state().castling();
         let (kingside, queenside) = (castling.kingside::<SideT>(), castling.queenside::<SideT>());
 
         // get the current king square

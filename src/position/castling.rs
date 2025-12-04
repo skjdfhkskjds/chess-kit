@@ -2,10 +2,10 @@ use crate::attack_table::AttackTable;
 use crate::position::position::Position;
 use crate::primitives::{Castling, GameStateExt, State};
 
-impl<AT, S> Position<AT, S>
+impl<AT, StateT> Position<AT, StateT>
 where
     AT: AttackTable,
-    S: State + GameStateExt,
+    StateT: State + GameStateExt,
 {
     // set_castling sets the castling rights for the given side
     //

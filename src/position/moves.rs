@@ -2,10 +2,10 @@ use crate::attack_table::AttackTable;
 use crate::position::{Position, SideCastlingSquares};
 use crate::primitives::{Black, GameStateExt, Move, Pieces, Side, Sides, Square, State, White};
 
-impl<AT, S> Position<AT, S>
+impl<AT, StateT> Position<AT, StateT>
 where
     AT: AttackTable,
-    S: State + GameStateExt,
+    StateT: State + GameStateExt,
 {
     // make_move makes the given move from the current position
     //

@@ -6,10 +6,10 @@ use crate::primitives::{
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
-pub struct Position<AT: AttackTable, S: State + GameStateExt> {
+pub struct Position<AT: AttackTable, StateT: State + GameStateExt> {
     pub attack_table: &'static AT, // attack table for the position
-    pub state: S,                  // current state of the position
-    pub history: History<S>,       // history of the position state
+    pub state: StateT,             // current state of the position
+    pub history: History<StateT>,  // history of the position state
 
     pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
@@ -18,10 +18,10 @@ pub struct Position<AT: AttackTable, S: State + GameStateExt> {
     pub zobrist: ZobristTable, // zobrist random values for the position
 }
 
-impl<AT, S> Position<AT, S>
+impl<AT, StateT> Position<AT, StateT>
 where
     AT: AttackTable,
-    S: State + GameStateExt,
+    StateT: State + GameStateExt,
 {
     // new creates a new position with all bitboards and pieces initialized to 0
     // and the zobrist random values set to 0
@@ -30,12 +30,12 @@ where
     pub fn new(attack_table: &'static AT) -> Self {
         Self {
             attack_table,
-            state: S::default(),
-            history: History::new(),
+            state: StateT::default(),
+            history: History::default(),
             sides: [Bitboard::empty(); Sides::TOTAL],
             bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
             pieces: [Pieces::None; Square::TOTAL],
-            zobrist: ZobristTable::new(),
+            zobrist: ZobristTable::default(),
         }
     }
 
@@ -144,6 +144,15 @@ where
         !self.total_occupancy()
     }
 
+    // piece_at gets the piece type at the given square
+    //
+    // @param: square - square to get the piece type at
+    // @return: piece type at the given square
+    #[inline(always)]
+    pub fn piece_at(&self, square: Square) -> Pieces {
+        self.pieces[square.idx()]
+    }
+
     // turn gets the side to move
     //
     // @return: side to move
@@ -151,12 +160,20 @@ where
     pub fn turn(&self) -> Sides {
         self.state.turn()
     }
+
+    // state returns a reference to the current state of the position
+    //
+    // @return: reference to the current state of the position
+    #[inline(always)]
+    pub fn state(&self) -> &StateT {
+        &self.state
+    }
 }
 
-impl<AT, S> Position<AT, S>
+impl<AT, StateT> Position<AT, StateT>
 where
     AT: AttackTable,
-    S: State + GameStateExt,
+    StateT: State + GameStateExt,
 {
     // try_from creates a new position from the given FEN string
     //

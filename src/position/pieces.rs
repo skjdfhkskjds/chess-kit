@@ -2,10 +2,10 @@ use crate::attack_table::AttackTable;
 use crate::position::Position;
 use crate::primitives::{Bitboard, GameStateExt, Pieces, Side, Square, State};
 
-impl<AT, S> Position<AT, S>
+impl<AT, StateT> Position<AT, StateT>
 where
     AT: AttackTable,
-    S: State + GameStateExt,
+    StateT: State + GameStateExt,
 {
     // king_square gets the square of the king for the given side
     //
