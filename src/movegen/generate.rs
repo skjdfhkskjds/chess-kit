@@ -2,8 +2,7 @@ use crate::attack_table::AttackTable;
 use crate::movegen::{MoveGenerator, SideToMove};
 use crate::position::Position;
 use crate::primitives::{
-    BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, Black, GameStateExt, MoveList, MoveType, Pieces,
-    Sides, State, White,
+    Bitboard, Black, GameStateExt, MoveList, MoveType, Pieces, Sides, Square, State, White,
 };
 
 impl<AT: AttackTable> MoveGenerator<AT> {
@@ -126,17 +125,17 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     ) {
         let en_passant = position.state().en_passant();
         let empty_squares = position.empty_squares();
-        let double_step_rank = BITBOARD_RANKS[SideT::DOUBLE_STEP_RANK.idx()];
+        let double_step_rank = Bitboard::rank(SideT::DOUBLE_STEP_RANK);
 
         // generate moves for each of the pawns
         let pawn_squares = position.get_piece::<SideT>(Pieces::Pawn);
         for from in pawn_squares.iter() {
-            let to = (from.idx() as i8 + SideT::PAWN_PUSH_OFFSET) as usize;
+            let to = Square::from_idx((from.idx() as i8 + SideT::PAWN_PUSH_OFFSET) as usize);
             let mut moves = Bitboard::empty();
 
             // generate pawn pushes
             if move_type == MoveType::All || move_type == MoveType::Quiet {
-                let single_step = BITBOARD_SQUARES[to] & empty_squares;
+                let single_step = Bitboard::square(to) & empty_squares;
                 let double_step = single_step.rotate_left(SideT::PAWN_DOUBLE_STEP_OFFSET)
                     & empty_squares
                     & double_step_rank;
@@ -148,7 +147,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
                 let targets = self.attack_table.pawn_targets::<SideT>(from);
                 let captures = targets & position.occupancy::<SideT::Other>();
                 let en_passant_captures = match en_passant {
-                    Some(ep) => targets & BITBOARD_SQUARES[ep.idx()],
+                    Some(ep) => targets & Bitboard::square(ep),
                     None => Bitboard::empty(),
                 };
                 moves |= captures | en_passant_captures;
@@ -199,8 +198,8 @@ impl<AT: AttackTable> MoveGenerator<AT> {
             // get the blockers (squares in between the king and the rook)
             //
             // TOOD: refactor this call to use Bitboard::between
-            let blockers = BITBOARD_SQUARES[SideT::KINGSIDE_DESTINATION.idx()]
-                | BITBOARD_SQUARES[SideT::KINGSIDE_ROOK_DESTINATION.idx()];
+            let blockers = Bitboard::square(SideT::KINGSIDE_DESTINATION)
+                | Bitboard::square(SideT::KINGSIDE_ROOK_DESTINATION);
 
             // if the squares along the path are empty and the king is not moving
             // "through" check, we can castle
@@ -209,7 +208,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
                     .attack_table
                     .is_attacked::<SideT, StateT>(position, SideT::KINGSIDE_ROOK_DESTINATION)
             {
-                moves |= BITBOARD_SQUARES[SideT::KINGSIDE_DESTINATION.idx()];
+                moves |= Bitboard::square(SideT::KINGSIDE_DESTINATION);
             }
         }
 
@@ -218,16 +217,16 @@ impl<AT: AttackTable> MoveGenerator<AT> {
             //
             // Note: the queenside blockers include an additional square, see
             //       `QUEENSIDE_ROOK_INTERMEDIATE` for more details.
-            let blockers = BITBOARD_SQUARES[SideT::QUEENSIDE_DESTINATION.idx()]
-                | BITBOARD_SQUARES[SideT::QUEENSIDE_ROOK_DESTINATION.idx()]
-                | BITBOARD_SQUARES[SideT::QUEENSIDE_ROOK_INTERMEDIATE.idx()];
+            let blockers = Bitboard::square(SideT::QUEENSIDE_DESTINATION)
+                | Bitboard::square(SideT::QUEENSIDE_ROOK_DESTINATION)
+                | Bitboard::square(SideT::QUEENSIDE_ROOK_INTERMEDIATE);
 
             if (occupancy & blockers).is_empty()
                 && !self
                     .attack_table
                     .is_attacked::<SideT, StateT>(position, SideT::QUEENSIDE_ROOK_DESTINATION)
             {
-                moves |= BITBOARD_SQUARES[SideT::QUEENSIDE_DESTINATION.idx()];
+                moves |= Bitboard::square(SideT::QUEENSIDE_DESTINATION);
             }
         }
 

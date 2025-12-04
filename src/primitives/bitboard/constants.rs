@@ -121,7 +121,8 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
 #[cfg(test)]
 mod tests {
     use super::BITBOARD_BETWEEN;
-    use crate::primitives::{BITBOARD_SQUARES, Square};
+    use crate::primitives::{Square};
+    use crate::primitives::bitboard::constants::BITBOARD_SQUARES;
 
     #[test]
     fn print_bitboard_between_samples() {

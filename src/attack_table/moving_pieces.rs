@@ -1,7 +1,5 @@
 use crate::attack_table::DefaultAttackTable;
-use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, File, Rank, Side, Square,
-};
+use crate::primitives::{Bitboard, File, Rank, Side, Square};
 
 impl DefaultAttackTable {
     // init_king_table initializes the king move table
@@ -10,15 +8,15 @@ impl DefaultAttackTable {
     #[rustfmt::skip]
     pub(crate) fn init_king_table(&mut self) {
         for sq in Square::ALL {
-            let bitboard = BITBOARD_SQUARES[sq.idx()];
-            let moves = ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_RANKS[Rank::R8.idx()]) << 7u8)
-                | ((bitboard & !BITBOARD_RANKS[Rank::R8.idx()]) << 8u8)
-                | ((bitboard & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Rank::R8.idx()]) << 9u8)
-                | ((bitboard & !BITBOARD_FILES[File::H.idx()]) << 1u8)
-                | ((bitboard & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Rank::R1.idx()]) >> 7u8)
-                | ((bitboard & !BITBOARD_RANKS[Rank::R1.idx()]) >> 8u8)
-                | ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_RANKS[Rank::R1.idx()]) >> 9u8)
-                | ((bitboard & !BITBOARD_FILES[File::A.idx()]) >> 1u8);
+            let square = Bitboard::square(sq);
+            let moves = ((square & !Bitboard::file(File::A) & !Bitboard::rank(Rank::R8)) << 7u8)
+                | ((square & !Bitboard::rank(Rank::R8)) << 8u8)
+                | ((square & !Bitboard::file(File::H) & !Bitboard::rank(Rank::R8)) << 9u8)
+                | ((square & !Bitboard::file(File::H)) << 1u8)
+                | ((square & !Bitboard::file(File::H) & !Bitboard::rank(Rank::R1)) >> 7u8)
+                | ((square & !Bitboard::rank(Rank::R1)) >> 8u8)
+                | ((square & !Bitboard::file(File::A) & !Bitboard::rank(Rank::R1)) >> 9u8)
+                | ((square & !Bitboard::file(File::A)) >> 1u8);
             self.king_table[sq.idx()] = moves;
         }
     }
@@ -30,16 +28,16 @@ impl DefaultAttackTable {
     #[rustfmt::skip]
     pub(crate) fn init_knight_table(&mut self) {
         for sq in Square::ALL {
-            let bitboard = BITBOARD_SQUARES[sq.idx()];
+            let square = Bitboard::square(sq);
             let moves =
-                ((bitboard & !BITBOARD_RANKS[Rank::R8.idx()] & !BITBOARD_RANKS[Rank::R7.idx()] & !BITBOARD_FILES[File::A.idx()]) << 15u8)
-                | ((bitboard & !BITBOARD_RANKS[Rank::R8.idx()] & !BITBOARD_RANKS[Rank::R7.idx()] & !BITBOARD_FILES[File::H.idx()]) << 17u8)
-                | ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_FILES[File::B.idx()] & !BITBOARD_RANKS[Rank::R8.idx()]) << 6u8)
-                | ((bitboard & !BITBOARD_FILES[File::G.idx()] & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Rank::R8.idx()]) << 10u8)
-                | ((bitboard & !BITBOARD_RANKS[Rank::R1.idx()] & !BITBOARD_RANKS[Rank::R2.idx()] & !BITBOARD_FILES[File::A.idx()]) >> 17u8)
-                | ((bitboard & !BITBOARD_RANKS[Rank::R1.idx()] & !BITBOARD_RANKS[Rank::R2.idx()] & !BITBOARD_FILES[File::H.idx()]) >> 15u8)
-                | ((bitboard & !BITBOARD_FILES[File::A.idx()] & !BITBOARD_FILES[File::B.idx()] & !BITBOARD_RANKS[Rank::R1.idx()]) >> 10u8)
-                | ((bitboard & !BITBOARD_FILES[File::G.idx()] & !BITBOARD_FILES[File::H.idx()] & !BITBOARD_RANKS[Rank::R1.idx()]) >> 6u8);
+                ((square & !Bitboard::rank(Rank::R8) & !Bitboard::rank(Rank::R7) & !Bitboard::file(File::A)) << 15u8)
+                | ((square & !Bitboard::rank(Rank::R8) & !Bitboard::rank(Rank::R7) & !Bitboard::file(File::H)) << 17u8)
+                | ((square & !Bitboard::file(File::A) & !Bitboard::file(File::B) & !Bitboard::rank(Rank::R8)) << 6u8)
+                | ((square & !Bitboard::file(File::G) & !Bitboard::file(File::H) & !Bitboard::rank(Rank::R8)) << 10u8)
+                | ((square & !Bitboard::rank(Rank::R1) & !Bitboard::rank(Rank::R2) & !Bitboard::file(File::A)) >> 17u8)
+                | ((square & !Bitboard::rank(Rank::R1) & !Bitboard::rank(Rank::R2) & !Bitboard::file(File::H)) >> 15u8)
+                | ((square & !Bitboard::file(File::A) & !Bitboard::file(File::B) & !Bitboard::rank(Rank::R1)) >> 10u8)
+                | ((square & !Bitboard::file(File::G) & !Bitboard::file(File::H) & !Bitboard::rank(Rank::R1)) >> 6u8);
             self.knight_table[sq.idx()] = moves;
         }
     }
@@ -51,11 +49,11 @@ impl DefaultAttackTable {
     #[rustfmt::skip]
     pub(crate) fn init_pawn_table<S: Side>(&mut self) {
         for sq in Square::ALL {
-            let bitboard = BITBOARD_SQUARES[sq.idx()];
-            self.pawn_table[S::INDEX][sq.idx()] = ((bitboard & !BITBOARD_FILES[File::A.idx()]) << 7u8)
-                | ((bitboard & !BITBOARD_FILES[File::H.idx()]) << 9u8);
-            self.pawn_table[S::Other::INDEX][sq.idx()] = ((bitboard & !BITBOARD_FILES[File::A.idx()]) >> 9u8)
-                | ((bitboard & !BITBOARD_FILES[File::H.idx()]) >> 7u8);
+            let square = Bitboard::square(sq);
+            self.pawn_table[S::INDEX][sq.idx()] = ((square & !Bitboard::file(File::A)) << 7u8)
+                | ((square & !Bitboard::file(File::H)) << 9u8);
+            self.pawn_table[S::Other::INDEX][sq.idx()] = ((square & !Bitboard::file(File::A)) >> 9u8)
+                | ((square & !Bitboard::file(File::H)) >> 7u8);
         }
     }
 }

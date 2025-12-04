@@ -1,7 +1,5 @@
 use crate::attack_table::DefaultAttackTable;
-use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, BitboardVec, File, Rank, Square,
-};
+use crate::primitives::{Bitboard, BitboardVec, File, Rank, Square};
 
 // Direction is an enum that represents the movement direction of a sliding
 // piece.
@@ -22,10 +20,9 @@ impl DefaultAttackTable {
     // @param: square - square to get the mask for
     // @return: masking bitboard for the given square
     pub(crate) fn rook_mask(square: Square) -> Bitboard {
-        let rook_at = BITBOARD_SQUARES[square.idx()];
+        let rook_at = Bitboard::square(square);
         let edges = DefaultAttackTable::get_edges(square);
-        let line_of_sight =
-            BITBOARD_FILES[square.file().idx()] | BITBOARD_RANKS[square.rank().idx()];
+        let line_of_sight = Bitboard::file(square.file()) | Bitboard::rank(square.rank());
 
         line_of_sight & !edges & !rook_at
     }
@@ -36,7 +33,7 @@ impl DefaultAttackTable {
     // @return: masking bitboard for the given square
     pub(crate) fn bishop_mask(square: Square) -> Bitboard {
         let bitboard = Bitboard::empty();
-        let bishop_at = BITBOARD_SQUARES[square.idx()];
+        let bishop_at = Bitboard::square(square);
         let edges = DefaultAttackTable::get_edges(square);
         let line_of_sight = DefaultAttackTable::attack_ray(&bitboard, square, Direction::UpLeft)
             | DefaultAttackTable::attack_ray(&bitboard, square, Direction::UpRight)
@@ -117,13 +114,13 @@ impl DefaultAttackTable {
     // @return: bitboard of all the edges of the board
     // TODO: think about moving this function elsewhere
     fn get_edges(exclude: Square) -> Bitboard {
-        let exclude_file = BITBOARD_FILES[exclude.file().idx()];
-        let exclude_rank = BITBOARD_RANKS[exclude.rank().idx()];
+        let exclude_file = Bitboard::file(exclude.file());
+        let exclude_rank = Bitboard::rank(exclude.rank());
 
-        (BITBOARD_FILES[File::A.idx()] & !exclude_file)
-            | (BITBOARD_FILES[File::H.idx()] & !exclude_file)
-            | (BITBOARD_RANKS[Rank::R1.idx()] & !exclude_rank)
-            | (BITBOARD_RANKS[Rank::R8.idx()] & !exclude_rank)
+        (Bitboard::file(File::A) & !exclude_file)
+            | (Bitboard::file(File::H) & !exclude_file)
+            | (Bitboard::rank(Rank::R1) & !exclude_rank)
+            | (Bitboard::rank(Rank::R8) & !exclude_rank)
     }
 
     // attack_ray returns the attack ray from the current square in the given
@@ -131,7 +128,7 @@ impl DefaultAttackTable {
     //
     // note: we unwrap the bitboards to u64 as a hack to enable const bitwise
     //       operations
-    // 
+    //
     // @param: bitboard - bitboard to use as the base for the attack ray
     // @param: square - square to start the attack ray from
     // @param: direction - direction to attack in
@@ -140,7 +137,7 @@ impl DefaultAttackTable {
         // get the file and rank and the square to analyze
         let mut file = square.file();
         let mut rank = square.rank();
-        let mut square = BITBOARD_SQUARES[square.idx()].const_unwrap();
+        let mut square = Bitboard::square(square).const_unwrap();
 
         // build the ray bitboard in the given direction
         let mut ray = 0u64;

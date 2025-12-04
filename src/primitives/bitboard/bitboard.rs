@@ -1,4 +1,7 @@
-use crate::primitives::{BITBOARD_BETWEEN, BITBOARD_SQUARES, Square};
+use crate::primitives::bitboard::constants::{
+    BITBOARD_BETWEEN, BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES,
+};
+use crate::primitives::{File, Rank, Square};
 use chess_kit_derive::{Arithmetic, BitOps};
 
 pub type BitboardVec = Vec<Bitboard>;
@@ -23,6 +26,41 @@ impl Bitboard {
     #[inline(always)]
     pub const fn empty() -> Self {
         Self(0)
+    }
+
+    // all creates a new bitboard with all bits set to 1
+    //
+    // @return: new bitboard
+    #[inline(always)]
+    pub const fn all() -> Self {
+        Self(u64::MAX)
+    }
+
+    // square creates a new bitboard with the bit for the given square set to 1
+    //
+    // @param: square - square to create the bitboard from
+    // @return: new bitboard
+    #[inline(always)]
+    pub const fn square(square: Square) -> Self {
+        BITBOARD_SQUARES[square.idx()]
+    }
+
+    // file creates a new bitboard with the bits for the given file set to 1
+    //
+    // @param: file - file to create the bitboard from
+    // @return: new bitboard
+    #[inline(always)]
+    pub const fn file(file: File) -> Self {
+        BITBOARD_FILES[file.idx()]
+    }
+
+    // rank creates a new bitboard with the bits for the given rank set to 1
+    //
+    // @param: rank - rank to create the bitboard from
+    // @return: new bitboard
+    #[inline(always)]
+    pub const fn rank(rank: Rank) -> Self {
+        BITBOARD_RANKS[rank.idx()]
     }
 
     // between returns the between bitboard for the given start (exclusive) and

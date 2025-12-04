@@ -10,9 +10,7 @@ pub mod squares;
 pub mod state;
 pub mod zobrist;
 
-pub use bitboard::{
-    BITBOARD_BETWEEN, BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, BitboardVec,
-};
+pub use bitboard::{Bitboard, BitboardVec};
 pub use castling::{CastleRights, Castling, SideCastling};
 pub use files::File;
 pub use history::History;
