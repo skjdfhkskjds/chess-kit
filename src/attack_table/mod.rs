@@ -6,67 +6,18 @@ mod table;
 pub(crate) use sliding_pieces::Direction;
 pub use table::{default_attack_table, DefaultAttackTable};
 
-use crate::position::Position;
-use crate::primitives::{Bitboard, GameStateExt, Side, Square, State};
+use crate::primitives::{Bitboard, Side, Square};
 
 // AttackTable is a table that provides information about targeting/targetted
 // squares for the board.
-pub trait AttackTable: PieceTargetsTable + Sized + 'static {
+// 
+// @trait
+pub trait AttackTable: Sized + 'static {
     // new creates and initializes a new attack table
     //
     // @return: a new, initialized attack table
     fn new() -> Self;
 
-    // attacked_by returns a bitboard containing the squares that the given side
-    // is attacked by at the given square
-    //
-    // @param: position - immutable reference to the position
-    // @param: square - square to check if is attacked
-    // @return: a bitboard of the squares of the opposing side that attack `square`
-    fn attacked_by<SideT: Side, StateT: State + GameStateExt>(
-        &self,
-        position: &Position<Self, StateT>,
-        square: Square,
-    ) -> Bitboard;
-
-    // is_attacked returns true if the given square on the given side is attacked
-    // by the opponent.
-    //
-    // @param: position - immutable reference to the position
-    // @param: square - square to check if is attacked
-    // @return: true if the square is attacked, false otherwise
-    fn is_attacked<SideT: Side, StateT: State + GameStateExt>(
-        &self,
-        position: &Position<Self, StateT>,
-        square: Square,
-    ) -> bool;
-
-    // is_checked returns true if the given side is checked
-    //
-    // @param: position - immutable reference to the position
-    // @return: true if the side is checked, false otherwise
-    fn is_checked<SideT: Side, StateT: State + GameStateExt>(
-        &self,
-        position: &Position<Self, StateT>,
-    ) -> bool;
-
-    // sniped_by returns a bitboard containing the squares of the opposing
-    // side that can "snipe" (a sliding piece that can theoretically, without
-    // being blocked, attack a given square) the given square
-    //
-    // @param: position - immutable reference to the position
-    // @param: square - square to check if can sniper
-    // @return: a bitboard of the squares that the given side can sniper at the given square
-    fn sniped_by<SideT: Side, StateT: State + GameStateExt>(
-        &self,
-        position: &Position<Self, StateT>,
-        square: Square,
-    ) -> Bitboard;
-}
-
-// PieceTargetsTable is a table that provides information about the squares that
-// a piece targets from the given square.
-pub trait PieceTargetsTable {
     // king_targets returns the squares that the king targets from the given
     // square
     //

@@ -182,11 +182,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         //
         // Note: a side can castle iff they have either kingside or queenside
         //       permissions and they are not currently in check
-        if !(kingside || queenside)
-            || self
-                .attack_table
-                .is_attacked::<SideT, StateT>(position, from)
-        {
+        if !(kingside || queenside) || position.is_attacked::<SideT>(from) {
             return;
         }
 
@@ -204,9 +200,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
             // if the squares along the path are empty and the king is not moving
             // "through" check, we can castle
             if (occupancy & blockers).is_empty()
-                && !self
-                    .attack_table
-                    .is_attacked::<SideT, StateT>(position, SideT::KINGSIDE_ROOK_DESTINATION)
+                && !position.is_attacked::<SideT>(SideT::KINGSIDE_ROOK_DESTINATION)
             {
                 moves |= Bitboard::square(SideT::KINGSIDE_DESTINATION);
             }
@@ -222,9 +216,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
                 | Bitboard::square(SideT::QUEENSIDE_ROOK_INTERMEDIATE);
 
             if (occupancy & blockers).is_empty()
-                && !self
-                    .attack_table
-                    .is_attacked::<SideT, StateT>(position, SideT::QUEENSIDE_ROOK_DESTINATION)
+                && !position.is_attacked::<SideT>(SideT::QUEENSIDE_ROOK_DESTINATION)
             {
                 moves |= Bitboard::square(SideT::QUEENSIDE_DESTINATION);
             }

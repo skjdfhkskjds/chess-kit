@@ -136,7 +136,7 @@ where
         }
 
         // move the piece
-        if piece != Pieces::Pawn {
+        if !matches!(piece, Pieces::Pawn) {
             // if the moving piece is not a pawn, just perform a regular move
             self.move_piece::<SideT>(piece, from, to);
 

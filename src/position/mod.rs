@@ -6,6 +6,7 @@ pub mod moves;
 pub mod pieces;
 pub mod rules;
 pub mod sides;
+mod attacks;
 
 pub use position::Position;
 pub use fen::{FENError, FENParser, Parser};
