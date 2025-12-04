@@ -4,9 +4,16 @@ use crate::position::Position;
 use crate::primitives::{
     Bitboard, BitboardVec, GameStateExt, Pieces, Side, Sides, Square, State, White,
 };
+use std::sync::OnceLock;
 
 type BitboardTable = [Bitboard; Square::TOTAL];
 type MagicTable = [Magic; Square::TOTAL];
+
+static DEFAULT_ATTACK_TABLE: OnceLock<DefaultAttackTable> = OnceLock::new();
+
+pub fn default_attack_table() -> &'static DefaultAttackTable {
+    DEFAULT_ATTACK_TABLE.get_or_init(DefaultAttackTable::new)
+}
 
 pub struct DefaultAttackTable {
     // king targets from each square

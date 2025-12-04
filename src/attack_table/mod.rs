@@ -3,19 +3,11 @@ mod moving_pieces;
 mod sliding_pieces;
 mod table;
 
-use std::sync::OnceLock;
-
 pub(crate) use sliding_pieces::Direction;
-pub use table::DefaultAttackTable;
+pub use table::{default_attack_table, DefaultAttackTable};
 
 use crate::position::Position;
 use crate::primitives::{Bitboard, GameStateExt, Side, Square, State};
-
-static DEFAULT_ATTACK_TABLE: OnceLock<DefaultAttackTable> = OnceLock::new();
-
-pub fn default_attack_table() -> &'static DefaultAttackTable {
-    DEFAULT_ATTACK_TABLE.get_or_init(DefaultAttackTable::new)
-}
 
 // AttackTable is a table that provides information about targeting/targetted
 // squares for the board.
