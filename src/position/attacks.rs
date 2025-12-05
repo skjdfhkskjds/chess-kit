@@ -30,15 +30,13 @@ where
         let bishop_attacks = self.attack_table.bishop_targets(square, occupancy);
         let knight_attacks = self.attack_table.knight_targets(square);
         let pawn_attacks = self.attack_table.pawn_targets::<SideT>(square);
-        // @opt: union of rook and bishop attacks instead of routine call
-        let queen_attacks = rook_attacks | bishop_attacks;
 
         // check if there is an intersection between an attack board and that
         // piece's respective occupancy
+        let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
         king_attacks & self.get_piece::<SideT::Other>(Pieces::King)
-            | rook_attacks & self.get_piece::<SideT::Other>(Pieces::Rook)
-            | queen_attacks & self.get_piece::<SideT::Other>(Pieces::Queen)
-            | bishop_attacks & self.get_piece::<SideT::Other>(Pieces::Bishop)
+            | rook_attacks & (self.get_piece::<SideT::Other>(Pieces::Rook) | queens)
+            | bishop_attacks & (self.get_piece::<SideT::Other>(Pieces::Bishop) | queens)
             | knight_attacks & self.get_piece::<SideT::Other>(Pieces::Knight)
             | pawn_attacks & self.get_piece::<SideT::Other>(Pieces::Pawn)
     }
@@ -59,14 +57,13 @@ where
         let bishop_attacks = self.attack_table.bishop_targets(square, occupancy);
         let knight_attacks = self.attack_table.knight_targets(square);
         let pawn_attacks = self.attack_table.pawn_targets::<SideT>(square);
-        // @opt: union of rook and bishop attacks instead of routine call
-        let queen_attacks = rook_attacks | bishop_attacks;
 
         // check if there is an intersection between an attack board and that
         // piece's respective occupancy
-        !(rook_attacks & self.get_piece::<SideT::Other>(Pieces::Rook)).is_empty()
-            || !(queen_attacks & self.get_piece::<SideT::Other>(Pieces::Queen)).is_empty()
-            || !(bishop_attacks & self.get_piece::<SideT::Other>(Pieces::Bishop)).is_empty()
+        let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
+        !(rook_attacks & (self.get_piece::<SideT::Other>(Pieces::Rook) | queens)).is_empty()
+            || !(bishop_attacks & (self.get_piece::<SideT::Other>(Pieces::Bishop) | queens))
+                .is_empty()
             || !(knight_attacks & self.get_piece::<SideT::Other>(Pieces::Knight)).is_empty()
             || !(pawn_attacks & self.get_piece::<SideT::Other>(Pieces::Pawn)).is_empty()
             || !(king_attacks & self.get_piece::<SideT::Other>(Pieces::King)).is_empty()
