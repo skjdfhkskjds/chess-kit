@@ -12,8 +12,7 @@ where
     // @return: square of the king for the given side
     #[inline(always)]
     pub fn king_square<SideT: Side>(&self) -> Square {
-        // TODO: refactor into bitboard.first() or something
-        Square::from_idx(self.get_piece::<SideT>(Pieces::King).trailing_zeros() as usize)
+        self.get_piece::<SideT>(Pieces::King).must_first()
     }
 
     // get_piece returns the bitboard of the given side and piece

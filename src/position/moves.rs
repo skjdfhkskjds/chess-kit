@@ -86,7 +86,7 @@ where
         // if the captured piece is a rook (king captures are invalid), and
         // the side has castling permissions, then revoke the appropriate
         // castling permissions
-        if piece == Pieces::Rook && self.state.castling().can_castle::<SideT>() {
+        if matches!(piece, Pieces::Rook) && self.state.castling().can_castle::<SideT>() {
             if square == SideT::QUEENSIDE_ROOK {
                 self.set_castling(self.state.castling().revoke_queenside::<SideT>());
             } else if square == SideT::KINGSIDE_ROOK {

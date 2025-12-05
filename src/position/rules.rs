@@ -69,9 +69,8 @@ where
 
                 // check if both bishops are on the same colour
                 //
-                // TODO: refactor into bitboard.first() or something
-                let wb_sq = Square::from_idx(w[Pieces::Bishop.idx()].trailing_zeros() as usize);
-                let bb_sq = Square::from_idx(b[Pieces::Bishop.idx()].trailing_zeros() as usize);
+                let wb_sq = w[Pieces::Bishop.idx()].must_first();
+                let bb_sq = b[Pieces::Bishop.idx()].must_first();
                 wb_sq.is_white() == bb_sq.is_white()
             }
             _ => false,
