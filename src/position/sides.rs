@@ -13,8 +13,11 @@ where
     // @side-effects: modifies the game state
     #[inline(always)]
     pub(crate) fn swap_sides<SideT: Side>(&mut self) {
-        self.state.update_key(self.zobrist.side::<SideT>());
-        self.state.set_turn(SideT::Other::SIDE);
-        self.state.update_key(self.zobrist.side::<SideT::Other>());
+        let side_delta = self.zobrist.side::<SideT>();
+        let other_delta = self.zobrist.side::<SideT::Other>();
+        let state = self.state_mut();
+        state.update_key(side_delta);
+        state.set_turn(SideT::Other::SIDE);
+        state.update_key(other_delta);
     }
 }

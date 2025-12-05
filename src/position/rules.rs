@@ -21,7 +21,7 @@ where
     #[inline(always)]
     pub fn is_draw_by_fifty_moves(&self) -> bool {
         // Note: 100 since we are using the halfmove clock
-        self.state.halfmoves() >= 100
+        self.state().halfmoves() >= 100
     }
 
     // is_draw_by_insufficient_material checks if the position is a draw according
@@ -87,7 +87,7 @@ where
         // walk backwards through the history
         for historic_state in self.history.iter().rev() {
             // if the zobrist keys match, we have a repetition
-            if historic_state.key() == self.state.key() {
+            if historic_state.key() == self.state().key() {
                 count += 1;
             }
 

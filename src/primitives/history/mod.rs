@@ -44,18 +44,59 @@ impl<S: State> History<S> {
         self.current += 1;
     }
 
+    // push_clone adds a clone of the current state entry to the history and
+    // returns a mutable reference to the new top of stack
+    //
+    // @return: mutable reference to the newly pushed state
+    // @side-effects: modifies the history, increments the current index
+    // @requires: the history is non-empty and not full
+    #[inline(always)]
+    pub fn push_clone(&mut self) -> &mut S {
+        debug_assert!(self.current > 0, "cannot clone from an empty history");
+        debug_assert!(self.current < MAX_FULLMOVES, "history is full");
+
+        let src = self.current - 1;
+        let dst = self.current;
+        self.states[dst] = self.states[src];
+        self.current += 1;
+        &mut self.states[dst]
+    }
+
     // pop removes the last state entry from the history and returns it
     //
-    // note: this function will return invalid memory if the history is empty
-    // 
-    // @return: the last state entry
+    // @return: the new top of stack if a pop occurred, otherwise None
     // @side-effects: modifies the history, decrements the current index
-    // @requires: the current index is greater than 0
+    // @requires: the current index is greater than 1
     #[inline(always)]
-    pub fn pop(&mut self) -> S {
-        debug_assert!(self.current > 0, "history is empty");
+    pub fn pop(&mut self) -> Option<&mut S> {
+        if self.current <= 1 {
+            return None;
+        }
+
         self.current -= 1;
-        self.states[self.current]
+        let idx = self.current - 1;
+        Some(&mut self.states[idx])
+    }
+
+    // current returns an immutable reference to the top state entry
+    //
+    // @return: reference to the current state entry
+    // @requires: the history is non-empty
+    #[inline(always)]
+    pub fn current(&self) -> &S {
+        debug_assert!(self.current > 0, "history is empty");
+        &self.states[self.current - 1]
+    }
+
+    // current_mut returns a mutable reference to the top state entry
+    //
+    // @return: mutable reference to the current state entry
+    // @requires: the history is non-empty
+    #[inline(always)]
+    pub fn current_mut(&mut self) -> &mut S {
+        debug_assert!(self.current > 0, "history is empty");
+        let idx = self.current - 1;
+        &mut self.states[idx]
     }
 
     // size returns the number of state entries in the history

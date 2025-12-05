@@ -7,8 +7,7 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 
 pub struct Position<AT: AttackTable, StateT: State + GameStateExt> {
-    pub attack_table: &'static AT, // attack table for the position
-    pub state: StateT,             // current state of the position
+    pub attack_table: &'static AT, // reference to the static attack table
     pub history: History<StateT>,  // history of the position state
 
     pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
@@ -30,7 +29,6 @@ where
     pub fn new(attack_table: &'static AT) -> Self {
         Self {
             attack_table,
-            state: StateT::default(),
             history: History::default(),
             sides: [Bitboard::empty(); Sides::TOTAL],
             bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
@@ -43,6 +41,10 @@ where
     //
     // @param: rng - an optional, mutable reference to the rng, useful for seeding
     pub fn init(&mut self, rng: Option<&mut StdRng>) {
+        if self.history.is_empty() {
+            self.history.init(StateT::default());
+        }
+
         match rng {
             Some(rng) => self.zobrist.init(rng),
             None => self.zobrist.init(&mut StdRng::from_rng(&mut rand::rng())),
@@ -50,13 +52,13 @@ where
 
         self.init_sides();
         self.init_pieces();
-        self.state.set_key(self.zobrist.new_key(
-            self.state.turn(),
-            self.state.castling(),
-            self.state.en_passant(),
+        let key = self.zobrist.new_key(
+            self.state().turn(),
+            self.state().castling(),
+            self.state().en_passant(),
             self.bitboards,
-        ));
-        self.history.init(self.state);
+        );
+        self.state_mut().set_key(key);
     }
 
     // init_sides initializes the `sides` bitboards by ORing the bitboards of
@@ -109,8 +111,9 @@ where
     //
     // @side-effects: modifies the `position`
     pub fn reset(&mut self) {
-        self.state.reset();
         self.history.clear();
+        self.history.push(StateT::default());
+        self.state_mut().reset();
         self.sides = [Bitboard::empty(); Sides::TOTAL];
         self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
         self.pieces = [Pieces::None; Square::TOTAL];
@@ -158,7 +161,7 @@ where
     // @return: side to move
     #[inline(always)]
     pub fn turn(&self) -> Sides {
-        self.state.turn()
+        self.state().turn()
     }
 
     // state returns a reference to the current state of the position
@@ -166,7 +169,15 @@ where
     // @return: reference to the current state of the position
     #[inline(always)]
     pub fn state(&self) -> &StateT {
-        &self.state
+        self.history.current()
+    }
+
+    // state_mut returns a mutable reference to the current state of the position
+    //
+    // @return: mutable reference to the current state of the position
+    #[inline(always)]
+    pub fn state_mut(&mut self) -> &mut StateT {
+        self.history.current_mut()
     }
 }
 
@@ -186,12 +197,17 @@ where
         }
 
         let parsed = fen_parser.unwrap();
+        self.history.clear();
+        self.history.push(StateT::default());
         self.bitboards = parsed.pieces.bitboards;
-        self.state.set_turn(parsed.turn.turn);
-        self.state.set_castling(parsed.castling.castling);
-        self.state.set_en_passant(parsed.en_passant.square);
-        self.state.set_halfmoves(parsed.halfmove_parser.clock);
-        self.state.set_fullmoves(parsed.fullmove_parser.clock);
+        {
+            let state = self.state_mut();
+            state.set_turn(parsed.turn.turn);
+            state.set_castling(parsed.castling.castling);
+            state.set_en_passant(parsed.en_passant.square);
+            state.set_halfmoves(parsed.halfmove_parser.clock);
+            state.set_fullmoves(parsed.fullmove_parser.clock);
+        }
 
         // TODO: move the board initialization elsewhere
         self.init(None);

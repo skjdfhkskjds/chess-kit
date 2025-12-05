@@ -47,7 +47,8 @@ where
     #[inline(always)]
     pub(crate) fn remove_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
         self.remove_piece_no_incrementals::<SideT>(piece, square);
-        self.state.update_key(self.zobrist.piece::<SideT>(piece, square));
+        let delta = self.zobrist.piece::<SideT>(piece, square);
+        self.state_mut().update_key(delta);
 
         // TODO: make updates to game state for things like phase, turn, piece square valuation
     }
@@ -75,7 +76,8 @@ where
     #[inline(always)]
     pub(crate) fn set_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
         self.set_piece_no_incrementals::<SideT>(piece, square);
-        self.state.update_key(self.zobrist.piece::<SideT>(piece, square));
+        let delta = self.zobrist.piece::<SideT>(piece, square);
+        self.state_mut().update_key(delta);
 
         // TODO: make updates to game state for things like phase, turn, piece square valuation
     }
@@ -87,9 +89,13 @@ where
     // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_en_passant(&mut self, square: Square) {
-        self.state.update_key(self.zobrist.en_passant(self.state.en_passant()));
-        self.state.set_en_passant(Some(square));
-        self.state.update_key(self.zobrist.en_passant(Some(square)));
+        let current_en_passant = self.state().en_passant();
+        let old_key = self.zobrist.en_passant(current_en_passant);
+        let new_key = self.zobrist.en_passant(Some(square));
+        let state = self.state_mut();
+        state.update_key(old_key);
+        state.set_en_passant(Some(square));
+        state.update_key(new_key);
     }
 
     // clear_en_passant clears the en passant square for the given side
@@ -98,9 +104,13 @@ where
     // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn clear_en_passant(&mut self) {
-        self.state.update_key(self.zobrist.en_passant(self.state.en_passant()));
-        self.state.set_en_passant(None);
-        self.state.update_key(self.zobrist.en_passant(None));
+        let current_en_passant = self.state().en_passant();
+        let old_key = self.zobrist.en_passant(current_en_passant);
+        let new_key = self.zobrist.en_passant(None);
+        let state = self.state_mut();
+        state.update_key(old_key);
+        state.set_en_passant(None);
+        state.update_key(new_key);
     }
 
     // has_bishop_pair checks if the given side has a bishop pair

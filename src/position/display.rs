@@ -45,7 +45,7 @@ where
         writeln!(f, "  ABCDEFGH")?;
 
         // print the game state metadata
-        writeln!(f, "{}", self.state)?;
+        writeln!(f, "{}", self.state())?;
 
         Ok(())
     }

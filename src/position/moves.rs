@@ -76,21 +76,23 @@ where
         self.remove_piece::<SideT>(piece, square);
 
         // reset the halfmove clock since a capture has occurred
-        self.state.set_halfmoves(0);
+        self.state_mut().set_halfmoves(0);
 
         // if the captured piece is a rook (king captures are invalid), and
         // the side has castling permissions, then revoke the appropriate
         // castling permissions
-        if matches!(piece, Pieces::Rook) && self.state.castling().can_castle::<SideT>() {
+        if piece == Pieces::Rook && self.state().castling().can_castle::<SideT>() {
             if square == SideT::QUEENSIDE_ROOK {
-                self.set_castling(self.state.castling().revoke_queenside::<SideT>());
+                self.set_castling(self.state().castling().revoke_queenside::<SideT>());
             } else if square == SideT::KINGSIDE_ROOK {
-                self.set_castling(self.state.castling().revoke_kingside::<SideT>());
+                self.set_castling(self.state().castling().revoke_kingside::<SideT>());
             }
         }
     }
 
-    fn update_blockers<SideT: Side>(&mut self, square: Square) {}
+    #[allow(dead_code)]
+    fn update_blockers<SideT: Side>(&mut self, _square: Square) {
+    }
 
     // make_move_for_side makes the given move from the current position for
     // the given side
@@ -106,9 +108,7 @@ where
         SideT::Other: SideCastlingSquares,
     {
         // push the current state into the history
-        // let mut current_state = self.state;
-        // current_state.set_next_move(mv);
-        self.history.push(self.state);
+        self.history.push_clone();
 
         // helper variables to avoid repeated calls
         let from = mv.from();
@@ -119,9 +119,9 @@ where
         // increment the move counters
         //
         // Note: if black is moving, increment the fullmove counter as well
-        self.state.inc_halfmoves();
+        self.state_mut().inc_halfmoves();
         if matches!(SideT::SIDE, Sides::Black) {
-            self.state.inc_fullmoves();
+            self.state_mut().inc_fullmoves();
         }
 
         // handle a piece capture
@@ -131,7 +131,7 @@ where
             self.capture_piece::<SideT::Other>(captured, to);
         }
         // set the captured piece for the state
-        self.state.set_captured_piece(captured);
+        self.state_mut().set_captured_piece(captured);
 
         // move the piece
         if !matches!(piece, Pieces::Pawn) {
@@ -160,20 +160,20 @@ where
                     }
 
                     // always revoke castling permissions after castling
-                    self.set_castling(self.state.castling().revoke::<SideT>());
-                } else if self.state.castling().can_castle::<SideT>() {
+                    self.set_castling(self.state().castling().revoke::<SideT>());
+                } else if self.state().castling().can_castle::<SideT>() {
                     // if the side can still castle, revoke it since the king
                     // left the starting square
-                    self.set_castling(self.state.castling().revoke::<SideT>());
+                    self.set_castling(self.state().castling().revoke::<SideT>());
                 }
-            } else if matches!(piece, Pieces::Rook) && self.state.castling().can_castle::<SideT>() {
+            } else if matches!(piece, Pieces::Rook) && self.state().castling().can_castle::<SideT>() {
                 // if the moving piece is a rook and that side can still castle,
                 // revoke the appropriate castling permissions if the rook is
                 // leaving the starting square
                 if from == SideT::KINGSIDE_ROOK {
-                    self.set_castling(self.state.castling().revoke_kingside::<SideT>());
+                    self.set_castling(self.state().castling().revoke_kingside::<SideT>());
                 } else if from == SideT::QUEENSIDE_ROOK {
-                    self.set_castling(self.state.castling().revoke_queenside::<SideT>());
+                    self.set_castling(self.state().castling().revoke_queenside::<SideT>());
                 }
             }
         } else {
@@ -192,7 +192,7 @@ where
             }
 
             // reset the halfmove clock since a pawn moved
-            self.state.set_halfmoves(0);
+            self.state_mut().set_halfmoves(0);
         }
 
         // if the moving piece is a pawn, and the move is a double step, then an
@@ -257,7 +257,7 @@ where
         }
 
         // if the move was a capture, restore the captured piece
-        let captured = self.state.captured_piece();
+        let captured = self.state().captured_piece();
         if !matches!(captured, Pieces::None) {
             self.set_piece_no_incrementals::<SideT::Other>(captured, to);
         }
@@ -269,6 +269,6 @@ where
 
         // revert the state
         debug_assert!(!self.history.is_empty(), "history is empty on unmake move");
-        self.state = self.history.pop();
+        self.history.pop();
     }
 }
