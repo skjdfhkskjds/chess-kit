@@ -1,6 +1,5 @@
 use crate::attack_table::AttackTable;
-use crate::position::Position;
-use crate::primitives::{Bitboard, GameStateExt, Move, MoveList, Pieces, SideRanks, Square, State};
+use crate::primitives::{Bitboard, Move, MoveList, Pieces, SideRanks, Square};
 
 // list of pieces that a pawn can promote to
 const PROMOTION_PIECES: [Pieces; 4] = [Pieces::Queen, Pieces::Rook, Pieces::Bishop, Pieces::Knight];
