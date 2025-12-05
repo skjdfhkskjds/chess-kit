@@ -47,55 +47,144 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     ) {
         self.generate_king_moves::<SideT, StateT>(position, list, move_type);
         self.generate_pawn_moves::<SideT, StateT>(position, list, move_type);
-        self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::Knight, list, move_type);
-        self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::Rook, list, move_type);
-        self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::Bishop, list, move_type);
-        self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::Queen, list, move_type);
+        self.generate_queen_moves::<SideT, StateT>(position, list, move_type);
+        self.generate_rook_moves::<SideT, StateT>(position, list, move_type);
+        self.generate_bishop_moves::<SideT, StateT>(position, list, move_type);
+        self.generate_knight_moves::<SideT, StateT>(position, list, move_type);
     }
 
-    // generate_moves_for_piece generates all the pseudo-legal moves of the given
-    // move type for the given piece from the current position and pushes them to
-    // the move list
-    //
-    // note: this function does not handle king or pawn move generation, as it is
-    //       handled explicitly by the `generate_king_moves` and `generate_pawn_moves`
-    //       functions respectively
+    // generate_queen_moves generates all the pseudo-legal moves of the given
+    // move type for the queen from the current position and pushes them to the
+    // move list
     //
     // @param: position - immutable reference to the position
-    // @param: piece - piece to generate moves of
     // @param: list - mutable reference to the move list
     // @param: move_type - move type to generate moves of
     // @return: void
     // @side-effects: modifies the `move list`
-    fn generate_moves_for_piece<SideT: SideToMove, StateT: State + GameStateExt>(
+    fn generate_queen_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,
-        piece: Pieces,
         list: &mut MoveList,
         move_type: MoveType,
     ) {
-        // pawn and king move generation is not handled by this function
-        debug_assert!(
-            !matches!(piece, Pieces::Pawn | Pieces::King),
-            "King/Pawn move generation is handled explicitly"
-        );
-
         let occupancy = position.total_occupancy();
         let empty_squares = position.empty_squares();
         let our_occupancy = position.occupancy::<SideT>();
         let opponent_occupancy = position.occupancy::<SideT::Other>();
 
-        // generate moves from all positions of the piece for the current side
+        // generate moves from all positions of the queen for the current side
         // to move
-        let to_move = position.get_piece::<SideT>(piece);
+        let to_move = position.get_piece::<SideT>(Pieces::Queen);
         for from in to_move.iter() {
-            let targets = match piece {
-                Pieces::Knight => self.attack_table.knight_targets(from),
-                Pieces::Bishop => self.attack_table.bishop_targets(from, occupancy),
-                Pieces::Rook => self.attack_table.rook_targets(from, occupancy),
-                Pieces::Queen => self.attack_table.queen_targets(from, occupancy),
-                _ => unreachable!("Not a valid piece: {piece}"),
+            let targets = self.attack_table.queen_targets(from, occupancy);
+
+            // filter the moves according to the requested move type
+            let moves = match move_type {
+                MoveType::All => targets & !our_occupancy,
+                MoveType::Quiet => targets & empty_squares,
+                MoveType::Capture => targets & opponent_occupancy,
             };
+
+            self.push_moves(from, moves, list);
+        }
+    }
+
+    // generate_rook_moves generates all the pseudo-legal moves of the given
+    // move type for the rook from the current position and pushes them to the
+    // move list
+    //
+    // @param: position - immutable reference to the position
+    // @param: list - mutable reference to the move list
+    // @param: move_type - move type to generate moves of
+    // @return: void
+    fn generate_rook_moves<SideT: SideToMove, StateT: State + GameStateExt>(
+        &self,
+        position: &Position<AT, StateT>,
+        list: &mut MoveList,
+        move_type: MoveType,
+    ) {
+        let occupancy = position.total_occupancy();
+        let empty_squares = position.empty_squares();
+        let our_occupancy = position.occupancy::<SideT>();
+        let opponent_occupancy = position.occupancy::<SideT::Other>();
+
+        // generate moves from all positions of the rook for the current side
+        // to move
+        let to_move = position.get_piece::<SideT>(Pieces::Rook);
+        for from in to_move.iter() {
+            let targets = self.attack_table.rook_targets(from, occupancy);
+
+            // filter the moves according to the requested move type
+            let moves = match move_type {
+                MoveType::All => targets & !our_occupancy,
+                MoveType::Quiet => targets & empty_squares,
+                MoveType::Capture => targets & opponent_occupancy,
+            };
+
+            self.push_moves(from, moves, list);
+        }
+    }
+
+    // generate_bishop_moves generates all the pseudo-legal moves of the given
+    // move type for the bishop from the current position and pushes them to the
+    // move list
+    //
+    // @param: position - immutable reference to the position
+    // @param: list - mutable reference to the move list
+    // @param: move_type - move type to generate moves of
+    // @return: void
+    fn generate_bishop_moves<SideT: SideToMove, StateT: State + GameStateExt>(
+        &self,
+        position: &Position<AT, StateT>,
+        list: &mut MoveList,
+        move_type: MoveType,
+    ) {
+        let occupancy = position.total_occupancy();
+        let empty_squares = position.empty_squares();
+        let our_occupancy = position.occupancy::<SideT>();
+        let opponent_occupancy = position.occupancy::<SideT::Other>();
+
+        // generate moves from all positions of the bishop for the current side
+        // to move
+        let to_move = position.get_piece::<SideT>(Pieces::Bishop);
+        for from in to_move.iter() {
+            let targets = self.attack_table.bishop_targets(from, occupancy);
+
+            // filter the moves according to the requested move type
+            let moves = match move_type {
+                MoveType::All => targets & !our_occupancy,
+                MoveType::Quiet => targets & empty_squares,
+                MoveType::Capture => targets & opponent_occupancy,
+            };
+
+            self.push_moves(from, moves, list);
+        }
+    }
+
+    // generate_knight_moves generates all the pseudo-legal moves of the given
+    // move type for the knight from the current position and pushes them to the
+    // move list
+    //
+    // @param: position - immutable reference to the position
+    // @param: list - mutable reference to the move list
+    // @param: move_type - move type to generate moves of
+    // @return: void
+    fn generate_knight_moves<SideT: SideToMove, StateT: State + GameStateExt>(
+        &self,
+        position: &Position<AT, StateT>,
+        list: &mut MoveList,
+        move_type: MoveType,
+    ) {
+        let empty_squares = position.empty_squares();
+        let our_occupancy = position.occupancy::<SideT>();
+        let opponent_occupancy = position.occupancy::<SideT::Other>();
+
+        // generate moves from all positions of the knight for the current side
+        // to move
+        let to_move = position.get_piece::<SideT>(Pieces::Knight);
+        for from in to_move.iter() {
+            let targets = self.attack_table.knight_targets(from);
 
             // filter the moves according to the requested move type
             let moves = match move_type {
