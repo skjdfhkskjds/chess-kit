@@ -1,11 +1,12 @@
 use crate::primitives::{
-    Bitboard, Castling, Clock, GameStateExt, Move, ReadOnlyState, Side, Sides, Square, State,
-    WriteOnlyState, ZobristKey,
+    Bitboard, Castling, Clock, GameStateExt, Pieces, ReadOnlyState, Side, Sides, Square,
+    State, WriteOnlyState, ZobristKey,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DefaultState {
     pub(crate) turn: Sides,                // side to move
+    pub(crate) captured_piece: Pieces,     // piece that was captured to arrive at this state
     pub(crate) castling: Castling,         // castling rights
     pub(crate) en_passant: Option<Square>, // active en passant square, if any
 
@@ -13,7 +14,6 @@ pub struct DefaultState {
     pub(crate) fullmoves: Clock, // fullmove clock
 
     pub(crate) zobrist_key: ZobristKey, // zobrist key for the current position
-    pub(crate) next_move: Move,         // next move to be made
 
     // ==============================
     //     Game State Extensions
@@ -30,12 +30,12 @@ impl State for DefaultState {
     fn new() -> Self {
         Self {
             turn: Sides::White,
+            captured_piece: Pieces::None,
             castling: Castling::all(),
             en_passant: None,
             halfmoves: 0,
             fullmoves: 0,
             zobrist_key: ZobristKey::default(),
-            next_move: Move::default(),
             king_blockers: [Bitboard::empty(); Sides::TOTAL],
             pinners: [Bitboard::empty(); Sides::TOTAL],
         }
@@ -47,12 +47,12 @@ impl State for DefaultState {
     #[inline(always)]
     fn reset(&mut self) {
         self.turn = Sides::White;
+        self.captured_piece = Pieces::None;
         self.castling = Castling::all();
         self.en_passant = None;
         self.halfmoves = 0;
         self.fullmoves = 0;
         self.zobrist_key = ZobristKey::default();
-        self.next_move = Move::default();
         self.king_blockers = [Bitboard::empty(); Sides::TOTAL];
         self.pinners = [Bitboard::empty(); Sides::TOTAL];
     }
@@ -81,6 +81,14 @@ impl ReadOnlyState for DefaultState {
     #[inline(always)]
     fn en_passant(&self) -> Option<Square> {
         self.en_passant
+    }
+
+    // captured_piece returns the piece that was captured to arrive at this state
+    //
+    // @impl: ReadOnlyState::captured_piece
+    #[inline(always)]
+    fn captured_piece(&self) -> Pieces {
+        self.captured_piece
     }
 
     // halfmoves returns the value of the current halfmove clock
@@ -131,6 +139,14 @@ impl WriteOnlyState for DefaultState {
     #[inline(always)]
     fn set_en_passant(&mut self, en_passant: Option<Square>) {
         self.en_passant = en_passant;
+    }
+
+    // set_captured_piece sets the piece that was captured to arrive at this state
+    //
+    // @impl: WriteOnlyState::set_captured_piece
+    #[inline(always)]
+    fn set_captured_piece(&mut self, piece: Pieces) {
+        self.captured_piece = piece;
     }
 
     // set_halfmoves sets the value of the current halfmove clock

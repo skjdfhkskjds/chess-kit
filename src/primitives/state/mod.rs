@@ -3,7 +3,7 @@ mod state;
 
 pub use state::DefaultState;
 
-use crate::primitives::{Bitboard, Castling, Side, Sides, Square, ZobristKey};
+use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
 use std::fmt::Display;
 
 pub type Clock = u16;
@@ -42,6 +42,11 @@ pub trait ReadOnlyState {
     //
     // @return: the current en passant square, if any
     fn en_passant(&self) -> Option<Square>;
+
+    // captured_piece returns the piece that was captured to arrive at this state
+    //
+    // @return: the piece that was captured to arrive at this state
+    fn captured_piece(&self) -> Pieces;
 
     // halfmoves returns the value of the current halfmove clock
     //
@@ -83,6 +88,13 @@ pub trait WriteOnlyState {
     // @return: void
     // @side-effects: modifies the `state`
     fn set_en_passant(&mut self, en_passant: Option<Square>);
+
+    // set_captured_piece sets the piece that was captured to arrive at this state
+    //
+    // @param: piece - the piece that was captured to arrive at this state
+    // @return: void
+    // @side-effects: modifies the `state`
+    fn set_captured_piece(&mut self, piece: Pieces);
 
     // set_halfmoves sets the value of the current halfmove clock
     //
@@ -148,12 +160,12 @@ pub trait WriteOnlyState {
 
 // GameStateExt is an optional extension trait for a State implementation that
 // provides additional game state information
-// 
+//
 // @trait
 pub trait GameStateExt {
     // king_blocker_pieces returns the bitboard of the side's king's blocker
     // pieces
-    // 
+    //
     // note: a blocker piece is not necessarily on the same side as the king it
     //       is blocking
     //
@@ -162,7 +174,7 @@ pub trait GameStateExt {
 
     // set_king_blocker_pieces sets the bitboard of the side's king's blocker
     // pieces
-    // 
+    //
     // note: a blocker piece is not necessarily on the same side as the king it
     //       is blocking
     //

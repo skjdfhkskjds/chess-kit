@@ -29,16 +29,22 @@ pub trait SideRanks {
     // DOUBLE_STEP_RANK is the rank that a pawn can double step to
     const DOUBLE_STEP_RANK: Rank;
 
+    // PROMOTABLE_RANK is the rank that a pawn is on when it promotes on its
+    // next move
+    const PROMOTABLE_RANK: Rank;
+
     // PROMOTION_RANK is the rank that a pawn promotes at
     const PROMOTION_RANK: Rank;
 }
 
 impl SideRanks for White {
     const DOUBLE_STEP_RANK: Rank = Rank::R4;
+    const PROMOTABLE_RANK: Rank = Rank::R7;
     const PROMOTION_RANK: Rank = Rank::R8;
 }
 
 impl SideRanks for Black {
     const DOUBLE_STEP_RANK: Rank = Rank::R5;
+    const PROMOTABLE_RANK: Rank = Rank::R2;
     const PROMOTION_RANK: Rank = Rank::R1;
 }

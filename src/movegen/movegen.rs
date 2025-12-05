@@ -18,87 +18,96 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     pub fn new(attack_table: &'static AT) -> Self {
         Self { attack_table }
     }
+}
 
-    // push_moves pushes a set of moves to the move list as defined by the
-    // given piece at the from square to the each of the to squares.
+impl<AT: AttackTable> MoveGenerator<AT> {
+    // push_moves pushes a set of moves of any non-pawn piece from the given
+    // from square to the given to squares
     //
-    // @param: position - immutable reference to the position
-    // @param: piece - piece to push the moves for
     // @param: from - square to push the moves from
     // @param: to_squares - bitboard of squares to push the moves to
     // @param: list - mutable reference to the move list
     // @return: void
     // @side-effects: modifies the `move list`
-    pub(crate) fn push_moves<SideT: SideRanks, StateT: State + GameStateExt>(
+    pub(crate) fn push_moves(&self, from: Square, to_squares: Bitboard, list: &mut MoveList) {
+        // push a move for each of the `to` squares
+        for to in to_squares.iter() {
+            list.push(Move::new(from, to));
+        }
+    }
+
+    // push_pawn_moves pushes a set of moves of a pawn from the given from square
+    // to the given to squares
+    //
+    // note: we explicitly handle pawn moves here to handle branchless code for
+    //       other piece types where en-passant captures are not possible
+    //
+    // @param: from - square to push the moves from
+    // @param: to_squares - bitboard of squares to push the moves to
+    // @param: list - mutable reference to the move list
+    // @param: en_passant - en passant square, if any
+    // @return: void
+    // @side-effects: modifies the `move list`
+    pub(crate) fn push_pawn_moves<SideT: SideRanks>(
         &self,
-        position: &Position<AT, StateT>,
-        piece: Pieces,
         from: Square,
         to_squares: Bitboard,
         list: &mut MoveList,
+        en_passant: Option<Square>,
     ) {
-        let en_passant = position.state().en_passant();
+        // handle promotion moves first
+        if from.on_rank(SideT::PROMOTABLE_RANK) {
+            for to in to_squares.iter() {
+                PROMOTION_PIECES.iter().for_each(|promotion_piece| {
+                    list.push(Move::new(from, to).with_promotion(*promotion_piece));
+                });
+            }
+            return;
+        }
 
         // push a move for each of the `to` squares
         for to in to_squares.iter() {
-            let mut mv = Move::new(piece, from, to);
+            let mut mv = Move::new(from, to);
 
-            // set the captured piece for the move if there is one
+            // a pawn is moving, so we need to handle the cases
             //
-            // Note: a captured piece is the piece that currently occupies the
-            //       target square. Notice that this definition excludes en-passant
-            //       captures.
-            let captured = position.piece_at(to);
-            if !matches!(captured, Pieces::None) {
-                mv = mv.with_capture(captured);
-            }
+            // 1. en passant capture
+            // 2. double step pawn push
+            // 3. promotion
 
-            // handle the special cases for the piece
-            match piece {
-                Pieces::Pawn => {
-                    // a pawn is moving, so we need to handle the cases
-                    //
-                    // 1. en passant capture
-                    // 2. double step pawn push
-                    // 3. promotion
+            // check if the move is an en passant capture
+            let is_en_passant = match en_passant {
+                Some(square) => square == to,
+                None => false,
+            };
 
-                    // check if the move is an en passant capture
-                    let is_en_passant = match en_passant {
-                        Some(square) => square == to,
-                        None => false,
-                    };
-
-                    if is_en_passant {
-                        // the move is an en passant capture
-                        mv = mv.with_en_passant();
-                    } else if to.distance(from) == 16 {
-                        // the move is a double step pawn push
-                        mv = mv.with_double_step();
-                    } else if to.on_rank(SideT::PROMOTION_RANK) {
-                        // generate all possible promotion moves
-                        PROMOTION_PIECES.iter().for_each(|promotion_piece| {
-                            list.push(mv.with_promotion(*promotion_piece));
-                        });
-
-                        // all move variants have been generated, move on to the
-                        // next move instead of exiting out of the conditional
-                        // block
-                        continue;
-                    }
-                }
-                Pieces::King => {
-                    // check if the move is a castle
-                    if to.distance(from) == 2 {
-                        mv = mv.with_castle();
-                    }
-                }
-                _ => {
-                    // no special handling required for other pieces
-                }
+            if is_en_passant {
+                // the move is an en passant capture
+                mv = mv.with_en_passant();
             }
 
             // push the move to the list
             list.push(mv);
+        }
+    }
+
+    // push_castling_moves pushes a set of moves for castling from the given from
+    // square to the given to squares
+    //
+    // @param: from - square to push the moves from
+    // @param: to_squares - bitboard of squares to push the castling moves to
+    // @param: list - mutable reference to the move list
+    // @return: void
+    // @side-effects: modifies the `move list`
+    pub(crate) fn push_castling_moves(
+        &self,
+        from: Square,
+        to_squares: Bitboard,
+        list: &mut MoveList,
+    ) {
+        // push a move for each of the `to` squares
+        for to in to_squares.iter() {
+            list.push(Move::new(from, to).with_castle());
         }
     }
 }

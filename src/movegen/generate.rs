@@ -45,21 +45,21 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         list: &mut MoveList,
         move_type: MoveType,
     ) {
-        self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::King, list, move_type);
+        self.generate_king_moves::<SideT, StateT>(position, list, move_type);
+        self.generate_pawn_moves::<SideT, StateT>(position, list, move_type);
         self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::Knight, list, move_type);
         self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::Rook, list, move_type);
         self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::Bishop, list, move_type);
         self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::Queen, list, move_type);
-        self.generate_moves_for_piece::<SideT, StateT>(position, Pieces::Pawn, list, move_type);
-
-        if move_type == MoveType::All || move_type == MoveType::Quiet {
-            self.generate_castle_moves::<SideT, StateT>(position, list);
-        }
     }
 
     // generate_moves_for_piece generates all the pseudo-legal moves of the given
     // move type for the given piece from the current position and pushes them to
     // the move list
+    //
+    // note: this function does not handle king or pawn move generation, as it is
+    //       handled explicitly by the `generate_king_moves` and `generate_pawn_moves`
+    //       functions respectively
     //
     // @param: position - immutable reference to the position
     // @param: piece - piece to generate moves of
@@ -74,10 +74,11 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         list: &mut MoveList,
         move_type: MoveType,
     ) {
-        // if the piece is a pawn,
-        if matches!(piece, Pieces::Pawn) {
-            return self.generate_pawn_moves::<SideT, StateT>(position, list, move_type);
-        }
+        // pawn and king move generation is not handled by this function
+        debug_assert!(
+            !matches!(piece, Pieces::Pawn | Pieces::King),
+            "King/Pawn move generation is handled explicitly"
+        );
 
         let occupancy = position.total_occupancy();
         let empty_squares = position.empty_squares();
@@ -89,7 +90,6 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         let to_move = position.get_piece::<SideT>(piece);
         for from in to_move.iter() {
             let targets = match piece {
-                Pieces::King => self.attack_table.king_targets(from),
                 Pieces::Knight => self.attack_table.knight_targets(from),
                 Pieces::Bishop => self.attack_table.bishop_targets(from, occupancy),
                 Pieces::Rook => self.attack_table.rook_targets(from, occupancy),
@@ -104,7 +104,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
                 MoveType::Capture => targets & opponent_occupancy,
             };
 
-            self.push_moves::<SideT, StateT>(position, piece, from, moves, list);
+            self.push_moves(from, moves, list);
         }
     }
 
@@ -125,6 +125,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     ) {
         let en_passant = position.state().en_passant();
         let empty_squares = position.empty_squares();
+        let occupancy = position.occupancy::<SideT::Other>();
         let double_step_rank = Bitboard::rank(SideT::DOUBLE_STEP_RANK);
 
         // generate moves for each of the pawns
@@ -145,7 +146,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
             // generate pawn captures
             if move_type == MoveType::All || move_type == MoveType::Capture {
                 let targets = self.attack_table.pawn_targets::<SideT>(from);
-                let captures = targets & position.occupancy::<SideT::Other>();
+                let captures = targets & occupancy;
                 let en_passant_captures = match en_passant {
                     Some(ep) => targets & Bitboard::square(ep),
                     None => Bitboard::empty(),
@@ -153,7 +154,46 @@ impl<AT: AttackTable> MoveGenerator<AT> {
                 moves |= captures | en_passant_captures;
             }
 
-            self.push_moves::<SideT, StateT>(position, Pieces::Pawn, from, moves, list);
+            // push the pawn moves to the move list
+            self.push_pawn_moves::<SideT>(from, moves, list, en_passant);
+        }
+    }
+
+    // generate_king_moves generates all the pseudo-legal moves of the given
+    // move type for the king from the current position and pushes them to the
+    // move list
+    //
+    // @param: position - immutable reference to the position
+    // @param: list - mutable reference to the move list
+    // @param: move_type - move type to generate moves of
+    // @return: void
+    // @side-effects: modifies the `move list`
+    fn generate_king_moves<SideT: SideToMove, StateT: State + GameStateExt>(
+        &self,
+        position: &Position<AT, StateT>,
+        list: &mut MoveList,
+        move_type: MoveType,
+    ) {
+        let from = position.king_square::<SideT>();
+        let targets = self.attack_table.king_targets(from);
+
+        // filter the moves according to the requested move type
+        let empty_squares = position.empty_squares();
+        let our_occupancy = position.occupancy::<SideT>();
+        let opponent_occupancy = position.occupancy::<SideT::Other>();
+
+        let moves = match move_type {
+            MoveType::All => targets & !our_occupancy,
+            MoveType::Quiet => targets & empty_squares,
+            MoveType::Capture => targets & opponent_occupancy,
+        };
+
+        // push the king moves to the move list
+        self.push_moves(from, moves, list);
+
+        // generate castle moves if the move type is all or quiet
+        if move_type == MoveType::All || move_type == MoveType::Quiet {
+            self.generate_castle_moves::<SideT, StateT>(position, list);
         }
     }
 
@@ -223,6 +263,6 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         }
 
         // push the castle moves to the move list
-        self.push_moves::<SideT, StateT>(position, Pieces::King, from, moves, list);
+        self.push_castling_moves(from, moves, list);
     }
 }

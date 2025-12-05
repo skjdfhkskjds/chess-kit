@@ -14,7 +14,7 @@ pub use bitboard::{Bitboard, BitboardVec};
 pub use castling::{CastleRights, Castling, SideCastling};
 pub use files::File;
 pub use history::History;
-pub use moves::{Move, MoveList, ShortMove};
+pub use moves::{Move, MoveType, MoveList};
 pub use pieces::Pieces;
 pub use ranks::{Rank, SideRanks};
 pub use sides::{Black, Side, Sides, White};

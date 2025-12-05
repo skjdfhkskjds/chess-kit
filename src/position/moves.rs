@@ -1,6 +1,8 @@
 use crate::attack_table::AttackTable;
 use crate::position::{Position, SideCastlingSquares};
-use crate::primitives::{Black, GameStateExt, Move, Pieces, Side, Sides, Square, State, White};
+use crate::primitives::{
+    Black, GameStateExt, Move, MoveType, Pieces, Side, Sides, Square, State, White,
+};
 
 impl<AT, StateT> Position<AT, StateT>
 where
@@ -26,16 +28,10 @@ where
     // @side-effects: modifies the `position`
     // @side-effects: reverts the `state` back
     pub fn unmake_move(&mut self, mv: Move) {
-        // revert the last move on the position
-        if self.history.is_empty() {
-            return;
-        }
-        self.state = self.history.pop();
-
         // unmake the move for the side that moved
         match self.turn() {
-            Sides::White => self.unmake_move_for_side::<White>(mv),
-            Sides::Black => self.unmake_move_for_side::<Black>(mv),
+            Sides::White => self.unmake_move_for_side::<Black>(mv),
+            Sides::Black => self.unmake_move_for_side::<White>(mv),
         }
     }
 
@@ -94,8 +90,7 @@ where
         }
     }
 
-    fn update_blockers<SideT: Side>(&mut self, square: Square) {
-    }
+    fn update_blockers<SideT: Side>(&mut self, square: Square) {}
 
     // make_move_for_side makes the given move from the current position for
     // the given side
@@ -116,9 +111,10 @@ where
         self.history.push(self.state);
 
         // helper variables to avoid repeated calls
-        let piece = mv.piece();
         let from = mv.from();
         let to = mv.to();
+        let piece = self.piece_at(from);
+        let move_type = mv.type_of();
 
         // increment the move counters
         //
@@ -129,10 +125,13 @@ where
         }
 
         // handle a piece capture
-        let captured = mv.captured();
-        if captured != Pieces::None {
+        let captured = self.piece_at(to);
+        if !matches!(captured, Pieces::None) {
+            // capture the piece from the board
             self.capture_piece::<SideT::Other>(captured, to);
         }
+        // set the captured piece for the state
+        self.state.set_captured_piece(captured);
 
         // move the piece
         if !matches!(piece, Pieces::Pawn) {
@@ -143,7 +142,7 @@ where
             // work to handle castling and revoke castling permissions if needed
             if matches!(piece, Pieces::King) {
                 // if the move is a castle, move the appropriate rook as well
-                if mv.is_castle() {
+                if matches!(move_type, MoveType::Castle) {
                     if to == SideT::KINGSIDE_DESTINATION {
                         // kingside castle
                         self.move_piece::<SideT>(
@@ -180,13 +179,15 @@ where
         } else {
             // if the move is a pawn move, check if the move is a promotion and
             // handle the piece move accordingly
-            let promoted = mv.promoted();
-            let is_promotion = promoted != Pieces::None;
-            self.remove_piece::<SideT>(piece, from);
-            self.set_piece::<SideT>(if !is_promotion { piece } else { promoted }, to);
+            if matches!(move_type, MoveType::Promotion) {
+                self.remove_piece::<SideT>(piece, from);
+                self.set_piece::<SideT>(mv.promoted_to(), to);
+            } else {
+                self.move_piece::<SideT>(piece, from, to);
+            }
 
             // if the move is an en passant capture, remove the opponent's pawn
-            if mv.is_en_passant() {
+            if matches!(move_type, MoveType::EnPassant) {
                 self.remove_piece::<SideT::Other>(Pieces::Pawn, to ^ 8);
             }
 
@@ -194,9 +195,12 @@ where
             self.state.set_halfmoves(0);
         }
 
-        // if the move is a double step, set the en passant square, otherwise
-        // clear it
-        if matches!(piece, Pieces::Pawn) && mv.is_double_step() {
+        // if the moving piece is a pawn, and the move is a double step, then an
+        // en passant capture is possible
+        //
+        // TODO: use a smarter approach to filter further whether or not an en
+        //       passant capture is possible
+        if matches!(piece, Pieces::Pawn) && to.distance(from) == 16 {
             self.set_en_passant(to ^ 8);
         } else {
             self.clear_en_passant();
@@ -221,22 +225,22 @@ where
         SideT::Other: SideCastlingSquares,
     {
         // extract key move data
-        let piece = mv.piece();
         let from = mv.from();
         let to = mv.to();
+        let piece = self.piece_at(to);
+        let move_type = mv.type_of();
 
         // move the piece back to the original square, or restore the pawn if
         // it was promoted
-        let promoted = mv.promoted();
-        if matches!(promoted, Pieces::None) {
-            self.move_piece_no_incrementals::<SideT>(piece, to, from);
-        } else {
-            self.remove_piece_no_incrementals::<SideT>(promoted, to);
+        if matches!(move_type, MoveType::Promotion) {
+            self.remove_piece_no_incrementals::<SideT>(mv.promoted_to(), to);
             self.set_piece_no_incrementals::<SideT>(Pieces::Pawn, from);
+        } else {
+            self.move_piece_no_incrementals::<SideT>(piece, to, from);
         }
 
         // if the move was a castle, move the appropriate rook back as well
-        if matches!(piece, Pieces::King) && mv.is_castle() {
+        if matches!(move_type, MoveType::Castle) {
             if to == SideT::KINGSIDE_DESTINATION {
                 self.move_piece_no_incrementals::<SideT>(
                     Pieces::Rook,
@@ -253,14 +257,18 @@ where
         }
 
         // if the move was a capture, restore the captured piece
-        let captured = mv.captured();
+        let captured = self.state.captured_piece();
         if !matches!(captured, Pieces::None) {
             self.set_piece_no_incrementals::<SideT::Other>(captured, to);
         }
 
         // if the move was an en passant capture, restore the opponent's pawn
-        if matches!(piece, Pieces::Pawn) && mv.is_en_passant() {
+        if matches!(move_type, MoveType::EnPassant) {
             self.set_piece_no_incrementals::<SideT::Other>(Pieces::Pawn, to ^ 8);
         }
+
+        // revert the state
+        debug_assert!(!self.history.is_empty(), "history is empty on unmake move");
+        self.state = self.history.pop();
     }
 }
