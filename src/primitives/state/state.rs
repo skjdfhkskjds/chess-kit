@@ -1,19 +1,60 @@
 use crate::primitives::{
-    Bitboard, Castling, Clock, GameStateExt, Pieces, ReadOnlyState, Side, Sides, Square,
-    State, WriteOnlyState, ZobristKey,
+    Bitboard, Castling, Clock, GameStateExt, Pieces, ReadOnlyState, Side, Sides, Square, State,
+    WriteOnlyState, ZobristKey,
 };
 
+// StateHeader is a header for a state that contains the parts of the state up
+// to (and excluding) the state key
+//
+// note: this is the struct that is copied when deriving a new state entry from
+//       the current state in the history
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct DefaultState {
+pub struct StateHeader {
     pub(crate) turn: Sides,                // side to move
     pub(crate) captured_piece: Pieces,     // piece that was captured to arrive at this state
     pub(crate) castling: Castling,         // castling rights
     pub(crate) en_passant: Option<Square>, // active en passant square, if any
+    pub(crate) halfmoves: Clock,           // halfmove clock
+    pub(crate) fullmoves: Clock,           // fullmove clock
+    pub(crate) key: ZobristKey,            // key for the current state
+}
 
-    pub(crate) halfmoves: Clock, // halfmove clock
-    pub(crate) fullmoves: Clock, // fullmove clock
+impl StateHeader {
+    // new creates a new, empty state header
+    //
+    // @return: new, empty state header
+    pub fn new() -> Self {
+        Self {
+            turn: Sides::White,
+            captured_piece: Pieces::None,
+            castling: Castling::all(),
+            en_passant: None,
+            halfmoves: 0,
+            fullmoves: 0,
+            key: ZobristKey::default(),
+        }
+    }
 
-    pub(crate) zobrist_key: ZobristKey, // zobrist key for the current position
+    // reset resets the state header to a new initial state
+    //
+    // @return: void
+    // @side-effects: modifies the `state header`
+    #[inline(always)]
+    pub fn reset(&mut self) {
+        self.turn = Sides::White;
+        self.captured_piece = Pieces::None;
+        self.castling = Castling::all();
+        self.en_passant = None;
+        self.halfmoves = 0;
+        self.fullmoves = 0;
+        self.key = ZobristKey::default();
+    }
+}
+
+// DefaultState is the default implementation of the State trait
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct DefaultState {
+    pub(crate) header: StateHeader,     // header of the state
 
     // ==============================
     //     Game State Extensions
@@ -29,13 +70,7 @@ impl State for DefaultState {
     #[inline(always)]
     fn new() -> Self {
         Self {
-            turn: Sides::White,
-            captured_piece: Pieces::None,
-            castling: Castling::all(),
-            en_passant: None,
-            halfmoves: 0,
-            fullmoves: 0,
-            zobrist_key: ZobristKey::default(),
+            header: StateHeader::new(),
             king_blockers: [Bitboard::empty(); Sides::TOTAL],
             pinners: [Bitboard::empty(); Sides::TOTAL],
         }
@@ -46,15 +81,17 @@ impl State for DefaultState {
     // @impl: State::reset
     #[inline(always)]
     fn reset(&mut self) {
-        self.turn = Sides::White;
-        self.captured_piece = Pieces::None;
-        self.castling = Castling::all();
-        self.en_passant = None;
-        self.halfmoves = 0;
-        self.fullmoves = 0;
-        self.zobrist_key = ZobristKey::default();
+        self.header.reset();
         self.king_blockers = [Bitboard::empty(); Sides::TOTAL];
         self.pinners = [Bitboard::empty(); Sides::TOTAL];
+    }
+
+    // copy_header_from copies the header of another state into this state
+    //
+    // @impl: State::copy_header_from
+    #[inline(always)]
+    fn copy_header_from(&mut self, other: &Self) {
+        self.header = other.header;
     }
 }
 
@@ -64,7 +101,7 @@ impl ReadOnlyState for DefaultState {
     // @impl: ReadOnlyState::turn
     #[inline(always)]
     fn turn(&self) -> Sides {
-        self.turn
+        self.header.turn
     }
 
     // castling returns the current castling rights
@@ -72,7 +109,7 @@ impl ReadOnlyState for DefaultState {
     // @impl: ReadOnlyState::castling
     #[inline(always)]
     fn castling(&self) -> Castling {
-        self.castling
+        self.header.castling
     }
 
     // en_passant returns the current en passant square, if any
@@ -80,7 +117,7 @@ impl ReadOnlyState for DefaultState {
     // @impl: ReadOnlyState::en_passant
     #[inline(always)]
     fn en_passant(&self) -> Option<Square> {
-        self.en_passant
+        self.header.en_passant
     }
 
     // captured_piece returns the piece that was captured to arrive at this state
@@ -88,7 +125,7 @@ impl ReadOnlyState for DefaultState {
     // @impl: ReadOnlyState::captured_piece
     #[inline(always)]
     fn captured_piece(&self) -> Pieces {
-        self.captured_piece
+        self.header.captured_piece
     }
 
     // halfmoves returns the value of the current halfmove clock
@@ -96,7 +133,7 @@ impl ReadOnlyState for DefaultState {
     // @impl: ReadOnlyState::halfmoves
     #[inline(always)]
     fn halfmoves(&self) -> Clock {
-        self.halfmoves
+        self.header.halfmoves
     }
 
     // fullmoves returns the value of the current fullmove clock
@@ -104,7 +141,7 @@ impl ReadOnlyState for DefaultState {
     // @impl: ReadOnlyState::fullmoves
     #[inline(always)]
     fn fullmoves(&self) -> Clock {
-        self.fullmoves
+        self.header.fullmoves
     }
 
     // key returns a key representing a unique identifier of the state
@@ -112,7 +149,7 @@ impl ReadOnlyState for DefaultState {
     // @impl: ReadOnlyState::key
     #[inline(always)]
     fn key(&self) -> ZobristKey {
-        self.zobrist_key
+        self.header.key
     }
 }
 
@@ -122,7 +159,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::set_turn
     #[inline(always)]
     fn set_turn(&mut self, turn: Sides) {
-        self.turn = turn;
+        self.header.turn = turn;
     }
 
     // set_castling sets the castling rights
@@ -130,7 +167,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::set_castling
     #[inline(always)]
     fn set_castling(&mut self, castling: Castling) {
-        self.castling = castling;
+        self.header.castling = castling;
     }
 
     // set_en_passant sets the en passant square, if any
@@ -138,7 +175,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::set_en_passant
     #[inline(always)]
     fn set_en_passant(&mut self, en_passant: Option<Square>) {
-        self.en_passant = en_passant;
+        self.header.en_passant = en_passant;
     }
 
     // set_captured_piece sets the piece that was captured to arrive at this state
@@ -146,7 +183,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::set_captured_piece
     #[inline(always)]
     fn set_captured_piece(&mut self, piece: Pieces) {
-        self.captured_piece = piece;
+        self.header.captured_piece = piece;
     }
 
     // set_halfmoves sets the value of the current halfmove clock
@@ -154,7 +191,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::set_halfmoves
     #[inline(always)]
     fn set_halfmoves(&mut self, halfmoves: Clock) {
-        self.halfmoves = halfmoves;
+        self.header.halfmoves = halfmoves;
     }
 
     // inc_halfmoves increments the value of the current halfmove clock by one
@@ -162,7 +199,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::inc_halfmoves
     #[inline(always)]
     fn inc_halfmoves(&mut self) {
-        self.halfmoves += 1;
+        self.header.halfmoves += 1;
     }
 
     // dec_halfmoves decrements the value of the current halfmove clock by one
@@ -170,7 +207,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::dec_halfmoves
     #[inline(always)]
     fn dec_halfmoves(&mut self) {
-        self.halfmoves -= 1;
+        self.header.halfmoves -= 1;
     }
 
     // set_fullmoves sets the value of the current fullmove clock
@@ -178,7 +215,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::set_fullmoves
     #[inline(always)]
     fn set_fullmoves(&mut self, fullmoves: Clock) {
-        self.fullmoves = fullmoves;
+        self.header.fullmoves = fullmoves;
     }
 
     // inc_fullmoves increments the value of the current fullmove clock by one
@@ -186,7 +223,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::inc_fullmoves
     #[inline(always)]
     fn inc_fullmoves(&mut self) {
-        self.fullmoves += 1;
+        self.header.fullmoves += 1;
     }
 
     // dec_fullmoves decrements the value of the current fullmove clock by one
@@ -194,7 +231,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::dec_fullmoves
     #[inline(always)]
     fn dec_fullmoves(&mut self) {
-        self.fullmoves -= 1;
+        self.header.fullmoves -= 1;
     }
 
     // set_key sets the key for the current state
@@ -202,7 +239,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::set_key
     #[inline(always)]
     fn set_key(&mut self, key: ZobristKey) {
-        self.zobrist_key = key;
+        self.header.key = key;
     }
 
     // update_key updates the key for the current state
@@ -212,7 +249,7 @@ impl WriteOnlyState for DefaultState {
     // @impl: WriteOnlyState::update_key
     #[inline(always)]
     fn update_key(&mut self, key: ZobristKey) {
-        self.zobrist_key ^= key;
+        self.header.key ^= key;
     }
 }
 

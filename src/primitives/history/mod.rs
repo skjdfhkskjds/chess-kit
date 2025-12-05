@@ -44,20 +44,21 @@ impl<S: State> History<S> {
         self.current += 1;
     }
 
-    // push_clone adds a clone of the current state entry to the history and
-    // returns a mutable reference to the new top of stack
+    // push_next adds a new state entry to the history by deriving it from the
+    // copy of the current state entry's header
     //
     // @return: mutable reference to the newly pushed state
     // @side-effects: modifies the history, increments the current index
     // @requires: the history is non-empty and not full
     #[inline(always)]
-    pub fn push_clone(&mut self) -> &mut S {
+    pub fn push_next(&mut self) -> &mut S {
         debug_assert!(self.current > 0, "cannot clone from an empty history");
         debug_assert!(self.current < MAX_FULLMOVES, "history is full");
 
         let src = self.current - 1;
         let dst = self.current;
-        self.states[dst] = self.states[src];
+        let src_state = self.states[src];
+        self.states[dst].copy_header_from(&src_state);
         self.current += 1;
         &mut self.states[dst]
     }

@@ -22,6 +22,16 @@ pub trait State: ReadOnlyState + WriteOnlyState + Default + Copy + Clone + Displ
     //
     // @side-effects: modifies the `state`
     fn reset(&mut self);
+
+    // copy_header_from copies the header of another state into this state
+    // 
+    // note: we define the header as the parts of the state up to (and
+    //       including) the state key
+    // 
+    // @param: other - the state to copy the header from
+    // @return: void
+    // @side-effects: modifies the `state`
+    fn copy_header_from(&mut self, other: &Self);
 }
 
 // ReadOnlyState is a trait that defines all read operations on the state

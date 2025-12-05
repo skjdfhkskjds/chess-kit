@@ -108,7 +108,7 @@ where
         SideT::Other: SideCastlingSquares,
     {
         // push the current state into the history
-        self.history.push_clone();
+        self.history.push_next();
 
         // helper variables to avoid repeated calls
         let from = mv.from();
