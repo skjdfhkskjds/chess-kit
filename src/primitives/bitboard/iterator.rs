@@ -21,7 +21,7 @@ impl Iterator for BitboardIter {
             0 => None,
             _ => {
                 let square = self.0.trailing_zeros();
-                self.0 ^= 1u64 << square;
+                self.0 &= self.0 - 1;
                 Some(Square::from_idx(square as usize))
             }
         }
