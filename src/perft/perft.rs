@@ -60,7 +60,7 @@ where
         }
 
         // undo the move
-        position.unmake_move();
+        position.unmake_move(mv);
     }
 
     // cache the result in the transposition table
@@ -113,7 +113,7 @@ where
         }
 
         // undo the move
-        position.unmake_move();
+        position.unmake_move(mv);
     }
 
     branches

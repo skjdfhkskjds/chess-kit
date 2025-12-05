@@ -25,7 +25,7 @@ where
     // @return: void
     // @side-effects: modifies the `position`
     // @side-effects: reverts the `state` back
-    pub fn unmake_move(&mut self) {
+    pub fn unmake_move(&mut self, mv: Move) {
         // revert the last move on the position
         if self.history.is_empty() {
             return;
@@ -33,10 +33,9 @@ where
         self.state = self.history.pop();
 
         // unmake the move for the side that moved
-        let next_move = self.state.next_move();
         match self.turn() {
-            Sides::White => self.unmake_move_for_side::<White>(next_move),
-            Sides::Black => self.unmake_move_for_side::<Black>(next_move),
+            Sides::White => self.unmake_move_for_side::<White>(mv),
+            Sides::Black => self.unmake_move_for_side::<Black>(mv),
         }
     }
 
@@ -112,9 +111,9 @@ where
         SideT::Other: SideCastlingSquares,
     {
         // push the current state into the history
-        let mut current_state = self.state;
-        current_state.set_next_move(mv);
-        self.history.push(current_state);
+        // let mut current_state = self.state;
+        // current_state.set_next_move(mv);
+        self.history.push(self.state);
 
         // helper variables to avoid repeated calls
         let piece = mv.piece();

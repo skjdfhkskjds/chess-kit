@@ -3,7 +3,7 @@ mod state;
 
 pub use state::DefaultState;
 
-use crate::primitives::{Bitboard, Castling, Move, Side, Sides, Square, ZobristKey};
+use crate::primitives::{Bitboard, Castling, Side, Sides, Square, ZobristKey};
 use std::fmt::Display;
 
 pub type Clock = u16;
@@ -57,11 +57,6 @@ pub trait ReadOnlyState {
     //
     // @return: the key of the state
     fn key(&self) -> ZobristKey;
-
-    // next_move returns the next move to be made from the current state
-    //
-    // @return: the next move to be made
-    fn next_move(&self) -> Move;
 }
 
 // WriteOnlyState is a trait that defines all write operations on the state
@@ -149,13 +144,6 @@ pub trait WriteOnlyState {
     // @return: void
     // @side-effects: modifies the `state`
     fn update_key(&mut self, key: ZobristKey);
-
-    // set_next_move sets the next move to be made from the current state
-    //
-    // @param: next_move - the next move to be made
-    // @return: void
-    // @side-effects: modifies the `state`
-    fn set_next_move(&mut self, next_move: Move);
 }
 
 // GameStateExt is an optional extension trait for a State implementation that

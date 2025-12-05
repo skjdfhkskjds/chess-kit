@@ -106,14 +106,6 @@ impl ReadOnlyState for DefaultState {
     fn key(&self) -> ZobristKey {
         self.zobrist_key
     }
-
-    // next_move returns the next move to be made from the current state
-    //
-    // @impl: ReadOnlyState::next_move
-    #[inline(always)]
-    fn next_move(&self) -> Move {
-        self.next_move
-    }
 }
 
 impl WriteOnlyState for DefaultState {
@@ -205,14 +197,6 @@ impl WriteOnlyState for DefaultState {
     #[inline(always)]
     fn update_key(&mut self, key: ZobristKey) {
         self.zobrist_key ^= key;
-    }
-
-    // set_next_move sets the next move to be made from the current state
-    //
-    // @impl: WriteOnlyState::set_next_move
-    #[inline(always)]
-    fn set_next_move(&mut self, next_move: Move) {
-        self.next_move = next_move;
     }
 }
 
