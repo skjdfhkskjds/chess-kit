@@ -1,8 +1,8 @@
 use crate::attack_table::AttackTable;
-use crate::movegen::{MoveGenerator, SideToMove};
+use crate::movegen::{MoveGenerator, MoveType, SideToMove};
 use crate::position::Position;
 use crate::primitives::{
-    Bitboard, Black, GameStateExt, MoveList, MoveType, Pieces, Sides, Square, State, White,
+    Bitboard, Black, GameStateExt, MoveList, Pieces, Sides, Square, State, White,
 };
 
 impl<AT: AttackTable> MoveGenerator<AT> {

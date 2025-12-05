@@ -1,6 +1,6 @@
 use crate::attack_table::AttackTable;
 use crate::position::position::Position;
-use crate::primitives::{Black, GameStateExt, Pieces, Sides, Square, State, White};
+use crate::primitives::{Black, GameStateExt, Pieces, Sides, State, White};
 
 impl<AT, StateT> Position<AT, StateT>
 where

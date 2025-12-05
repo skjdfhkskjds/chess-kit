@@ -1,8 +1,8 @@
 use crate::attack_table::AttackTable;
-use crate::movegen::MoveGenerator;
+use crate::movegen::{MoveGenerator, MoveType};
 use crate::perft::{Depth, NodeCount, PerftData};
 use crate::position::Position;
-use crate::primitives::{Black, GameStateExt, Move, MoveList, MoveType, Sides, State, White};
+use crate::primitives::{Black, GameStateExt, Move, MoveList, Sides, State, White};
 use crate::transposition::TranspositionTable;
 
 // perft calculates the number of leaf nodes at the given depth from the current

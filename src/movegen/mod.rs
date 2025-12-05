@@ -1,6 +1,8 @@
 mod generate;
 mod movegen;
+mod move_type;
 
+pub use move_type::MoveType;
 pub use movegen::MoveGenerator;
 
 use crate::position::SideCastlingSquares;
