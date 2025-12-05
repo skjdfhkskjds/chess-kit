@@ -65,18 +65,15 @@ impl<S: State> History<S> {
 
     // pop removes the last state entry from the history and returns it
     //
-    // @return: the new top of stack if a pop occurred, otherwise None
     // @side-effects: modifies the history, decrements the current index
     // @requires: the current index is greater than 1
     #[inline(always)]
-    pub fn pop(&mut self) -> Option<&mut S> {
+    pub fn pop(&mut self) {
         if self.current <= 1 {
-            return None;
+            return;
         }
 
         self.current -= 1;
-        let idx = self.current - 1;
-        Some(&mut self.states[idx])
     }
 
     // current returns an immutable reference to the top state entry

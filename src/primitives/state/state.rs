@@ -54,11 +54,12 @@ impl StateHeader {
 // DefaultState is the default implementation of the State trait
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DefaultState {
-    pub(crate) header: StateHeader,     // header of the state
+    pub(crate) header: StateHeader, // header of the state
 
     // ==============================
     //     Game State Extensions
     // ==============================
+    pub(crate) checkers: Bitboard, // bitboard of pieces that are checking the opponent's king
     pub(crate) king_blockers: [Bitboard; Sides::TOTAL], // bitboard of the side's king's blockers
     pub(crate) pinners: [Bitboard; Sides::TOTAL], // bitboard of the pieces that are pinning the opponent's king
 }
@@ -71,6 +72,7 @@ impl State for DefaultState {
     fn new() -> Self {
         Self {
             header: StateHeader::new(),
+            checkers: Bitboard::empty(),
             king_blockers: [Bitboard::empty(); Sides::TOTAL],
             pinners: [Bitboard::empty(); Sides::TOTAL],
         }
@@ -82,6 +84,7 @@ impl State for DefaultState {
     #[inline(always)]
     fn reset(&mut self) {
         self.header.reset();
+        self.checkers = Bitboard::empty();
         self.king_blockers = [Bitboard::empty(); Sides::TOTAL];
         self.pinners = [Bitboard::empty(); Sides::TOTAL];
     }
@@ -254,6 +257,22 @@ impl WriteOnlyState for DefaultState {
 }
 
 impl GameStateExt for DefaultState {
+    // checkers returns the bitboard of pieces that are checking the opponent's king
+    //
+    // @impl: GameStateExt::checkers
+    #[inline(always)]
+    fn checkers(&self) -> Bitboard {
+        self.checkers
+    }
+
+    // set_checkers sets the bitboard of pieces that are checking the opponent's king
+    //
+    // @impl: GameStateExt::set_checkers
+    #[inline(always)]
+    fn set_checkers(&mut self, checkers: Bitboard) {
+        self.checkers = checkers;
+    }
+
     // king_blocker_pieces returns the bitboard of the side's king's blocker
     // pieces
     //

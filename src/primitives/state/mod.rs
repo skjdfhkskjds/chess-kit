@@ -173,6 +173,18 @@ pub trait WriteOnlyState {
 //
 // @trait
 pub trait GameStateExt {
+    // checkers returns the bitboard of pieces that are checking the opponent's king
+    //
+    // @return: bitboard of pieces that are checking the opponent's king
+    fn checkers(&self) -> Bitboard;
+
+    // set_checkers sets the bitboard of pieces that are checking the opponent's king
+    //
+    // @param: checkers - bitboard of pieces that are checking the opponent's king
+    // @return: void
+    // @side-effects: modifies the `state`
+    fn set_checkers(&mut self, checkers: Bitboard);
+
     // king_blocker_pieces returns the bitboard of the side's king's blocker
     // pieces
     //
