@@ -93,11 +93,11 @@ where
 
             let mask = 1u64 << square; // bitmask for the square
             for (piece, (w, b)) in white.iter().zip(black.iter()).enumerate() {
-                if !(w & mask).is_empty() {
+                if (w & mask).not_empty() {
                     on_square = Pieces::from_idx(piece);
                     break; // enforce exclusivity
                 }
-                if !(b & mask).is_empty() {
+                if (b & mask).not_empty() {
                     on_square = Pieces::from_idx(piece);
                     break; // enforce exclusivity
                 }
@@ -119,29 +119,28 @@ where
         self.pieces = [Pieces::None; Square::TOTAL];
     }
 
-    // occupancy gets the bitboard of the given side's pieces in the position
+    // occupancy gets the occupancy bitboard of SideT
     //
     // @param: side - side to get the occupancy for
-    // @return: bitboard of the given side's pieces in the position
+    // @return: occupancy bitboard of SideT
     #[inline(always)]
     pub fn occupancy<SideT: Side>(&self) -> Bitboard {
         self.sides[SideT::INDEX]
     }
 
-    // total_occupancy gets the bitboard of all pieces in the position
+    // total_occupancy gets the full occupancy bitboard of both sides
     //
-    //
-    // @return: bitboard of all pieces in the position
+    // @return: full occupancy bitboard of both sides
     #[inline(always)]
     pub fn total_occupancy(&self) -> Bitboard {
         self.sides[Sides::White.idx()] | self.sides[Sides::Black.idx()]
     }
 
-    // empty_squares gets the bitboard of all empty squares in the position
+    // empty_squares gets the bitboard of all empty squares
     //
     // note: logically equivalent to `!(self.occupancy())`
     //
-    // @return: bitboard of all empty squares in the position
+    // @return: bitboard of all the empty squares
     #[inline(always)]
     pub fn empty_squares(&self) -> Bitboard {
         !self.total_occupancy()
@@ -164,17 +163,17 @@ where
         self.state().turn()
     }
 
-    // state returns a reference to the current state of the position
+    // state returns a reference to the current state
     //
-    // @return: reference to the current state of the position
+    // @return: reference to the current state
     #[inline(always)]
     pub fn state(&self) -> &StateT {
         self.history.current()
     }
 
-    // state_mut returns a mutable reference to the current state of the position
+    // state_mut returns a mutable reference to the current state
     //
-    // @return: mutable reference to the current state of the position
+    // @return: mutable reference to the current state
     #[inline(always)]
     pub fn state_mut(&mut self) -> &mut StateT {
         self.history.current_mut()
@@ -186,10 +185,10 @@ where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
-    // try_from creates a new position from the given FEN string
+    // load_fen loads a new position from the given FEN string
     //
     // @param: fen - FEN string to create the position from
-    // @return: new position, or an error if the FEN string is invalid
+    // @return: initialized position, or an error if the FEN string is invalid
     pub fn load_fen(&mut self, fen: &str) -> Result<(), FENError> {
         let fen_parser = FENParser::parse(fen);
         if fen_parser.is_err() {

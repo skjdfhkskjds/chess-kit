@@ -7,17 +7,21 @@ where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
-    // swap_sides swaps the sides of the position
+    // swap_sides swaps the turn to move from SideT to SideT::Other
     //
     // @return: void
     // @side-effects: modifies the game state
     #[inline(always)]
     pub(crate) fn swap_sides<SideT: Side>(&mut self) {
-        let side_delta = self.zobrist.side::<SideT>();
-        let other_delta = self.zobrist.side::<SideT::Other>();
-        let state = self.state_mut();
-        state.update_key(side_delta);
-        state.set_turn(SideT::Other::SIDE);
-        state.update_key(other_delta);
+        // remove the current turn from the key
+        let current_turn_key = self.zobrist.side::<SideT>();
+        self.state_mut().update_key(current_turn_key);
+
+        // set the new turn in the state
+        self.state_mut().set_turn(SideT::Other::SIDE);
+
+        // add the new turn to the key
+        let new_turn_key = self.zobrist.side::<SideT::Other>();
+        self.state_mut().update_key(new_turn_key);
     }
 }

@@ -7,21 +7,23 @@ where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
-    // attacked_by returns a bitboard containing the squares that the given side
-    // is attacked by at the given square
+    // attacked_by returns a bitboard containing the occupied squares of
+    // SideT::Other that are attacking the given square
     //
-    // @impl: AttackTable::attacked_by
+    // @param: square - square to check if is attacked by SideT::Other
+    // @return: bitboard of the occupied squares of SideT::Other that are
+    //          attacking the given square
     #[inline(always)]
     pub fn attacked_by<SideT: Side>(&self, square: Square) -> Bitboard {
-        // idea: our square `T` is attacked iff the opponent has at least one
+        // idea: our square `T` is attacked iff SideT::Other has at least one
         //       piece in square `S` such that attack board generated from `T`
         //       includes `S`
         //
         // effectively relies on this idea of, if i can see you, you can see me
         //
-        // the nuance not covered above is pawn attacks are not symmetric, so we
-        // reconcile this by checking the pawn attacks for our side instead of the
-        // opponent's
+        // the nuance not covered above is that pawn attacks are not symmetric,
+        // so we reconcile this by checking the pawn attacks for SideT instead
+        // of SideT::Other
 
         // generate the attack boards for each piece
         let occupancy = self.total_occupancy();
@@ -41,17 +43,18 @@ where
             | pawn_attacks & self.get_piece::<SideT::Other>(Pieces::Pawn)
     }
 
-    // is_attacked returns true if the given square on the given side is attacked
-    // by the opponent
+    // is_attacked returns true if the given square on SideT is attacked by
+    // SideT::Other
     //
     // note: this is the same implementation as `attacked_by`, but we leverage
     //       early termination to improve performance
     //
-    // @impl: AttackTable::is_attacked
+    // @param: square - square to check if is attacked by SideT::Other
+    // @param: occupancy - occupancy of the board
+    // @return: true if the given square is attacked by SideT::Other, false otherwise
     #[inline(always)]
-    pub fn is_attacked<SideT: Side>(&self, square: Square) -> bool {
+    pub fn is_attacked<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> bool {
         // generate the attack boards for each piece
-        let occupancy = self.total_occupancy();
         let king_attacks = self.attack_table.king_targets(square);
         let rook_attacks = self.attack_table.rook_targets(square, occupancy);
         let bishop_attacks = self.attack_table.bishop_targets(square, occupancy);
@@ -61,32 +64,51 @@ where
         // check if there is an intersection between an attack board and that
         // piece's respective occupancy
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
-        !(rook_attacks & (self.get_piece::<SideT::Other>(Pieces::Rook) | queens)).is_empty()
-            || !(bishop_attacks & (self.get_piece::<SideT::Other>(Pieces::Bishop) | queens))
-                .is_empty()
-            || !(knight_attacks & self.get_piece::<SideT::Other>(Pieces::Knight)).is_empty()
-            || !(pawn_attacks & self.get_piece::<SideT::Other>(Pieces::Pawn)).is_empty()
-            || !(king_attacks & self.get_piece::<SideT::Other>(Pieces::King)).is_empty()
+        (rook_attacks & (self.get_piece::<SideT::Other>(Pieces::Rook) | queens)).not_empty()
+            || (bishop_attacks & (self.get_piece::<SideT::Other>(Pieces::Bishop) | queens))
+                .not_empty()
+            || (knight_attacks & self.get_piece::<SideT::Other>(Pieces::Knight)).not_empty()
+            || (pawn_attacks & self.get_piece::<SideT::Other>(Pieces::Pawn)).not_empty()
+            || (king_attacks & self.get_piece::<SideT::Other>(Pieces::King)).not_empty()
     }
 
-    // is_checked returns true if the given side is checked
+    // is_attacked_by_sliders returns true if the given square is attacked by
+    // SideT::Other's sliding pieces
     //
-    // @impl: AttackTable::is_checked
+    // @param: square - square to check if is attacked by SideT::Other's sliders
+    // @param: occupancy - occupancy of the board
+    // @return: true if the given square is attacked by SideT::Other's sliders, false otherwise
+    #[inline(always)]
+    pub fn is_attacked_by_sliders<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> bool {
+        let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
+
+        (self.attack_table.rook_targets(square, occupancy)
+            & (queens | self.get_piece::<SideT::Other>(Pieces::Rook)))
+        .not_empty()
+            || (self.attack_table.bishop_targets(square, occupancy)
+                & (queens | self.get_piece::<SideT::Other>(Pieces::Bishop)))
+            .not_empty()
+    }
+
+    // is_checked returns true if SideT is currently in check
+    //
+    // @return: true if SideT is checked, false otherwise
     #[inline(always)]
     pub fn is_checked<SideT: Side>(&self) -> bool {
-        self.is_attacked::<SideT>(self.king_square::<SideT>())
+        self.is_attacked::<SideT>(self.king_square::<SideT>(), self.total_occupancy())
     }
 
-    // sniped_by returns a bitboard containing the squares of the opposing
-    // side that can "snipe" the given square
+    // sniped_by returns a bitboard containing the occupied squares of
+    // SideT::Other that can "snipe" the given square
     //
-    // @impl: AttackTable::sniped_by
+    // @param: square - square to check if is sniped by SideT::Other
+    // @return: true if the given square is sniped by SideT::Other, false otherwise
     #[inline(always)]
     pub fn sniped_by<SideT: Side>(&self, square: Square) -> Bitboard {
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
 
-        // the snipers are the union of the opponent's rooks/queens that can
-        // see the square on an empty board and the opponent's bishops/queens
+        // the snipers are the union of SideT::Other's rooks/queens that can
+        // see the square on an empty board and SideT::Other's bishops/queens
         // that can see the square on an empty board
         (self.attack_table.rook_targets(square, Bitboard::empty())
             & (queens | self.get_piece::<SideT::Other>(Pieces::Rook)))

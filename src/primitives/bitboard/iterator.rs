@@ -20,7 +20,7 @@ impl Bitboard {
     // @return: first square in the bitboard
     #[inline(always)]
     pub const fn must_first(&self) -> Square {
-        debug_assert!(!self.is_empty(), "bitboard is empty");
+        debug_assert!(self.not_empty(), "bitboard is empty");
         Square::from_idx(self.0.trailing_zeros() as usize)
     }
 

@@ -7,15 +7,15 @@ where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
-    // king_square gets the square of the king for the given side
+    // king_square gets the square of the king of SideT
     //
-    // @return: square of the king for the given side
+    // @return: square of the king of SideT
     #[inline(always)]
     pub fn king_square<SideT: Side>(&self) -> Square {
         self.get_piece::<SideT>(Pieces::King).must_first()
     }
 
-    // get_piece returns the bitboard of the given side and piece
+    // get_piece returns the bitboard of SideT's piece
     //
     // @param: piece - piece to get the bitboard for
     // @return: bitboard of the piece for the given side
@@ -24,21 +24,25 @@ where
         self.bitboards[SideT::INDEX][piece.idx()]
     }
 
-    // remove_piece_no_incrementals removes the piece from the given side and
-    // square without updating the zobrist key or any incremental game state
+    // remove_piece_no_incrementals removes SideT's piece from the given square
+    // without updating the zobrist key or any incremental game state
     //
     // @param: piece - piece to remove
     // @param: square - square to remove the piece from
     // @return: void
     // @side-effects: modifies the `position`
     #[inline(always)]
-    pub(crate) fn remove_piece_no_incrementals<SideT: Side>(&mut self, piece: Pieces, square: Square) {
+    pub(crate) fn remove_piece_no_incrementals<SideT: Side>(
+        &mut self,
+        piece: Pieces,
+        square: Square,
+    ) {
         self.bitboards[SideT::INDEX][piece.idx()].remove_at(square);
         self.sides[SideT::INDEX].remove_at(square);
         self.pieces[square.idx()] = Pieces::None;
     }
 
-    // remove_piece removes the piece from the given side and square
+    // remove_piece removes SideT's piece from the given square
     //
     // @param: piece - piece to remove
     // @param: square - square to remove the piece from
@@ -53,8 +57,8 @@ where
         // TODO: make updates to game state for things like phase, turn, piece square valuation
     }
 
-    // set_piece_no_incrementals sets the piece on the given side and square
-    // without updating the zobrist key or any incremental game state
+    // set_piece_no_incrementals sets SideT's piece on the given square without
+    // updating the zobrist key or any incremental game state
     //
     // @param: piece - piece to set on the board
     // @param: square - square to set the piece on
@@ -67,7 +71,7 @@ where
         self.pieces[square.idx()] = piece;
     }
 
-    // set_piece puts the piece on the given side and square
+    // set_piece puts SideT's piece on the given square
     //
     // @param: piece - piece to put on the board
     // @param: square - square to put the piece on
@@ -82,7 +86,7 @@ where
         // TODO: make updates to game state for things like phase, turn, piece square valuation
     }
 
-    // set_en_passant sets the en passant square for the given side
+    // set_en_passant sets the en passant square in the state
     //
     // @param: square - square to set the en passant square for
     // @return: void
@@ -98,7 +102,7 @@ where
         state.update_key(new_key);
     }
 
-    // clear_en_passant clears the en passant square for the given side
+    // clear_en_passant clears the en passant square in the state
     //
     // @return: void
     // @side-effects: modifies the `position`
@@ -113,9 +117,9 @@ where
         state.update_key(new_key);
     }
 
-    // has_bishop_pair checks if the given side has a bishop pair
+    // has_bishop_pair checks if SideT has a bishop pair
     //
-    // @return: true if the given side has a bishop pair, false otherwise
+    // @return: true if SideT has a bishop pair, false otherwise
     pub(crate) fn has_bishop_pair<SideT: Side>(&self) -> bool {
         let bitboard = self.get_piece::<SideT>(Pieces::Bishop);
         let mut white_bishops = 0;

@@ -37,12 +37,12 @@ where
         // checkmate
         //
         // that is, if either side has a queen, rook, or a pawn.
-        let sufficient_solo_material = !w[Pieces::Queen.idx()].is_empty()
-            || !w[Pieces::Rook.idx()].is_empty()
-            || !w[Pieces::Pawn.idx()].is_empty()
-            || !b[Pieces::Queen.idx()].is_empty()
-            || !b[Pieces::Rook.idx()].is_empty()
-            || !b[Pieces::Pawn.idx()].is_empty();
+        let sufficient_solo_material = w[Pieces::Queen.idx()].not_empty()
+            || w[Pieces::Rook.idx()].not_empty()
+            || w[Pieces::Pawn.idx()].not_empty()
+            || b[Pieces::Queen.idx()].not_empty()
+            || b[Pieces::Rook.idx()].not_empty()
+            || b[Pieces::Pawn.idx()].not_empty();
         if sufficient_solo_material {
             return false;
         }
@@ -68,7 +68,6 @@ where
                 }
 
                 // check if both bishops are on the same colour
-                //
                 let wb_sq = w[Pieces::Bishop.idx()].must_first();
                 let bb_sq = b[Pieces::Bishop.idx()].must_first();
                 wb_sq.is_white() == bb_sq.is_white()
@@ -114,12 +113,12 @@ where
         // checkmate
         //
         // that is, if either side has a queen, rook, or a pawn.
-        let sufficient_solo_material = !w[Pieces::Queen.idx()].is_empty()
-            || !w[Pieces::Rook.idx()].is_empty()
-            || !w[Pieces::Pawn.idx()].is_empty()
-            || !b[Pieces::Queen.idx()].is_empty()
-            || !b[Pieces::Rook.idx()].is_empty()
-            || !b[Pieces::Pawn.idx()].is_empty();
+        let sufficient_solo_material = w[Pieces::Queen.idx()].not_empty()
+            || w[Pieces::Rook.idx()].not_empty()
+            || w[Pieces::Pawn.idx()].not_empty()
+            || b[Pieces::Queen.idx()].not_empty()
+            || b[Pieces::Rook.idx()].not_empty()
+            || b[Pieces::Pawn.idx()].not_empty();
 
         // if either side has sufficient solo material or a bishop pair,
         // then that side can force checkmate
@@ -135,8 +134,8 @@ where
 
         // if either side has a knight-bishop pair, OR they have at least 3
         // knights, then that side can force checkmate
-        (!w[Pieces::Bishop.idx()].is_empty() && white_knights > 0)
-            || (!b[Pieces::Bishop.idx()].is_empty() && black_knights > 0)
+        (w[Pieces::Bishop.idx()].not_empty() && white_knights > 0)
+            || (b[Pieces::Bishop.idx()].not_empty() && black_knights > 0)
             || white_knights >= 3
             || black_knights >= 3
     }

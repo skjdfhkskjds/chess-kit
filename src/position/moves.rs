@@ -1,7 +1,7 @@
 use crate::attack_table::AttackTable;
 use crate::position::{Position, SideCastlingSquares};
 use crate::primitives::{
-    Black, GameStateExt, Move, MoveType, Pieces, Side, Sides, Square, State, White,
+    Bitboard, Black, GameStateExt, Move, MoveType, Pieces, Side, Sides, Square, State, White,
 };
 
 impl<AT, StateT> Position<AT, StateT>
@@ -35,8 +35,9 @@ where
         }
     }
 
-    // move_piece_no_incrementals moves the piece from the given square to the
-    // given square without updating the zobrist key or any incremental game state
+    // move_piece_no_incrementals moves SideT's piece from the given square to
+    // the given square without updating the zobrist key or any incremental game
+    // state
     //
     // @param: piece - piece to move
     // @param: from - square to move the piece from
@@ -49,7 +50,7 @@ where
         self.set_piece_no_incrementals::<SideT>(piece, to);
     }
 
-    // move_piece moves the piece from the given square to the given square
+    // move_piece moves SideT's piece from the given square to the given square
     //
     // @param: piece - piece to move
     // @param: from - square to move the piece from
@@ -62,7 +63,7 @@ where
         self.set_piece::<SideT>(piece, to);
     }
 
-    // capture_piece captures the side's piece at the given square
+    // capture_piece captures SideT's piece at the given square
     //
     // @param: piece - piece to capture
     // @param: square - square that the captured piece is on
@@ -90,12 +91,86 @@ where
         }
     }
 
-    #[allow(dead_code)]
-    fn update_blockers<SideT: Side>(&mut self, _square: Square) {
+    // update_blockers updates the blockers for SideT and pinners for
+    // SideT::Other at the king square of SideT
+    //
+    // @return: void
+    // @side-effects: modifies the `state`
+    #[inline(always)]
+    fn update_blockers<SideT: Side>(&mut self) {
+        let king_square = self.king_square::<SideT>();
+
+        // blockers is the occupied squares preventing the king square from
+        // being attacked by the snipers of SideT::Other
+        let mut blockers = Bitboard::empty();
+
+        // pinners is the occupied squares of SideT::Other that are pinning a
+        // piece of SideT to the king square of SideT
+        let mut pinners = Bitboard::empty();
+
+        // get the snipers of SideT::Other that can see the king square
+        let snipers = self.sniped_by::<SideT>(king_square);
+
+        // get the occupancy of the board excluding the snipers
+        let occupancy = self.total_occupancy() ^ snipers;
+
+        for sniper in snipers.iter() {
+            // between contains the occupied squares between the king square
+            // and the sniper
+            let between = Bitboard::between(king_square, sniper) & occupancy;
+
+            // if the between bitboard has exactly one bit set, then it is a
+            // blocker to the king square
+            if between.exactly_one() {
+                blockers |= between;
+
+                // if the blocker is on SideT, then the sniper is a pinner
+                if (self.occupancy::<SideT>() & between).not_empty() {
+                    pinners.set_at(sniper);
+                }
+            }
+        }
+
+        // set the blockers and pinners in the state
+        self.state_mut().set_king_blocker_pieces::<SideT>(blockers);
+        self.state_mut().set_pinning_pieces::<SideT::Other>(pinners);
     }
 
-    // make_move_for_side makes the given move from the current position for
-    // the given side
+    pub fn is_legal_move<SideT: Side>(&self, mv: Move) -> bool {
+        let from = mv.from();
+        let to = mv.to();
+
+        // if the move is an en passant capture, check whether or not the king
+        // is attacked by SideT::Other's sliders
+        // 
+        // note: skip non-sliding attacks since an en passant capture is only
+        //       possible if there are no other pieces delivering check other
+        //       than the pawn to be captured
+        if matches!(mv.type_of(), MoveType::EnPassant) {
+            let king_square = self.king_square::<SideT>();
+            let en_passant_square = to ^ 8;
+            let occupancy = (self.total_occupancy()
+                ^ Bitboard::square(from)
+                ^ Bitboard::square(en_passant_square))
+                | Bitboard::square(to);
+
+            return !self.is_attacked_by_sliders::<SideT>(king_square, occupancy);
+        }
+
+        // if the moving piece is a king, check whether or not the destination
+        // square is attacked by SideT::Other
+        if matches!(self.piece_at(from), Pieces::King) {
+            let occupancy = self.total_occupancy() ^ Bitboard::square(from);
+            return !self.is_attacked::<SideT>(to, occupancy);
+        }
+
+        // otherwise, any non-king move is legal iff it is not pinned or it is
+        // moving along the line on which it is pinned
+        return (self.state().king_blocker_pieces::<SideT>() & Bitboard::square(from)).is_empty()
+            || (Bitboard::line(from, to) & self.king_square::<SideT>()).not_empty();
+    }
+
+    // make_move_for_side makes the given move from the current position as SideT
     //
     // @param: mv - move to make
     // @return: void
@@ -115,6 +190,7 @@ where
         let to = mv.to();
         let piece = self.piece_at(from);
         let move_type = mv.type_of();
+        let mut check_en_passant = false;
 
         // increment the move counters
         //
@@ -166,7 +242,8 @@ where
                     // left the starting square
                     self.set_castling(self.state().castling().revoke::<SideT>());
                 }
-            } else if matches!(piece, Pieces::Rook) && self.state().castling().can_castle::<SideT>() {
+            } else if matches!(piece, Pieces::Rook) && self.state().castling().can_castle::<SideT>()
+            {
                 // if the moving piece is a rook and that side can still castle,
                 // revoke the appropriate castling permissions if the rook is
                 // leaving the starting square
@@ -189,31 +266,114 @@ where
             // if the move is an en passant capture, remove the opponent's pawn
             if matches!(move_type, MoveType::EnPassant) {
                 self.remove_piece::<SideT::Other>(Pieces::Pawn, to ^ 8);
+            } else if to.distance(from) == 16 {
+                // if the move is a double step, then an en passant capture may
+                // be possible, and we should check for it later
+                check_en_passant = true;
             }
 
             // reset the halfmove clock since a pawn moved
             self.state_mut().set_halfmoves(0);
         }
 
+        // set the checkers to SideT::Other's king square if the move gives a
+        // check
+        //
+        // TODO: conditionally set if move gives a check
+        let checkers = self.attacked_by::<SideT::Other>(self.king_square::<SideT::Other>());
+        self.state_mut().set_checkers(checkers);
+
         // if the moving piece is a pawn, and the move is a double step, then an
-        // en passant capture is possible
+        // en passant capture may be possible
         //
         // TODO: use a smarter approach to filter further whether or not an en
         //       passant capture is possible
-        if matches!(piece, Pieces::Pawn) && to.distance(from) == 16 {
-            self.set_en_passant(to ^ 8);
-        } else {
+        // note: the while loop is a hack to conditionally break out
+        while check_en_passant {
+            let en_passant_square = to ^ 8;
+            let mut attacking_pawns = self.get_piece::<SideT::Other>(Pieces::Pawn)
+                & self.attack_table.pawn_targets::<SideT>(en_passant_square);
+
+            // if there are no pawns that can attack the en passant square, then
+            // no en passant capture is possible
+            if attacking_pawns.is_empty() {
+                check_en_passant = false;
+                break;
+            }
+
+            // if there are other pieces delivering check other than the pawn
+            // to be captured, then en passant is illegal
+            if (self.state().checkers() & !Bitboard::square(to)).not_empty() {
+                check_en_passant = false;
+                break;
+            }
+
+            // if multiple (two) pawns are attacking the en passant square, then
+            // we need to check some more conditions to determine if en passant
+            // is legal
+            if attacking_pawns.more_than_one() {
+                // if either pawn is not pinned to the king, then en passant is
+                // legal
+                if !(self.state().king_blocker_pieces::<SideT::Other>() & attacking_pawns)
+                    .more_than_one()
+                {
+                    self.set_en_passant(en_passant_square);
+                    break;
+                }
+
+                // if both pawns are pinned to the king and neither is on the
+                // same file as the king, then both pawns are pinned by bishops
+                // and en passant is illegal
+                let king_file = Bitboard::file(self.king_square::<SideT::Other>().file());
+                if (king_file & attacking_pawns).is_empty() {
+                    check_en_passant = false;
+                    break;
+                }
+
+                // otherwise, there is a horizontally pinned pawn on the king's
+                // file, and remove it from consideration since an en passant
+                // from that pawn is illegal
+                attacking_pawns &= !king_file;
+            }
+
+            debug_assert!(
+                attacking_pawns.exactly_one(),
+                "attacking pawns should be exactly one"
+            );
+            let king_square = self.king_square::<SideT::Other>();
+            let occupancy = (self.total_occupancy() ^ Bitboard::square(to) ^ attacking_pawns)
+                | Bitboard::square(en_passant_square);
+
+            // if the king is attacked after capturing en passant, then it is
+            // illegal
+            if self.is_attacked_by_sliders::<SideT::Other>(king_square, occupancy) {
+                check_en_passant = false;
+                break;
+            }
+
+            // otherwise, en passant is legal, so set the square
+            self.set_en_passant(en_passant_square);
+            break;
+        }
+
+        // if after all the checks, en passant is not legal, then clear the en
+        // passant square
+        if !check_en_passant {
             self.clear_en_passant();
         }
 
         // swap the side to move
         self.swap_sides::<SideT>();
+
+        // update the blockers and pinners for both sides after the move
+        self.update_blockers::<SideT>();
+        self.update_blockers::<SideT::Other>();
     }
 
-    // unmake_move_for_side unmakes the last move from the current position for
-    // the given side
+    // unmake_move_for_side unmakes the last move from the current position as
+    // SideT
     //
-    // Note: since unmake pops from the history, we don't need to recompute
+    // note: since unmake pops from the history, we don't need to recompute
     //       any incremental game state since those are retrieved directly
     //
     // @return: void

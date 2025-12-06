@@ -76,25 +76,38 @@ impl Bitboard {
 
     // is_empty checks if the bitboard is empty
     //
-    // @param: self - immutable reference to the bitboard
     // @return: true if the bitboard is empty, false otherwise
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.0 == 0
     }
 
+    // not_empty checks if the bitboard is not empty
+    //
+    // @return: true if the bitboard is not empty, false otherwise
+    #[inline(always)]
+    pub const fn not_empty(&self) -> bool {
+        self.0 != 0
+    }
+
+    // exactly_one checks if the bitboard has exactly one bit set
+    //
+    // @return: true if the bitboard has exactly one bit set, false otherwise
+    #[inline(always)]
+    pub const fn exactly_one(&self) -> bool {
+        self.0.count_ones() == 1
+    }
+
     // more_than_one checks if the bitboard has more than one bit set
     //
-    // @param: self - immutable reference to the bitboard
     // @return: true if the bitboard has more than one bit set, false otherwise
     #[inline(always)]
     pub const fn more_than_one(&self) -> bool {
-        self.0 > 1
+        self.0.count_ones() > 1
     }
 
     // remove_at removes the piece at the given square
     //
-    // @param: self - mutable reference to the bitboard
     // @param: square - square to remove the piece from
     // @return: void
     // @side-effects: modifies the `bitboard`
@@ -105,7 +118,6 @@ impl Bitboard {
 
     // set_at sets the piece at the given square
     //
-    // @param: self - mutable reference to the bitboard
     // @param: square - square to set the piece on
     // @return: void
     // @side-effects: modifies the `bitboard`

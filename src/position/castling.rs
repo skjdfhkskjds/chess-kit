@@ -7,7 +7,7 @@ where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
-    // set_castling sets the castling rights for the given side
+    // set_castling sets the castling rights for SideT
     //
     // @param: castling - castling rights to set
     // @return: void

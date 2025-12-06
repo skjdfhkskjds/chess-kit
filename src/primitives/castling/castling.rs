@@ -17,66 +17,65 @@ impl Castling {
         Self(CastleRights::All as u8)
     }
 
-    // with_kingside adds the kingside castling rights for the given side
+    // with_kingside adds the kingside castling rights for SideT
     //
-    // @return: a new castling rights value with the kingside rights added
+    // @return: castling rights value with the kingside rights added
     #[inline]
     pub fn with_kingside<S: SideCastling>(&self) -> Self {
         Self(self.0 | S::KINGSIDE as u8)
     }
 
-    // with_queenside adds the queenside castling rights for the given side
+    // with_queenside adds the queenside castling rights for SideT
     //
-    // @return: a new castling rights value with the queenside rights added
+    // @return: castling rights value with the queenside rights added
     #[inline]
     pub fn with_queenside<S: SideCastling>(&self) -> Self {
         Self(self.0 | S::QUEENSIDE as u8)
     }
 
-    // revoke revokes the castling rights for the given side
+    // revoke revokes all the castling rights for SideT
     //
-    // @param: side - side to revoke castling rights from
-    // @return: a new castling rights value with the castling rights revoked
+    // @return: castling rights value with the castling rights revoked
     #[inline]
     pub fn revoke<S: SideCastling>(&self) -> Self {
         Self(self.0 & !(S::ALL as u8))
     }
 
-    // revoke_kingside revokes the kingside castling rights for the given side
+    // revoke_kingside revokes the kingside castling rights for SideT
     //
-    // @return: a new castling rights value with the kingside rights revoked
+    // @return: castling rights value with the kingside rights revoked
     #[inline]
     pub fn revoke_kingside<S: SideCastling>(&self) -> Self {
         Self(self.0 & !(S::KINGSIDE as u8))
     }
 
-    // revoke_queenside revokes the queenside castling rights for the given side
+    // revoke_queenside revokes the queenside castling rights for SideT
     //
-    // @return: a new castling rights value with the queenside rights revoked
+    // @return: castling rights value with the queenside rights revoked
     #[inline]
     pub fn revoke_queenside<S: SideCastling>(&self) -> Self {
         Self(self.0 & !(S::QUEENSIDE as u8))
     }
 
-    // can_castle checks if the castling rights allow the given side to castle
+    // can_castle checks if the castling rights allow SideT to castle
     //
-    // @return: true if the given side can castle, false otherwise
+    // @return: true if SideT can castle, false otherwise
     #[inline(always)]
     pub fn can_castle<S: SideCastling>(&self) -> bool {
         self.0 & S::ALL as u8 != CastleRights::None as u8
     }
 
-    // kingside checks if the castling rights allow the given side to castle kingside
+    // kingside checks if the castling rights allow SideT to castle kingside
     //
-    // @return: true if the given side can castle kingside, false otherwise
+    // @return: true if SideT can castle kingside, false otherwise
     #[inline(always)]
     pub fn kingside<S: SideCastling>(&self) -> bool {
         self.0 & S::KINGSIDE as u8 != CastleRights::None as u8
     }
 
-    // queenside checks if the castling rights allow the given side to castle queenside
+    // queenside checks if the castling rights allow SideT to castle queenside
     //
-    // @return: true if the given side can castle queenside, false otherwise
+    // @return: true if SideT can castle queenside, false otherwise
     #[inline(always)]
     pub fn queenside<S: SideCastling>(&self) -> bool {
         self.0 & S::QUEENSIDE as u8 != CastleRights::None as u8
