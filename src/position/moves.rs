@@ -136,13 +136,17 @@ where
         self.state_mut().set_pinning_pieces::<SideT::Other>(pinners);
     }
 
+    // is_legal_move checks if the given move played by SideT is legal
+    //
+    // @param: mv - move to check if is legal
+    // @return: true if the move is legal, false otherwise
     pub fn is_legal_move<SideT: Side>(&self, mv: Move) -> bool {
         let from = mv.from();
         let to = mv.to();
 
         // if the move is an en passant capture, check whether or not the king
         // is attacked by SideT::Other's sliders
-        // 
+        //
         // note: skip non-sliding attacks since an en passant capture is only
         //       possible if there are no other pieces delivering check other
         //       than the pawn to be captured
@@ -167,7 +171,8 @@ where
         // otherwise, any non-king move is legal iff it is not pinned or it is
         // moving along the line on which it is pinned
         return (self.state().king_blocker_pieces::<SideT>() & Bitboard::square(from)).is_empty()
-            || (Bitboard::line(from, to) & self.king_square::<SideT>()).not_empty();
+            || (Bitboard::line(from, to) & Bitboard::square(self.king_square::<SideT>()))
+                .not_empty();
     }
 
     // make_move_for_side makes the given move from the current position as SideT

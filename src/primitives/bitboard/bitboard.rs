@@ -1,5 +1,5 @@
 use crate::primitives::bitboard::constants::{
-    BITBOARD_BETWEEN, BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES,
+    BITBOARD_BETWEEN, BITBOARD_FILES, BITBOARD_LINES, BITBOARD_RANKS, BITBOARD_SQUARES,
 };
 use crate::primitives::{File, Rank, Square};
 use chess_kit_derive::{Arithmetic, BitOps};
@@ -72,6 +72,17 @@ impl Bitboard {
     #[inline(always)]
     pub const fn between(start: Square, end: Square) -> Self {
         BITBOARD_BETWEEN[start.idx()][end.idx()]
+    }
+
+    // line returns the edge to edge line of the bitboard intersecting the two
+    // given squares
+    //
+    // @param: s1 - first square
+    // @param: s2 - second square
+    // @return: line bitboard
+    #[inline(always)]
+    pub const fn line(s1: Square, s2: Square) -> Self {
+        BITBOARD_LINES[s1.idx()][s2.idx()]
     }
 
     // is_empty checks if the bitboard is empty
