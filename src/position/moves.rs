@@ -162,9 +162,9 @@ where
     // @return: void
     // @side-effects: modifies the `state`
     pub(crate) fn update_check_info<SideT: Side>(&mut self) {
-        // // update the blockers and pinners for each side
-        // self.update_blockers::<White>();
-        // self.update_blockers::<Black>();
+        // update the blockers and pinners for each side
+        self.update_blockers::<White>();
+        self.update_blockers::<Black>();
 
         let king_square = self.king_square::<SideT::Other>();
         let occupancy = self.total_occupancy();

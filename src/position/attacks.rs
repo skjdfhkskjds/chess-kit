@@ -34,14 +34,20 @@ where
         let knight_attacks = self.attack_table.knight_targets(square);
         let pawn_attacks = self.attack_table.pawn_targets::<SideT>(square);
 
+        let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
+        let rooks_and_queens = self.get_piece::<SideT::Other>(Pieces::Rook) | queens;
+        let bishops_and_queens = self.get_piece::<SideT::Other>(Pieces::Bishop) | queens;
+        let knights = self.get_piece::<SideT::Other>(Pieces::Knight);
+        let pawns = self.get_piece::<SideT::Other>(Pieces::Pawn);
+        let kings = self.get_piece::<SideT::Other>(Pieces::King);
+
         // check if there is an intersection between an attack board and that
         // piece's respective occupancy
-        let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
-        king_attacks & self.get_piece::<SideT::Other>(Pieces::King)
-            | rook_attacks & (self.get_piece::<SideT::Other>(Pieces::Rook) | queens)
-            | bishop_attacks & (self.get_piece::<SideT::Other>(Pieces::Bishop) | queens)
-            | knight_attacks & self.get_piece::<SideT::Other>(Pieces::Knight)
-            | pawn_attacks & self.get_piece::<SideT::Other>(Pieces::Pawn)
+        king_attacks & kings
+            | rook_attacks & rooks_and_queens
+            | bishop_attacks & bishops_and_queens
+            | knight_attacks & knights
+            | pawn_attacks & pawns
     }
 
     // is_attacked returns true if the given square on SideT is attacked by
@@ -120,13 +126,13 @@ where
     #[inline(always)]
     pub fn is_sniped_by<SideT: Side>(&self, square: Square) -> Bitboard {
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
+        let rooks_and_queens = self.get_piece::<SideT::Other>(Pieces::Rook) | queens;
+        let bishops_and_queens = self.get_piece::<SideT::Other>(Pieces::Bishop) | queens;
 
         // the snipers are the union of SideT::Other's rooks/queens that can
         // see the square on an empty board and SideT::Other's bishops/queens
         // that can see the square on an empty board
-        (self.attack_table.rook_targets(square, Bitboard::empty())
-            & (queens | self.get_piece::<SideT::Other>(Pieces::Rook)))
-            | (self.attack_table.bishop_targets(square, Bitboard::empty())
-                & (queens | self.get_piece::<SideT::Other>(Pieces::Bishop)))
+        (self.attack_table.rook_targets(square, Bitboard::empty()) & rooks_and_queens)
+            | (self.attack_table.bishop_targets(square, Bitboard::empty()) & bishops_and_queens)
     }
 }
