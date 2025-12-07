@@ -1,7 +1,5 @@
-use crate::movegen::MoveGenerator;
-use crate::primitives::{
-    BITBOARD_FILES, BITBOARD_RANKS, BITBOARD_SQUARES, Bitboard, BitboardVec, File, Rank, Square,
-};
+use crate::attack_table::DefaultAttackTable;
+use crate::primitives::{Bitboard, BitboardVec, File, Rank, Square};
 
 // Direction is an enum that represents the movement direction of a sliding
 // piece.
@@ -16,46 +14,15 @@ pub enum Direction {
     DownLeft,
 }
 
-impl MoveGenerator {
-    // get_rook_attacks returns the attacks for the given square and bitboard.
-    //
-    // @param: square - square to get the attacks for
-    // @param: bitboard - current occupancy state of the board
-    // @return: bitboard representing the rook targets
-    #[inline(always)]
-    pub fn get_rook_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
-        self.rook_table[self.rook_magics[square.idx()].index_of(bitboard)]
-    }
-
-    // get_bishop_attacks returns the attacks for the given square and bitboard.
-    //
-    // @param: square - square to get the attacks for
-    // @param: bitboard - current occupancy state of the board
-    // @return: bitboard representing the bishop targets
-    #[inline(always)]
-    pub(crate) fn get_bishop_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
-        self.bishop_table[self.bishop_magics[square.idx()].index_of(bitboard)]
-    }
-
-    // get_queen_attacks returns the attacks for the given square and bitboard.
-    //
-    // @param: square - square to get the attacks for
-    // @param: bitboard - current occupancy state of the board
-    // @return: bitboard representing the queen targets
-    #[inline(always)]
-    pub(crate) fn get_queen_attacks(&self, square: Square, bitboard: &Bitboard) -> Bitboard {
-        self.get_rook_attacks(square, bitboard) ^ self.get_bishop_attacks(square, bitboard)
-    }
-
+impl DefaultAttackTable {
     // rook_mask returns the rook mask for the given square
     //
     // @param: square - square to get the mask for
     // @return: masking bitboard for the given square
     pub(crate) fn rook_mask(square: Square) -> Bitboard {
-        let rook_at = BITBOARD_SQUARES[square.idx()];
-        let edges = MoveGenerator::get_edges(square);
-        let line_of_sight =
-            BITBOARD_FILES[square.file().idx()] | BITBOARD_RANKS[square.rank().idx()];
+        let rook_at = Bitboard::square(square);
+        let edges = DefaultAttackTable::get_edges(square);
+        let line_of_sight = Bitboard::file(square.file()) | Bitboard::rank(square.rank());
 
         line_of_sight & !edges & !rook_at
     }
@@ -66,12 +33,12 @@ impl MoveGenerator {
     // @return: masking bitboard for the given square
     pub(crate) fn bishop_mask(square: Square) -> Bitboard {
         let bitboard = Bitboard::empty();
-        let bishop_at = BITBOARD_SQUARES[square.idx()];
-        let edges = MoveGenerator::get_edges(square);
-        let line_of_sight = MoveGenerator::attack_ray(&bitboard, square, Direction::UpLeft)
-            | MoveGenerator::attack_ray(&bitboard, square, Direction::UpRight)
-            | MoveGenerator::attack_ray(&bitboard, square, Direction::DownRight)
-            | MoveGenerator::attack_ray(&bitboard, square, Direction::DownLeft);
+        let bishop_at = Bitboard::square(square);
+        let edges = DefaultAttackTable::get_edges(square);
+        let line_of_sight = DefaultAttackTable::attack_ray(&bitboard, square, Direction::UpLeft)
+            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::UpRight)
+            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::DownRight)
+            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::DownLeft);
 
         line_of_sight & !edges & !bishop_at
     }
@@ -86,10 +53,10 @@ impl MoveGenerator {
         let mut attacks: BitboardVec = Vec::new();
 
         for bitboard in blockers.iter() {
-            let attacking = MoveGenerator::attack_ray(bitboard, square, Direction::Up)
-                | MoveGenerator::attack_ray(bitboard, square, Direction::Right)
-                | MoveGenerator::attack_ray(bitboard, square, Direction::Down)
-                | MoveGenerator::attack_ray(bitboard, square, Direction::Left);
+            let attacking = DefaultAttackTable::attack_ray(bitboard, square, Direction::Up)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::Right)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::Down)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::Left);
             attacks.push(attacking);
         }
 
@@ -106,10 +73,10 @@ impl MoveGenerator {
         let mut attacks: BitboardVec = Vec::new();
 
         for bitboard in blockers.iter() {
-            let attacking = MoveGenerator::attack_ray(bitboard, square, Direction::UpLeft)
-                | MoveGenerator::attack_ray(bitboard, square, Direction::UpRight)
-                | MoveGenerator::attack_ray(bitboard, square, Direction::DownRight)
-                | MoveGenerator::attack_ray(bitboard, square, Direction::DownLeft);
+            let attacking = DefaultAttackTable::attack_ray(bitboard, square, Direction::UpLeft)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::UpRight)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::DownRight)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::DownLeft);
             attacks.push(attacking);
         }
 
@@ -147,34 +114,38 @@ impl MoveGenerator {
     // @return: bitboard of all the edges of the board
     // TODO: think about moving this function elsewhere
     fn get_edges(exclude: Square) -> Bitboard {
-        let exclude_file = BITBOARD_FILES[exclude.file().idx()];
-        let exclude_rank = BITBOARD_RANKS[exclude.rank().idx()];
+        let exclude_file = Bitboard::file(exclude.file());
+        let exclude_rank = Bitboard::rank(exclude.rank());
 
-        (BITBOARD_FILES[File::A.idx()] & !exclude_file)
-            | (BITBOARD_FILES[File::H.idx()] & !exclude_file)
-            | (BITBOARD_RANKS[Rank::R1.idx()] & !exclude_rank)
-            | (BITBOARD_RANKS[Rank::R8.idx()] & !exclude_rank)
+        (Bitboard::file(File::A) & !exclude_file)
+            | (Bitboard::file(File::H) & !exclude_file)
+            | (Bitboard::rank(Rank::R1) & !exclude_rank)
+            | (Bitboard::rank(Rank::R8) & !exclude_rank)
     }
 
     // attack_ray returns the attack ray from the current square in the given
     // direction based on the given bitboard.
     //
+    // note: we unwrap the bitboards to u64 as a hack to enable const bitwise
+    //       operations
+    //
     // @param: bitboard - bitboard to use as the base for the attack ray
     // @param: square - square to start the attack ray from
     // @param: direction - direction to attack in
     // @return: attack ray bitboard
-    fn attack_ray(bitboard: &Bitboard, square: Square, direction: Direction) -> Bitboard {
+    pub const fn attack_ray(bitboard: &Bitboard, square: Square, direction: Direction) -> Bitboard {
         // get the file and rank and the square to analyze
         let mut file = square.file();
         let mut rank = square.rank();
-        let mut square = BITBOARD_SQUARES[square.idx()];
+        let mut square = Bitboard::square(square).const_unwrap();
 
         // build the ray bitboard in the given direction
-        let mut ray = Bitboard::empty();
+        let mut ray = 0u64;
+        let occupancy = bitboard.const_unwrap();
         loop {
             match direction {
                 Direction::Up => {
-                    if rank == Rank::R8 {
+                    if rank.const_eq(Rank::R8) {
                         break;
                     }
 
@@ -183,7 +154,7 @@ impl MoveGenerator {
                     rank.inc();
                 }
                 Direction::Right => {
-                    if file == File::H {
+                    if file.const_eq(File::H) {
                         break;
                     }
 
@@ -192,7 +163,7 @@ impl MoveGenerator {
                     file.inc();
                 }
                 Direction::Down => {
-                    if rank == Rank::R1 {
+                    if rank.const_eq(Rank::R1) {
                         break;
                     }
 
@@ -201,7 +172,7 @@ impl MoveGenerator {
                     rank.dec();
                 }
                 Direction::Left => {
-                    if file == File::A {
+                    if file.const_eq(File::A) {
                         break;
                     }
 
@@ -210,7 +181,7 @@ impl MoveGenerator {
                     file.dec();
                 }
                 Direction::UpLeft => {
-                    if rank == Rank::R8 || file == File::A {
+                    if rank.const_eq(Rank::R8) || file.const_eq(File::A) {
                         break;
                     }
 
@@ -220,7 +191,7 @@ impl MoveGenerator {
                     file.dec();
                 }
                 Direction::UpRight => {
-                    if rank == Rank::R8 || file == File::H {
+                    if rank.const_eq(Rank::R8) || file.const_eq(File::H) {
                         break;
                     }
 
@@ -230,7 +201,7 @@ impl MoveGenerator {
                     file.inc();
                 }
                 Direction::DownRight => {
-                    if rank == Rank::R1 || file == File::H {
+                    if rank.const_eq(Rank::R1) || file.const_eq(File::H) {
                         break;
                     }
 
@@ -240,7 +211,7 @@ impl MoveGenerator {
                     file.inc();
                 }
                 Direction::DownLeft => {
-                    if rank == Rank::R1 || file == File::A {
+                    if rank.const_eq(Rank::R1) || file.const_eq(File::A) {
                         break;
                     }
 
@@ -253,11 +224,11 @@ impl MoveGenerator {
 
             // if the square is blocked, we have built the full ray in this
             // direction, so we can stop
-            if !(square & bitboard).is_empty() {
+            if square & occupancy != 0 {
                 break;
             }
         }
 
-        ray
+        Bitboard::new(ray)
     }
 }

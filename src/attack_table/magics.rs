@@ -1,4 +1,4 @@
-use crate::movegen::MoveGenerator;
+use crate::attack_table::DefaultAttackTable;
 /**
  * The magics as used by Rustic can be found just below. If you want to see the function used to
  * generate them, look for the "find_magics()" function. This function can be found in the module
@@ -72,44 +72,19 @@ pub struct Magic {
     pub num: u64,
 }
 
-/**
- * get_index() is the actual function that gets the magic index into the attack table.
- * The attack table is a perfect hash. This means the following.
- * - A rook on A1 has 7 squares vertical and 7 squares horizontal movement.
- * - This is a total of 14 bits. However, if there are no pieces on A2-A6, or B1-G1, the rook
- *   can always see A8 and H1. This means that if there are no blockers on the file or rank,
- *   the rook can 'see' the square at the edge of the board. Therefore, the bits marking the
- *   edge of a ray are not counted. Thus, the rook on A1 has actually 12 bits set.
- * - These bits along the rank and file denote the possible position of blocking pieces.
- * - For 12 bits, there are 4096 possible configuration of blockers (2 to the power of 12).
- * - Thus, square A1 has 4096 blocker boards.
- * - The get_index() function receives a board occupancy when called.
- * - "occupancy & self.mask" (the mask for the piece on the square the magic belongs to) yields
- *   a blocker board.
- * - Each blocker board (configuration of blockers) goes with one attack board (the squares the)
- *   piece can actually attack). This attack board is in the attack table.
- * - The formula calculates WHERE in the attack table the blocker board is:
- *   (blockerboard * magic number) >> (64 - bits in mask) + offset
- * - For the rook on A1 the outcome will be an index of 0 - 4095:
- *   0 - 4095 because of 4096 possible blocker (and thus, attack board) permutations
- *   0 for offset, because A1 is the first square.
- * - So the index for a rook on B1 will start at 4096, and so on. (So B1's offset is 4096.)
- * - The "magic number" is called magic, because it generates a UNIQUE index for each attack
- *   board in the attack table, without any collisions; so the entire table is exactly
- *   filled. This is called a perfect hash.
- * - Finding the magics is a process of just trying random numbers, with the formula below, over
- *   and over again until a number is found that generates unique indexes for all of the
- *   permutations of attacks of the piece on a particular square. See the explanation for
- *   find_magics().
- */
 impl Magic {
-    pub fn index_of(&self, occupancy: &Bitboard) -> usize {
+    // idx gets the magic index for the given occupancy
+    //
+    // @param: occupancy - occupancy to get the magic index for
+    // @return: magic index for the given occupancy
+    #[inline(always)]
+    pub fn idx(&self, occupancy: Bitboard) -> usize {
         let blockerboard = occupancy & self.mask;
         u64::from((blockerboard.wrapping_mul(self.num) >> self.shift) + self.offset) as usize
     }
 }
 
-impl MoveGenerator {
+impl DefaultAttackTable {
     // assert_table_initialized asserts that the table is initialized to the
     // expected size for the given piece
     //
@@ -141,20 +116,20 @@ impl MoveGenerator {
     fn init_square_magics(&mut self, offset: &mut u64, square: Square, piece: Pieces) {
         // get the mask for the given piece and square
         let mask = match piece {
-            Pieces::Rook => MoveGenerator::rook_mask(square),
-            Pieces::Bishop => MoveGenerator::bishop_mask(square),
+            Pieces::Rook => DefaultAttackTable::rook_mask(square),
+            Pieces::Bishop => DefaultAttackTable::bishop_mask(square),
             _ => panic!("Illegal piece type for magics: {piece}"),
         };
 
         let bits = mask.count_ones(); // number of set bits in the mask
         let permutations = 2u64.pow(bits); // number of blocker boards to be indexed
         let end = *offset + permutations - 1; // end point in the attack table
-        let blocker_boards = MoveGenerator::blocker_boards(mask);
+        let blocker_boards = DefaultAttackTable::blocker_boards(mask);
 
         // get the attack boards for the given piece and square
         let attack_boards = match piece {
-            Pieces::Rook => MoveGenerator::rook_attack_boards(square, &blocker_boards),
-            Pieces::Bishop => MoveGenerator::bishop_attack_boards(square, &blocker_boards),
+            Pieces::Rook => DefaultAttackTable::rook_attack_boards(square, &blocker_boards),
+            Pieces::Bishop => DefaultAttackTable::bishop_attack_boards(square, &blocker_boards),
             _ => panic!("Illegal piece type for magics: {piece}"),
         };
 
@@ -179,7 +154,7 @@ impl MoveGenerator {
         // index the attack boards for the given piece and square
         for i in 0..permutations {
             let next = i as usize;
-            let index = magic.index_of(&blocker_boards[next]);
+            let index = magic.idx(blocker_boards[next]);
 
             // assert that the attack table index is currently empty
             assert!(

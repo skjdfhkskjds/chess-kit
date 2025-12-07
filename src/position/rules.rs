@@ -1,7 +1,12 @@
+use crate::attack_table::AttackTable;
 use crate::position::position::Position;
-use crate::primitives::{Pieces, Sides, Square, White, Black};
+use crate::primitives::{Black, GameStateExt, Pieces, Sides, State, White};
 
-impl Position {
+impl<AT, StateT> Position<AT, StateT>
+where
+    AT: AttackTable,
+    StateT: State + GameStateExt,
+{
     // is_draw checks if the position is a draw
     //
     // @return: true if the position is a draw, false otherwise
@@ -16,7 +21,7 @@ impl Position {
     #[inline(always)]
     pub fn is_draw_by_fifty_moves(&self) -> bool {
         // Note: 100 since we are using the halfmove clock
-        self.state.halfmoves >= 100
+        self.state().halfmoves() >= 100
     }
 
     // is_draw_by_insufficient_material checks if the position is a draw according
@@ -32,12 +37,12 @@ impl Position {
         // checkmate
         //
         // that is, if either side has a queen, rook, or a pawn.
-        let sufficient_solo_material = !w[Pieces::Queen.idx()].is_empty()
-            || !w[Pieces::Rook.idx()].is_empty()
-            || !w[Pieces::Pawn.idx()].is_empty()
-            || !b[Pieces::Queen.idx()].is_empty()
-            || !b[Pieces::Rook.idx()].is_empty()
-            || !b[Pieces::Pawn.idx()].is_empty();
+        let sufficient_solo_material = w[Pieces::Queen.idx()].not_empty()
+            || w[Pieces::Rook.idx()].not_empty()
+            || w[Pieces::Pawn.idx()].not_empty()
+            || b[Pieces::Queen.idx()].not_empty()
+            || b[Pieces::Rook.idx()].not_empty()
+            || b[Pieces::Pawn.idx()].not_empty();
         if sufficient_solo_material {
             return false;
         }
@@ -63,10 +68,8 @@ impl Position {
                 }
 
                 // check if both bishops are on the same colour
-                // 
-                // TODO: refactor into bitboard.first() or something
-                let wb_sq = Square::from_idx(w[Pieces::Bishop.idx()].trailing_zeros() as usize);
-                let bb_sq = Square::from_idx(b[Pieces::Bishop.idx()].trailing_zeros() as usize);
+                let wb_sq = w[Pieces::Bishop.idx()].must_first();
+                let bb_sq = b[Pieces::Bishop.idx()].must_first();
                 wb_sq.is_white() == bb_sq.is_white()
             }
             _ => false,
@@ -83,14 +86,14 @@ impl Position {
         // walk backwards through the history
         for historic_state in self.history.iter().rev() {
             // if the zobrist keys match, we have a repetition
-            if historic_state.zobrist_key == self.state.zobrist_key {
+            if historic_state.key() == self.state().key() {
                 count += 1;
             }
 
             // if the halfmove clock is 0, the history position is a result
             // of a capture or a pawn move, so no previous positions can be
             // the same
-            if historic_state.halfmoves == 0 {
+            if historic_state.halfmoves() == 0 {
                 break;
             }
         }
@@ -110,12 +113,12 @@ impl Position {
         // checkmate
         //
         // that is, if either side has a queen, rook, or a pawn.
-        let sufficient_solo_material = !w[Pieces::Queen.idx()].is_empty()
-            || !w[Pieces::Rook.idx()].is_empty()
-            || !w[Pieces::Pawn.idx()].is_empty()
-            || !b[Pieces::Queen.idx()].is_empty()
-            || !b[Pieces::Rook.idx()].is_empty()
-            || !b[Pieces::Pawn.idx()].is_empty();
+        let sufficient_solo_material = w[Pieces::Queen.idx()].not_empty()
+            || w[Pieces::Rook.idx()].not_empty()
+            || w[Pieces::Pawn.idx()].not_empty()
+            || b[Pieces::Queen.idx()].not_empty()
+            || b[Pieces::Rook.idx()].not_empty()
+            || b[Pieces::Pawn.idx()].not_empty();
 
         // if either side has sufficient solo material or a bishop pair,
         // then that side can force checkmate
@@ -131,8 +134,8 @@ impl Position {
 
         // if either side has a knight-bishop pair, OR they have at least 3
         // knights, then that side can force checkmate
-        (!w[Pieces::Bishop.idx()].is_empty() && white_knights > 0)
-            || (!b[Pieces::Bishop.idx()].is_empty() && black_knights > 0)
+        (w[Pieces::Bishop.idx()].not_empty() && white_knights > 0)
+            || (b[Pieces::Bishop.idx()].not_empty() && black_knights > 0)
             || white_knights >= 3
             || black_knights >= 3
     }

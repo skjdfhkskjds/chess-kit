@@ -1,8 +1,13 @@
+use crate::attack_table::AttackTable;
 use crate::position::Position;
-use crate::primitives::{File, Pieces, Rank, Sides};
+use crate::primitives::{File, GameStateExt, Pieces, Rank, Sides, State};
 use std::fmt;
 
-impl fmt::Display for Position {
+impl<AT, StateT> fmt::Display for Position<AT, StateT>
+where
+    AT: AttackTable,
+    StateT: State + GameStateExt,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut board = [['.'; File::TOTAL]; Rank::TOTAL];
 
@@ -40,7 +45,7 @@ impl fmt::Display for Position {
         writeln!(f, "  ABCDEFGH")?;
 
         // print the game state metadata
-        writeln!(f, "{}", self.state)?;
+        writeln!(f, "{}", self.state())?;
 
         Ok(())
     }

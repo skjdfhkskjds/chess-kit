@@ -15,16 +15,48 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
     let repr_ty = parse_repr_primitive(input, "EnumBitOps")?;
 
     let name = &input.ident;
+    let repr_is_u64 = is_primitive_type(&repr_ty, "u64");
     let repr_is_u32 = is_primitive_type(&repr_ty, "u32");
     let repr_is_u8 = is_primitive_type(&repr_ty, "u8");
 
     let helper_impl = quote! {
         impl #name {
             #[inline(always)]
-            fn __chess_kit_enum_bitops_from_raw(value: #repr_ty) -> Self {
+            const fn __chess_kit_enum_bitops_from_raw(value: #repr_ty) -> Self {
                 unsafe { ::core::mem::transmute::<#repr_ty, Self>(value) }
             }
         }
+    };
+
+    let shl_u64_impls = if !repr_is_u64 {
+        quote! {
+            impl ::core::ops::Shl<u64> for #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shl(self, rhs: u64) -> Self::Output {
+                    #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) << rhs)
+                }
+            }
+
+            impl<'a> ::core::ops::Shl<u64> for &'a #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shl(self, rhs: u64) -> Self::Output {
+                    #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs)
+                }
+            }
+
+            impl ::core::ops::ShlAssign<u64> for #name {
+                #[inline(always)]
+                fn shl_assign(&mut self, rhs: u64) {
+                    *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs);
+                }
+            }
+        }
+    } else {
+        quote! {}
     };
 
     let shl_u32_impls = if !repr_is_u32 {
@@ -82,6 +114,37 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
                 #[inline(always)]
                 fn shl_assign(&mut self, rhs: u8) {
                     *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs);
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let shr_u64_impls = if !repr_is_u64 {
+        quote! {
+            impl ::core::ops::Shr<u64> for #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shr(self, rhs: u64) -> Self::Output {
+                    #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) >> rhs)
+                }
+            }
+
+            impl<'a> ::core::ops::Shr<u64> for &'a #name {
+                type Output = #name;
+
+                #[inline(always)]
+                fn shr(self, rhs: u64) -> Self::Output {
+                    #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs)
+                }
+            }
+
+            impl ::core::ops::ShrAssign<u64> for #name {
+                #[inline(always)]
+                fn shr_assign(&mut self, rhs: u64) {
+                    *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs);
                 }
             }
         }
@@ -426,6 +489,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             }
         }
 
+        #shl_u64_impls
         #shl_u32_impls
         #shl_u8_impls
 
@@ -482,6 +546,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             }
         }
 
+        #shr_u64_impls
         #shr_u32_impls
         #shr_u8_impls
     };

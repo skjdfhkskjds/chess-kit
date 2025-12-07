@@ -8,7 +8,7 @@ impl File {
     // @param: self - immutable reference to the file
     // @return: file incremented by one
     #[inline(always)]
-    pub fn inc(&mut self) {
+    pub const fn inc(&mut self) {
         *self = Self::from_idx(self.idx() + 1);
     }
 
@@ -19,7 +19,18 @@ impl File {
     // @param: self - immutable reference to the file
     // @return: file decremented by one
     #[inline(always)]
-    pub fn dec(&mut self) {
+    pub const fn dec(&mut self) {
         *self = Self::from_idx(self.idx() - 1);
+    }
+
+    // const_eq is a constant function that checks if the file is equal to the
+    // other file
+    //
+    // @param: self - immutable reference to the file
+    // @param: other - immutable reference to the other file
+    // @return: true if the file is equal to the other file, false otherwise
+    #[inline(always)]
+    pub const fn const_eq(self, other: Self) -> bool {
+        self.idx() == other.idx()
     }
 }

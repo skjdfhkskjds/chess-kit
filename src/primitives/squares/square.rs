@@ -7,7 +7,7 @@ impl Square {
     // @param: rank - rank to create the square from
     // @return: new square
     #[inline(always)]
-    pub fn new(file: File, rank: Rank) -> Self {
+    pub const fn new(file: File, rank: Rank) -> Self {
         Self::from_idx((rank.idx() * 8) + file.idx())
     }
 
@@ -16,7 +16,7 @@ impl Square {
     // @param: self - immutable reference to the square
     // @return: rank of the square
     #[inline(always)]
-    pub fn rank(&self) -> Rank {
+    pub const fn rank(&self) -> Rank {
         Rank::from_idx(self.idx() / 8)
     }
 
@@ -25,7 +25,7 @@ impl Square {
     // @param: self - immutable reference to the square
     // @return: file of the square
     #[inline(always)]
-    pub fn file(&self) -> File {
+    pub const fn file(&self) -> File {
         File::from_idx(self.idx() % 8)
     }
 
@@ -34,7 +34,7 @@ impl Square {
     // @param: self - immutable reference to the square
     // @return: true if the square is a white square, false otherwise
     #[inline(always)]
-    pub fn is_white(&self) -> bool {
+    pub const fn is_white(&self) -> bool {
         let even_rank = ((self.idx() / 8) & 1) == 0;
         let even_square = (self.idx() & 1) == 0;
         even_rank ^ even_square
@@ -56,8 +56,8 @@ impl Square {
     // @param: rank - rank to check
     // @return: true if the square is on the given rank, false otherwise
     #[inline(always)]
-    pub fn on_rank(&self, rank: Rank) -> bool {
-        self.rank() == rank
+    pub const fn on_rank(&self, rank: Rank) -> bool {
+        self.rank().idx() == rank.idx()
     }
 
     // on_file returns true if the square is on the given file
@@ -66,7 +66,7 @@ impl Square {
     // @param: file - file to check
     // @return: true if the square is on the given file, false otherwise
     #[inline(always)]
-    pub fn on_file(&self, file: File) -> bool {
-        self.file() == file
+    pub const fn on_file(&self, file: File) -> bool {
+        self.file().idx() == file.idx()
     }
 }

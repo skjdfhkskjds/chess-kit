@@ -11,14 +11,14 @@ impl TryFrom<&str> for File {
 
         let char = s.chars().next().unwrap();
         match char {
-            'A' => Ok(File::A),
-            'B' => Ok(File::B),
-            'C' => Ok(File::C),
-            'D' => Ok(File::D),
-            'E' => Ok(File::E),
-            'F' => Ok(File::F),
-            'G' => Ok(File::G),
-            'H' => Ok(File::H),
+            'A' | 'a' => Ok(File::A),
+            'B' | 'b' => Ok(File::B),
+            'C' | 'c' => Ok(File::C),
+            'D' | 'd' => Ok(File::D),
+            'E' | 'e' => Ok(File::E),
+            'F' | 'f' => Ok(File::F),
+            'G' | 'g' => Ok(File::G),
+            'H' | 'h' => Ok(File::H),
             _ => Err("invalid file"),
         }
     }

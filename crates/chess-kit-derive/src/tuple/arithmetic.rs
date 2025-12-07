@@ -66,24 +66,6 @@ pub fn expand_arithmetic(input: &DeriveInput) -> Result<proc_macro2::TokenStream
                 #name(self.0 * rhs)
             }
         }
-
-        // ================================================
-        //                   FROM/INTO
-        // ================================================
-
-        impl ::core::convert::From<#inner> for #name {
-            #[inline(always)]
-            fn from(value: #inner) -> Self {
-                #name(value)
-            }
-        }
-
-        impl ::core::convert::From<#name> for #inner {
-            #[inline(always)]
-            fn from(value: #name) -> Self {
-                value.0
-            }
-        }
     };
 
     Ok(output)

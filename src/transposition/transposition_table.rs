@@ -1,9 +1,9 @@
 use crate::primitives::ZobristKey;
-use crate::transposition::{NodeData, bucket::Bucket};
+use crate::transposition::{NodeData, TranspositionTable, bucket::Bucket};
 
 const MB_TO_BYTES: usize = 1024 * 1024;
 
-pub struct TranspositionTable<T: NodeData> {
+pub struct DefaultTranspositionTable<T: NodeData> {
     size: usize,        // number of entries in the table
     capacity: usize,    // maximum number of entries in the table
     max_buckets: usize, // maximum number of buckets in the table
@@ -12,15 +12,12 @@ pub struct TranspositionTable<T: NodeData> {
     buckets: Vec<Bucket<T>>,
 }
 
-impl<T> TranspositionTable<T>
-where
-    T: NodeData + Copy + Clone,
-{
+impl<T: NodeData> TranspositionTable<T> for DefaultTranspositionTable<T> {
     // new creates a new transposition table with the requested memory size
     //
     // @param: memory_size - the size of the transposition table in MBs
     // @return: a new transposition table
-    pub fn new(memory_size: usize) -> Self {
+    fn new(memory_size: usize) -> Self {
         let (buckets, capacity) = Self::calculate_sizes(memory_size);
 
         Self {
@@ -38,7 +35,8 @@ where
     // @param: data - the data to insert
     // @return: void
     // @side-effects: modifies the transposition table
-    pub fn insert(&mut self, zobrist_key: ZobristKey, data: T) {
+    #[inline(always)]
+    fn insert(&mut self, zobrist_key: ZobristKey, data: T) {
         if !self.is_enabled() {
             return;
         }
@@ -52,7 +50,8 @@ where
     //
     // @param: zobrist_key - the zobrist key of the position to probe
     // @return: the data if the position is found, None otherwise
-    pub fn probe(&self, zobrist_key: ZobristKey) -> Option<&T> {
+    #[inline(always)]
+    fn probe(&self, zobrist_key: ZobristKey) -> Option<&T> {
         if !self.is_enabled() {
             return None;
         }
@@ -65,7 +64,7 @@ where
     //
     // @return: true if the transposition table is enabled, false otherwise
     #[inline(always)]
-    pub const fn is_enabled(&self) -> bool {
+    fn is_enabled(&self) -> bool {
         self.memory_size > 0
     }
 
@@ -73,16 +72,8 @@ where
     //
     // @return: maximum number of entries in the transposition table
     #[inline(always)]
-    pub const fn capacity(&self) -> usize {
+    fn capacity(&self) -> usize {
         self.capacity
-    }
-
-    // buckets returns the number of buckets allocated in the transposition table
-    //
-    // @return: number of buckets allocated in the transposition table
-    #[inline(always)]
-    pub const fn buckets(&self) -> usize {
-        self.max_buckets
     }
 
     // resize resizes the transposition table's underlying memory allocation to
@@ -91,7 +82,7 @@ where
     // @param: memory_size - the new size of the transposition table in MBs
     // @return: void
     // @side-effects: clears the transposition table
-    pub fn resize(&mut self, memory_size: usize) {
+    fn resize(&mut self, memory_size: usize) {
         // if the memory size is unchanged, just clear the table
         if self.memory_size == memory_size {
             self.clear();
@@ -108,7 +99,7 @@ where
     // @return: void
     // @side-effects: clears the transposition table
     #[inline(always)]
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         for entry in self.buckets.iter_mut() {
             entry.clear();
         }
@@ -119,7 +110,8 @@ where
     // between 0 and 1000 ('permille')
     //
     // @return: permille usage of the transposition table
-    pub fn usage_permille(&self) -> u16 {
+    #[inline(always)]
+    fn usage_permille(&self) -> u16 {
         self.usage(1000f64)
     }
 
@@ -127,8 +119,19 @@ where
     // between 0 and 100 ('percent')
     //
     // @return: percent usage of the transposition table
-    pub fn usage_percent(&self) -> u16 {
+    #[inline(always)]
+    fn usage_percent(&self) -> u16 {
         self.usage(100f64)
+    }
+}
+
+impl<T: NodeData> DefaultTranspositionTable<T> {
+    // buckets returns the number of buckets allocated in the transposition table
+    //
+    // @return: number of buckets allocated in the transposition table
+    #[inline(always)]
+    pub fn buckets(&self) -> usize {
+        self.max_buckets
     }
 
     // parse_zobrist_key builds the index and key from the zobrist key
@@ -146,8 +149,8 @@ where
         //       key is an alias/wrapper around a u64 and relies on the fact that
         //       the `as` cast truncates the superfluous upper bits
         // TODO: make a choice as to whether or not that invariant is reasonable
-        let index = ((zobrist_key >> 32) as u32) as usize % self.max_buckets;
-        let key = zobrist_key as u32;
+        let index = u32::from(zobrist_key >> 32u64) as usize % self.max_buckets;
+        let key = u32::from(zobrist_key);
         (index, key)
     }
 
@@ -157,7 +160,7 @@ where
     // @param: base - the base to use for the calculation
     // @return: usage of the transposition table
     #[inline(always)]
-    const fn usage(&self, base: f64) -> u16 {
+    fn usage(&self, base: f64) -> u16 {
         if !self.is_enabled() {
             return 0;
         }

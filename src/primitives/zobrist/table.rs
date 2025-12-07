@@ -11,10 +11,10 @@ impl ZobristTable {
     // @return: new instance of a zobrist table
     pub fn new() -> Self {
         Self {
-            pieces: [[[0; Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL],
-            castling: [0; CastleRights::TOTAL],
-            sides: [0; Sides::TOTAL],
-            en_passant: [0; Square::TOTAL + 1],
+            pieces: [[[ZobristKey::default(); Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL],
+            castling: [ZobristKey::default(); CastleRights::TOTAL],
+            sides: [ZobristKey::default(); Sides::TOTAL],
+            en_passant: [ZobristKey::default(); Square::TOTAL + 1],
         }
     }
 
@@ -26,24 +26,24 @@ impl ZobristTable {
         self.pieces.iter_mut().for_each(|piece| {
             piece.iter_mut().for_each(|square| {
                 square.iter_mut().for_each(|side| {
-                    *side = rng.random::<u64>();
+                    *side = ZobristKey::from(rng.random::<u64>());
                 });
             });
         });
 
         // generate random values for each castling right
         self.castling.iter_mut().for_each(|castling| {
-            *castling = rng.random::<u64>();
+            *castling = ZobristKey::from(rng.random::<u64>());
         });
 
         // generate random values for each side
         self.sides.iter_mut().for_each(|side| {
-            *side = rng.random::<u64>();
+            *side = ZobristKey::from(rng.random::<u64>());
         });
 
         // generate random values for each en passant square
         self.en_passant.iter_mut().for_each(|en_passant| {
-            *en_passant = rng.random::<u64>();
+            *en_passant = ZobristKey::from(rng.random::<u64>());
         });
     }
 
@@ -61,7 +61,7 @@ impl ZobristTable {
         en_passant: Option<Square>,
         bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL],
     ) -> ZobristKey {
-        let mut key = 0;
+        let mut key = ZobristKey::default();
         for (side, bitboards) in bitboards.iter().enumerate() {
             for (piece, bitboard) in bitboards.iter().enumerate() {
                 for square in bitboard.iter() {
@@ -97,7 +97,7 @@ impl ZobristTable {
     // @return: random value for the given castling rights
     #[inline(always)]
     pub fn castling(&self, castling: Castling) -> ZobristKey {
-        self.castling[castling.bits() as usize]
+        self.castling[u8::from(castling) as usize]
     }
 
     // side returns the random value for the given side

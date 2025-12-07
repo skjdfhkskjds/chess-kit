@@ -1,16 +1,25 @@
+use crate::attack_table::AttackTable;
 use crate::position::position::Position;
-use crate::primitives::Castling;
+use crate::primitives::{Castling, GameStateExt, State};
 
-impl Position {
-    // set_castling sets the castling rights for the given side
+impl<AT, StateT> Position<AT, StateT>
+where
+    AT: AttackTable,
+    StateT: State + GameStateExt,
+{
+    // set_castling sets the castling rights for SideT
     //
     // @param: castling - castling rights to set
     // @return: void
     // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_castling(&mut self, castling: Castling) {
-        self.state.zobrist_key ^= self.zobrist.castling(self.state.castling);
-        self.state.castling = castling;
-        self.state.zobrist_key ^= self.zobrist.castling(self.state.castling);
+        let current_castling = self.state().castling();
+        let old_key = self.zobrist.castling(current_castling);
+        let new_key = self.zobrist.castling(castling);
+        let state = self.state_mut();
+        state.update_key(old_key);
+        state.set_castling(castling);
+        state.update_key(new_key);
     }
 }
