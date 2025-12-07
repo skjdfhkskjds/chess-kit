@@ -117,6 +117,16 @@ impl Bitboard {
         self.0.count_ones() > 1
     }
 
+    // intersects checks whether there is an intersection between this and the
+    // other bitboard
+    // 
+    // @param: other - other bitboard to check for intersection
+    // @return: true if there is an intersection between this and the other bitboard, false otherwise
+    #[inline(always)]
+    pub fn intersects(&self, other: Bitboard) -> bool {
+        (self & other).not_empty()
+    }
+
     // remove_at removes the piece at the given square
     //
     // @param: square - square to remove the piece from
@@ -124,7 +134,7 @@ impl Bitboard {
     // @side-effects: modifies the `bitboard`
     #[inline(always)]
     pub fn remove_at(&mut self, square: Square) {
-        self.0 &= !BITBOARD_SQUARES[square.idx()].0;
+        self.0 &= !Bitboard::square(square).0;
     }
 
     // set_at sets the piece at the given square
@@ -134,6 +144,40 @@ impl Bitboard {
     // @side-effects: modifies the `bitboard`
     #[inline(always)]
     pub fn set_at(&mut self, square: Square) {
-        self.0 |= BITBOARD_SQUARES[square.idx()].0;
+        self.0 |= Bitboard::square(square).0;
+    }
+
+    // has_square checks if the given square is set in the bitboard
+    // 
+    // @param: square - square to check
+    // @return: true if the given square is set in the bitboard, false otherwise
+    #[inline(always)]
+    pub fn has_square(&self, square: Square) -> bool {
+        self.intersects(Bitboard::square(square))
+    }
+
+    // in_between checks if the given square is on the "between" line of s1 and
+    // s2, again as noted in `Bitboard::between`, excludes s1 and includes s2
+    // 
+    // @param: s1 - first square forming the "between" line to check
+    // @param: s2 - second square forming the "between" line to check
+    // @param: square - square to check
+    // @return: true if the given square is between s1 and s2, false otherwise
+    #[inline(always)]
+    pub fn in_between(s1: Square, s2: Square, square: Square) -> bool {
+        Bitboard::between(s1, s2).has_square(square)
+    }
+
+    // in_line checks if the given square is on the edge to edge line which
+    // intersects s1 and s2
+    // 
+    // @param: s1 - first square along the line to check
+    // @param: s2 - second square along the line to check
+    // @param: square - square to check
+    // @return: true if the given square is on the edge to edge line which
+    //          intersects s1 and s2, false otherwise
+    #[inline(always)]
+    pub fn in_line(s1: Square, s2: Square, square: Square) -> bool {
+        Bitboard::line(s1, s2).has_square(square)
     }
 }

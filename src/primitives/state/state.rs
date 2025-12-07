@@ -62,6 +62,7 @@ pub struct DefaultState {
     pub(crate) checkers: Bitboard, // bitboard of pieces that are checking the opponent's king
     pub(crate) king_blockers: [Bitboard; Sides::TOTAL], // bitboard of the side's king's blockers
     pub(crate) pinners: [Bitboard; Sides::TOTAL], // bitboard of the pieces that are pinning the opponent's king
+    pub(crate) check_squares: [Bitboard; Pieces::TOTAL], // bitboard of squares that each piece would deliver check
 }
 
 impl State for DefaultState {
@@ -75,6 +76,7 @@ impl State for DefaultState {
             checkers: Bitboard::empty(),
             king_blockers: [Bitboard::empty(); Sides::TOTAL],
             pinners: [Bitboard::empty(); Sides::TOTAL],
+            check_squares: [Bitboard::empty(); Pieces::TOTAL],
         }
     }
 
@@ -87,6 +89,7 @@ impl State for DefaultState {
         self.checkers = Bitboard::empty();
         self.king_blockers = [Bitboard::empty(); Sides::TOTAL];
         self.pinners = [Bitboard::empty(); Sides::TOTAL];
+        self.check_squares = [Bitboard::empty(); Pieces::TOTAL];
     }
 
     // copy_header_from copies the header of another state into this state
@@ -307,6 +310,24 @@ impl GameStateExt for DefaultState {
     #[inline(always)]
     fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
         self.pinners[SideT::INDEX] = pieces;
+    }
+
+    // check_squares returns the bitboard of squares that a given piece would
+    // have to be on to deliver check to SideT::Other's king
+    // 
+    // @impl: GameStateExt::check_squares
+    #[inline(always)]
+    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
+        self.check_squares[piece.idx()]
+    }
+
+    // set_check_squares sets the bitboard of squares that a given piece would
+    // have to be on to deliver check to SideT::Other's king
+    // 
+    // @impl: GameStateExt::set_check_squares
+    #[inline(always)]
+    fn set_check_squares<SideT: Side>(&mut self, piece: Pieces, squares: Bitboard) {
+        self.check_squares[piece.idx()] = squares;
     }
 }
 

@@ -196,7 +196,6 @@ pub const BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
 
 #[cfg(test)]
 mod tests {
-    use super::{BITBOARD_BETWEEN, BITBOARD_LINES};
     use crate::primitives::{Bitboard, File, Rank, Square};
 
     #[test]
@@ -210,7 +209,7 @@ mod tests {
         ];
 
         for (target, source) in samples {
-            let bitboard = BITBOARD_BETWEEN[target.idx()][source.idx()];
+            let bitboard = Bitboard::between(target, source);
             println!("start {target} end {source}");
             println!("start bitboard:\n{}", Bitboard::square(target));
             println!("end bitboard:\n{}", Bitboard::square(source));

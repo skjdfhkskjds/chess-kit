@@ -16,20 +16,19 @@ impl Parser for PiecesParser {
         let mut bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
 
         for c in segment.chars() {
-            let square = Bitboard::square(Square::from_idx((rank * 8) + file));
             match c {
-                'k' => bitboards[Sides::Black.idx()][Pieces::King.idx()] |= square,
-                'q' => bitboards[Sides::Black.idx()][Pieces::Queen.idx()] |= square,
-                'r' => bitboards[Sides::Black.idx()][Pieces::Rook.idx()] |= square,
-                'b' => bitboards[Sides::Black.idx()][Pieces::Bishop.idx()] |= square,
-                'n' => bitboards[Sides::Black.idx()][Pieces::Knight.idx()] |= square,
-                'p' => bitboards[Sides::Black.idx()][Pieces::Pawn.idx()] |= square,
-                'K' => bitboards[Sides::White.idx()][Pieces::King.idx()] |= square,
-                'Q' => bitboards[Sides::White.idx()][Pieces::Queen.idx()] |= square,
-                'R' => bitboards[Sides::White.idx()][Pieces::Rook.idx()] |= square,
-                'B' => bitboards[Sides::White.idx()][Pieces::Bishop.idx()] |= square,
-                'N' => bitboards[Sides::White.idx()][Pieces::Knight.idx()] |= square,
-                'P' => bitboards[Sides::White.idx()][Pieces::Pawn.idx()] |= square,
+                'k' => bitboards[Sides::Black.idx()][Pieces::King.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'q' => bitboards[Sides::Black.idx()][Pieces::Queen.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'r' => bitboards[Sides::Black.idx()][Pieces::Rook.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'b' => bitboards[Sides::Black.idx()][Pieces::Bishop.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'n' => bitboards[Sides::Black.idx()][Pieces::Knight.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'p' => bitboards[Sides::Black.idx()][Pieces::Pawn.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'K' => bitboards[Sides::White.idx()][Pieces::King.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'Q' => bitboards[Sides::White.idx()][Pieces::Queen.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'R' => bitboards[Sides::White.idx()][Pieces::Rook.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'B' => bitboards[Sides::White.idx()][Pieces::Bishop.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'N' => bitboards[Sides::White.idx()][Pieces::Knight.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
+                'P' => bitboards[Sides::White.idx()][Pieces::Pawn.idx()] |= Bitboard::square(Square::from_idx((rank * 8) + file)),
                 '1'..='8' => {
                     if let Some(offset) = c.to_digit(10) {
                         file += offset as usize;

@@ -205,17 +205,33 @@ pub trait GameStateExt {
     // @side-effects: modifies the `state`
     fn set_king_blocker_pieces<SideT: Side>(&mut self, pieces: Bitboard);
 
-    // pinning_pieces returns the bitboard of the pieces that are pinning the
-    // opponent's king
+    // pinning_pieces returns the bitboard of SideT's pieces that are pinning
+    // SideT::Other's pieces to their king
     //
-    // @return: bitboard of the pieces that are pinning the opponent's king
+    // @return: bitboard of pieces that are pinning SideT::Other's pieces
     fn pinning_pieces<SideT: Side>(&self) -> Bitboard;
 
-    // set_pinning_pieces sets the bitboard of the pieces that are pinning the
-    // opponent's king
+    // set_pinning_pieces sets the bitboard of SideT's pieces that are pinning
+    // SideT::Other's pieces to their king
     //
-    // @param: pieces - pieces that are pinning the opponent's king
+    // @param: pieces - SideT's pieces that are pinning SideT::Other's pieces
     // @return: void
     // @side-effects: modifies the `state`
     fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard);
+
+    // check_squares returns the bitboard of squares that a given piece would
+    // have to be on to deliver check to SideT::Other's king
+    // 
+    // @param: piece - piece to check the squares for
+    // @return: bitboard of squares that deliver check to SideT::Other
+    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard;
+
+    // set_check_squares sets the bitboard of squares that a given piece would
+    // have to be on to deliver check to SideT::Other's king
+    // 
+    // @param: piece - piece to set the squares for
+    // @param: squares - bitboard of squares that deliver check to SideT::Other
+    // @return: void
+    // @side-effects: modifies the `state`
+    fn set_check_squares<SideT: Side>(&mut self, piece: Pieces, squares: Bitboard);
 }

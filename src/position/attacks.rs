@@ -7,14 +7,15 @@ where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
-    // attacked_by returns a bitboard containing the occupied squares of
-    // SideT::Other that are attacking the given square
+    // is_attacked_by returns a bitboard containing the squares occupied by
+    // SideT::Other's pieces that are attacking the given SideT at the given
+    // square
     //
     // @param: square - square to check if is attacked by SideT::Other
     // @return: bitboard of the occupied squares of SideT::Other that are
     //          attacking the given square
     #[inline(always)]
-    pub fn attacked_by<SideT: Side>(&self, square: Square) -> Bitboard {
+    pub fn is_attacked_by<SideT: Side>(&self, square: Square) -> Bitboard {
         // idea: our square `T` is attacked iff SideT::Other has at least one
         //       piece in square `S` such that attack board generated from `T`
         //       includes `S`
@@ -90,6 +91,15 @@ where
             .not_empty()
     }
 
+    // is_checked_by returns the bitboard of squares occupied by SideT::Other's
+    // pieces that are delivering check to SideT
+    //
+    // @return: bitboard of squares that SideT is checked by
+    #[inline(always)]
+    pub fn is_checked_by<SideT: Side>(&self) -> Bitboard {
+        self.is_attacked_by::<SideT>(self.king_square::<SideT>())
+    }
+
     // is_checked returns true if SideT is currently in check
     //
     // @return: true if SideT is checked, false otherwise
@@ -98,13 +108,17 @@ where
         self.is_attacked::<SideT>(self.king_square::<SideT>(), self.total_occupancy())
     }
 
-    // sniped_by returns a bitboard containing the occupied squares of
-    // SideT::Other that can "snipe" the given square
+    // is_sniped_by returns a bitboard containing the squares occupied by
+    // SideT::Other's pieces that can "snipe" the given SideT at the given
+    // square
+    //
+    // note: we define "sniping" as a sliding piece that would be able to attack
+    //       SideT at the given square assuming the ray is empty
     //
     // @param: square - square to check if is sniped by SideT::Other
     // @return: true if the given square is sniped by SideT::Other, false otherwise
     #[inline(always)]
-    pub fn sniped_by<SideT: Side>(&self, square: Square) -> Bitboard {
+    pub fn is_sniped_by<SideT: Side>(&self, square: Square) -> Bitboard {
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
 
         // the snipers are the union of SideT::Other's rooks/queens that can

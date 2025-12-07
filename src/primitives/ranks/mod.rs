@@ -26,6 +26,9 @@ impl Rank {
 // 
 // @trait
 pub trait SideRanks {
+    // SINGLE_STEP_RANK is the rank that a pawn can single step to
+    const SINGLE_STEP_RANK: Rank;
+
     // DOUBLE_STEP_RANK is the rank that a pawn can double step to
     const DOUBLE_STEP_RANK: Rank;
 
@@ -38,12 +41,14 @@ pub trait SideRanks {
 }
 
 impl SideRanks for White {
+    const SINGLE_STEP_RANK: Rank = Rank::R3;
     const DOUBLE_STEP_RANK: Rank = Rank::R4;
     const PROMOTABLE_RANK: Rank = Rank::R7;
     const PROMOTION_RANK: Rank = Rank::R8;
 }
 
 impl SideRanks for Black {
+    const SINGLE_STEP_RANK: Rank = Rank::R6;
     const DOUBLE_STEP_RANK: Rank = Rank::R5;
     const PROMOTABLE_RANK: Rank = Rank::R2;
     const PROMOTION_RANK: Rank = Rank::R1;

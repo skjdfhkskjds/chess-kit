@@ -1,5 +1,5 @@
 use crate::attack_table::DefaultAttackTable;
-use crate::primitives::{Bitboard, File, Rank, Side, Square};
+use crate::primitives::{Bitboard, File, Rank, Sides, Square};
 
 impl DefaultAttackTable {
     // init_king_table initializes the king move table
@@ -47,12 +47,31 @@ impl DefaultAttackTable {
     // @param: self - mutable reference to the move generator
     // @return: void
     #[rustfmt::skip]
-    pub(crate) fn init_pawn_table<S: Side>(&mut self) {
+    pub(crate) fn init_pawn_table(&mut self) {
         for sq in Square::ALL {
             let square = Bitboard::square(sq);
-            self.pawn_table[S::INDEX][sq.idx()] = ((square & !Bitboard::file(File::A)) << 7u8)
+
+            // generate the pawn pushes
+            self.pawn_push_table[Sides::White.idx()][sq.idx()] = (square & !Bitboard::rank(Rank::R8)) << 8u8;
+            self.pawn_push_table[Sides::Black.idx()][sq.idx()] = (square & !Bitboard::rank(Rank::R1)) >> 8u8;
+
+            assert!(
+                self.pawn_push_table[Sides::White.idx()][sq.idx()].count_ones() == if sq.on_rank(Rank::R8) { 0 } else { 1 },
+                "pawn push table should be at most one, square:\n{},table:\n{}",
+                sq,
+                self.pawn_push_table[Sides::White.idx()][sq.idx()],
+            );
+            assert!(
+                self.pawn_push_table[Sides::Black.idx()][sq.idx()].count_ones() == if sq.on_rank(Rank::R1) { 0 } else { 1 },
+                "pawn push table should be at most one, square:\n{},table:\n{}",
+                sq,
+                self.pawn_push_table[Sides::Black.idx()][sq.idx()],
+            );
+            
+            // generate the pawn attacks
+            self.pawn_attack_table[Sides::White.idx()][sq.idx()] = ((square & !Bitboard::file(File::A)) << 7u8)
                 | ((square & !Bitboard::file(File::H)) << 9u8);
-            self.pawn_table[S::Other::INDEX][sq.idx()] = ((square & !Bitboard::file(File::A)) >> 9u8)
+            self.pawn_attack_table[Sides::Black.idx()][sq.idx()] = ((square & !Bitboard::file(File::A)) >> 9u8)
                 | ((square & !Bitboard::file(File::H)) >> 7u8);
         }
     }

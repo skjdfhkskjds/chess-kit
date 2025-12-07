@@ -1,8 +1,6 @@
 use crate::attack_table::AttackTable;
-use crate::primitives::{Bitboard, Move, MoveList, Pieces, SideRanks, Square};
-
-// list of pieces that a pawn can promote to
-const PROMOTION_PIECES: [Pieces; 4] = [Pieces::Queen, Pieces::Rook, Pieces::Bishop, Pieces::Knight];
+use crate::movegen::MoveType;
+use crate::primitives::{Bitboard, Move, MoveList, Pieces, Square};
 
 pub struct MoveGenerator<AT: AttackTable> {
     pub(crate) attack_table: &'static AT,
@@ -29,7 +27,6 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @return: void
     // @side-effects: modifies the `move list`
     pub(crate) fn push_moves(&self, from: Square, to_squares: Bitboard, list: &mut MoveList) {
-        // push a move for each of the `to` squares
         for to in to_squares.iter() {
             list.push(Move::new(from, to));
         }
@@ -41,52 +38,70 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // note: we explicitly handle pawn moves here to handle branchless code for
     //       other piece types where en-passant captures are not possible
     //
-    // @param: from - square to push the moves from
     // @param: to_squares - bitboard of squares to push the moves to
+    // @param: offset - offset to add to a given to square of a pawn to get the
+    //                  from square of a pawn push
     // @param: list - mutable reference to the move list
-    // @param: en_passant - en passant square, if any
     // @return: void
     // @side-effects: modifies the `move list`
-    pub(crate) fn push_pawn_moves<SideT: SideRanks>(
-        &self,
-        from: Square,
-        to_squares: Bitboard,
-        list: &mut MoveList,
-        en_passant: Option<Square>,
-    ) {
-        // handle promotion moves first
-        if from.on_rank(SideT::PROMOTABLE_RANK) {
-            for to in to_squares.iter() {
-                PROMOTION_PIECES.iter().for_each(|promotion_piece| {
-                    list.push(Move::new(from, to).with_promotion(*promotion_piece));
-                });
-            }
-            return;
-        }
-
-        // push a move for each of the `to` squares
+    pub(crate) fn push_pawn_moves(&self, to_squares: Bitboard, offset: i8, list: &mut MoveList) {
         for to in to_squares.iter() {
-            let mut mv = Move::new(from, to);
+            let from = Square::from_idx((to.idx() as i8 - offset) as usize);
+            list.push(Move::new(from, to));
+        }
+    }
 
-            // a pawn is moving, so we need to handle the cases
-            //
-            // 1. en passant capture
-            // 2. double step pawn push
-            // 3. promotion
+    // push_pawn_en_passant_captures pushes a set of moves of a pawn from the given
+    // from squares to the given en passant square
+    //
+    // @param: from_squares - bitboard of squares to push the moves from
+    // @param: en_passant_square - square to push the en passant captures to
+    // @param: list - mutable reference to the move list
+    // @return: void
+    // @side-effects: modifies the `move list`
+    pub(crate) fn push_pawn_en_passant_captures(
+        &self,
+        from_squares: Bitboard,
+        en_passant_square: Square,
+        list: &mut MoveList,
+    ) {
+        for from in from_squares.iter() {
+            list.push(Move::new(from, en_passant_square).with_en_passant());
+        }
+    }
 
-            // check if the move is an en passant capture
-            let is_en_passant = match en_passant {
-                Some(square) => square == to,
-                None => false,
-            };
+    // push_pawn_promotions pushes a set of moves of a pawn that is promoting
+    // to the given to squares
+    //
+    // @param: to_squares - bitboard of squares to push the promoting pawns to
+    // @param: offset - offset to add to a given to square of a pawn to get the
+    //                  from square of a pawn promotion
+    // @param: is_capture - whether the pawn is capturing a piece when promoting
+    // @param: list - mutable reference to the move list
+    // @param: move_type - move type to generate promotions of
+    pub(crate) fn push_pawn_promotions(
+        &self,
+        to_squares: Bitboard,
+        offset: i8,
+        is_capture: bool,
+        list: &mut MoveList,
+        move_type: MoveType,
+    ) {
+        for to in to_squares.iter() {
+            let from = Square::from_idx((to.idx() as i8 - offset) as usize);
 
-            if is_en_passant {
-                // the move is an en passant capture
-                mv = mv.with_en_passant();
+            if !matches!(move_type, MoveType::Quiet) {
+                list.push(Move::new(from, to).with_promotion(Pieces::Queen));
             }
 
-            // push the move to the list
-            list.push(mv);
+            if matches!(move_type, MoveType::Evasions | MoveType::NonEvasions)
+                || (matches!(move_type, MoveType::Capture) && is_capture)
+                || (matches!(move_type, MoveType::Quiet) && !is_capture)
+            {
+                list.push(Move::new(from, to).with_promotion(Pieces::Knight));
+                list.push(Move::new(from, to).with_promotion(Pieces::Bishop));
+                list.push(Move::new(from, to).with_promotion(Pieces::Rook));
+            }
         }
     }
 
@@ -104,7 +119,6 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         to_squares: Bitboard,
         list: &mut MoveList,
     ) {
-        // push a move for each of the `to` squares
         for to in to_squares.iter() {
             list.push(Move::new(from, to).with_castle());
         }

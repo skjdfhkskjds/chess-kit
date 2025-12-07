@@ -1,7 +1,7 @@
 use crate::attack_table::AttackTable;
 use crate::position::fen::{FENError, FENParser, Parser};
 use crate::primitives::{
-    Bitboard, GameStateExt, History, Pieces, Side, Sides, Square, State, ZobristTable,
+    Bitboard, Black, GameStateExt, History, Pieces, Side, Sides, Square, State, White, ZobristTable,
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -52,13 +52,7 @@ where
 
         self.init_sides();
         self.init_pieces();
-        let key = self.zobrist.new_key(
-            self.state().turn(),
-            self.state().castling(),
-            self.state().en_passant(),
-            self.bitboards,
-        );
-        self.state_mut().set_key(key);
+        self.init_state();
     }
 
     // init_sides initializes the `sides` bitboards by ORing the bitboards of
@@ -104,6 +98,35 @@ where
             }
 
             self.pieces[square] = on_square;
+        }
+    }
+
+    // init_state initializes the state for the given position
+    //
+    // @return: void
+    // @side-effects: modifies the `state`
+    fn init_state(&mut self) {
+        // set the state key
+        let key = self.zobrist.new_key(
+            self.state().turn(),
+            self.state().castling(),
+            self.state().en_passant(),
+            self.bitboards,
+        );
+        self.state_mut().set_key(key);
+
+        // update the check info and checkers in the state
+        match self.turn() {
+            Sides::White => {
+                let checkers = self.is_checked_by::<White>();
+                self.state_mut().set_checkers(checkers);
+                self.update_check_info::<White>();
+            }
+            Sides::Black => {
+                let checkers = self.is_checked_by::<Black>();
+                self.state_mut().set_checkers(checkers);
+                self.update_check_info::<Black>();
+            }
         }
     }
 

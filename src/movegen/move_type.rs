@@ -2,5 +2,6 @@
 pub enum MoveType {
     Quiet,
     Capture,
-    All,
+    Evasions,
+    NonEvasions,
 }
