@@ -1,5 +1,5 @@
 use crate::perft_utils::PerftTest;
-use chess_kit::attack_table::{default_attack_table, DefaultAttackTable};
+use chess_kit::attack_table::{DefaultAttackTable, default_attack_table};
 use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
 use chess_kit::position::Position;
@@ -20,11 +20,11 @@ pub enum PerftHarnessMode {
 
 // PerftHarness is a test harness for running perft tests
 pub struct PerftHarness {
-    mode: PerftHarnessMode,                   // the mode to run the harness in
-    test_cases: Vec<PerftTest>,               // the test cases to run
+    mode: PerftHarnessMode,                    // the mode to run the harness in
+    test_cases: Vec<PerftTest>,                // the test cases to run
     attack_table: &'static DefaultAttackTable, // global attack table, shared across tests
     move_generator: MoveGenerator<DefaultAttackTable>, // global move generator, shared across tests
-    tt: DefaultTranspositionTable<PerftData>, // global transposition table, shared across tests
+    tt: DefaultTranspositionTable<PerftData>,  // global transposition table, shared across tests
     position: Position<DefaultAttackTable, DefaultState>, // global position, shared across tests
 }
 
@@ -68,33 +68,31 @@ impl PerftHarness {
         }
 
         // run the test case per depth
-        for expected in test.iter() {
-            let now = Instant::now();
-            let nodes = match self.mode {
-                PerftHarnessMode::Default => perft(
-                    &mut self.position,
-                    &self.move_generator,
-                    &mut self.tt,
-                    expected.depth(),
-                ),
-                PerftHarnessMode::Divide => perft_divide_print(
-                    &mut self.position,
-                    &self.move_generator,
-                    &mut self.tt,
-                    expected.depth(),
-                ),
-            };
+        let now = Instant::now();
+        let nodes = match self.mode {
+            PerftHarnessMode::Default => perft(
+                &mut self.position,
+                &self.move_generator,
+                &mut self.tt,
+                test.data.depth(),
+            ),
+            PerftHarnessMode::Divide => perft_divide_print(
+                &mut self.position,
+                &self.move_generator,
+                &mut self.tt,
+                test.data.depth(),
+            ),
+        };
 
-            // output test results
-            let elapsed = now.elapsed().as_millis();
-            let moves_per_second = ((nodes * 1000) as f64 / elapsed as f64).floor();
-            print!("Depth {}: {} ", expected.depth(), nodes);
-            print!("[{}ms, {} moves/s] ", elapsed, moves_per_second);
-            println!("[tt usage: {}%]", self.tt.usage_percent());
+        // output test results
+        let elapsed = now.elapsed().as_millis();
+        let moves_per_second = ((nodes * 1000) as f64 / elapsed as f64).floor();
+        print!("Depth {}: {} ", test.data.depth(), nodes);
+        print!("[{}ms, {} moves/s] ", elapsed, moves_per_second);
+        println!("[tt usage: {}%]", self.tt.usage_percent());
 
-            // assert the results
-            assert_eq!(nodes, expected.node_count());
-        }
+        // assert the results
+        assert_eq!(nodes, test.data.node_count());
     }
 
     // run runs all the test cases

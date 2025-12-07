@@ -3,53 +3,36 @@ use std::convert::TryFrom;
 use std::fmt::{self, Display};
 
 // PerftTest is an object representing a single Perft test-case
-//
-// Within each test-case, there are sub-cases defined as a pair of
-//   <depth, expected leaf nodes>
 #[derive(Debug, Default, Clone)]
 pub struct PerftTest {
     pub(crate) fen: &'static str, // the FEN string for the test case
-    data: Vec<PerftData>,         // data vector containing <depth, expected leaf nodes> pairs
-}
-
-impl PerftTest {
-    pub fn iter(&self) -> impl Iterator<Item = PerftData> {
-        self.data.iter().copied()
-    }
+    pub(crate) data: PerftData,   // data containing <depth, expected leaf nodes>
 }
 
 impl TryFrom<&'static str> for PerftTest {
     type Error = &'static str;
 
     fn try_from(value: &'static str) -> Result<Self, Self::Error> {
-        let parts = value.split(';').collect::<Vec<&str>>();
-        if parts.len() < 2 {
-            return Err("Invalid perft case");
+        let parts = value.split('|').collect::<Vec<&str>>();
+        if parts.len() != 3 {
+            return Err("Invalid perft test string, expected format: <FEN>|<depth>|<leaf nodes>");
         }
 
         // the first part is the FEN string
         let fen = parts[0].trim();
 
-        // the remaining parts are the depth data
-        let data = parts[1..]
-            .iter()
-            .map(|part| {
-                // each part should be of the form 'D<depth> <leaf nodes>'
-                let parts = part.split(' ').collect::<Vec<&str>>();
+        // parse the depth
+        //
+        // Note: ignore the prefix 'D'
+        let depth = (parts[1]).parse::<Depth>().unwrap();
 
-                // parse the depth
-                //
-                // Note: ignore the prefix 'D'
-                let depth = (parts[0][1..]).parse::<Depth>().unwrap();
+        // parse the expected number of leaf nodes
+        let leaf_nodes = parts[2].parse::<NodeCount>().unwrap();
 
-                // parse the expected number of leaf nodes
-                let leaf_nodes = parts[1].parse::<NodeCount>().unwrap();
-
-                PerftData::new(depth, leaf_nodes)
-            })
-            .collect::<Vec<PerftData>>();
-
-        Ok(Self { fen, data })
+        Ok(Self {
+            fen,
+            data: PerftData::new(depth, leaf_nodes),
+        })
     }
 }
 
@@ -60,9 +43,7 @@ impl Display for PerftTest {
 
         // print the perft data
         write!(f, "Perft Data: ")?;
-        for data in &self.data {
-            write!(f, "{} ", data)?;
-        }
+        write!(f, "{} ", self.data)?;
         Ok(())
     }
 }
