@@ -147,6 +147,6 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::queen_targets
     #[inline(always)]
     fn queen_targets(&self, square: Square, bitboard: Bitboard) -> Bitboard {
-        self.rook_targets(square, bitboard) ^ self.bishop_targets(square, bitboard)
+        self.rook_targets(square, bitboard) | self.bishop_targets(square, bitboard)
     }
 }

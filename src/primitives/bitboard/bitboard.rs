@@ -1,5 +1,5 @@
 use crate::primitives::bitboard::constants::{
-    BITBOARD_BETWEEN, BITBOARD_FILES, BITBOARD_LINES, BITBOARD_RANKS, BITBOARD_SQUARES,
+    BITBOARD_BETWEEN, BITBOARD_FILES, BITBOARD_LINES, BITBOARD_RANKS,
 };
 use crate::primitives::{File, Rank, Square};
 use chess_kit_derive::{Arithmetic, BitOps};
@@ -42,7 +42,7 @@ impl Bitboard {
     // @return: new bitboard
     #[inline(always)]
     pub const fn square(square: Square) -> Self {
-        BITBOARD_SQUARES[square.idx()]
+        Self(1 << square.idx())
     }
 
     // file creates a new bitboard with the bits for the given file set to 1
@@ -119,7 +119,7 @@ impl Bitboard {
 
     // intersects checks whether there is an intersection between this and the
     // other bitboard
-    // 
+    //
     // @param: other - other bitboard to check for intersection
     // @return: true if there is an intersection between this and the other bitboard, false otherwise
     #[inline(always)]
@@ -148,7 +148,7 @@ impl Bitboard {
     }
 
     // has_square checks if the given square is set in the bitboard
-    // 
+    //
     // @param: square - square to check
     // @return: true if the given square is set in the bitboard, false otherwise
     #[inline(always)]
@@ -158,7 +158,7 @@ impl Bitboard {
 
     // in_between checks if the given square is on the "between" line of s1 and
     // s2, again as noted in `Bitboard::between`, excludes s1 and includes s2
-    // 
+    //
     // @param: s1 - first square forming the "between" line to check
     // @param: s2 - second square forming the "between" line to check
     // @param: square - square to check
@@ -170,7 +170,7 @@ impl Bitboard {
 
     // in_line checks if the given square is on the edge to edge line which
     // intersects s1 and s2
-    // 
+    //
     // @param: s1 - first square along the line to check
     // @param: s2 - second square along the line to check
     // @param: square - square to check

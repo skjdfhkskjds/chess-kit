@@ -34,21 +34,6 @@ pub const BITBOARD_FILES: [Bitboard; File::TOTAL] = {
     files
 };
 
-// BITBOARD_SQUARES is a constant array of bitboards, where each bitboard is has
-// the bits for that square set to 1
-pub const BITBOARD_SQUARES: [Bitboard; Square::TOTAL] = {
-    let mut squares = [Bitboard::empty(); Square::TOTAL];
-    let mut i = 0;
-
-    // Note: while loop hack to get around const fn loop limitations
-    while i < Square::TOTAL {
-        squares[i] = Bitboard::new(1 << i);
-        i += 1;
-    }
-
-    squares
-};
-
 pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
     let mut between = [[Bitboard::empty(); Square::TOTAL]; Square::TOTAL];
     let mut i = 0;
@@ -80,7 +65,7 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
             //
             // otherwise, the entry should just contain the end square's bitboard
             if i == j || !(same_rank || same_file || same_diagonal) {
-                between[i][j] = BITBOARD_SQUARES[j];
+                between[i][j] = Bitboard::square(target);
                 j += 1;
                 continue;
             }
@@ -106,7 +91,7 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
 
             // get the attack ray from the source square to the occupancy board
             // which contains our "target" square
-            let occupancy = BITBOARD_SQUARES[j];
+            let occupancy = Bitboard::square(target);
             between[i][j] = DefaultAttackTable::attack_ray(&occupancy, source, direction);
 
             j += 1;
@@ -182,7 +167,7 @@ pub const BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
             lines[i][j] = Bitboard::new(
                 forward.const_unwrap()
                     | backward.const_unwrap()
-                    | BITBOARD_SQUARES[i].const_unwrap(),
+                    | Bitboard::square(source).const_unwrap(),
             );
 
             j += 1;

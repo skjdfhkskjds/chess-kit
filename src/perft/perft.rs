@@ -43,13 +43,13 @@ where
     let mut nodes = 0;
     for mv in moves.iter() {
         // check if the move is legal
-        let is_legal = match position.turn() {
-            Sides::White => position.is_legal_move::<White>(mv),
-            Sides::Black => position.is_legal_move::<Black>(mv),
-        };
-        if !is_legal {
-            continue;
-        }
+        // let is_legal = match position.turn() {
+        //     Sides::White => position.is_legal_move::<White>(mv),
+        //     Sides::Black => position.is_legal_move::<Black>(mv),
+        // };
+        // if !is_legal {
+        //     continue;
+        // }
 
         // println!("move {mv} is legal in position\n{position}");
         // make the move
@@ -59,14 +59,14 @@ where
         //
         // Note: we check if the opponent is checked since `make_move` swaps the
         //       side to move.
-        // let is_checked = match position.turn() {
-        //     Sides::White => position.is_checked::<Black>(),
-        //     Sides::Black => position.is_checked::<White>(),
-        // };
+        let is_checked = match position.turn() {
+            Sides::White => position.is_checked::<Black>(),
+            Sides::Black => position.is_checked::<White>(),
+        };
         // assert!(!is_checked, "move {mv} leaves the king in check in position\n{position}");
-        if depth > 1 {
+        if !is_checked && depth > 1 {
             nodes += perft(position, move_generator, tt, depth - 1);
-        } else {
+        } else if !is_checked {
             nodes += 1;
         }
 

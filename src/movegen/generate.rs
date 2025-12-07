@@ -35,11 +35,13 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         position: &Position<AT, StateT>,
         list: &mut MoveList,
     ) {
-        let move_type = if position.state().checkers().not_empty() {
-            MoveType::Evasions
-        } else {
-            MoveType::NonEvasions
-        };
+        // TODO: reenable
+        // let move_type = if position.state().checkers().not_empty() {
+        //     MoveType::Evasions
+        // } else {
+        //     MoveType::NonEvasions
+        // };
+        let move_type = MoveType::NonEvasions;
         self.generate_moves(position, list, move_type);
     }
 
@@ -58,6 +60,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         list: &mut MoveList,
         move_type: MoveType,
     ) {
+        // TODO: reenable
         // get the set of possible destination squares for our next move based
         // on the move type and the number of pieces delivering check to the
         // king
@@ -66,33 +69,35 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         // legal would be king moves that physically evade the square currently
         // being attacked, so we can skip all other pieces and only consider the
         // king
-        let mut destinations = Bitboard::empty();
-        if move_type != MoveType::Evasions || !position.state().checkers().more_than_one() {
-            destinations = match move_type {
-                MoveType::Evasions => {
-                    // if the move type is evasions, then there must be exactly
-                    // one piece delivering check
-                    //
-                    // in this case, the only moves we should consider are ones
-                    // that would either block the check or capture that piece
-                    assert!(
-                        position.state().checkers().exactly_one(),
-                        "checkers should be exactly one"
-                    );
-                    let checker = position.state().checkers().must_first();
-                    Bitboard::between(position.king_square::<SideT>(), checker)
-                }
-                MoveType::NonEvasions => !position.occupancy::<SideT>(),
-                MoveType::Capture => position.occupancy::<SideT::Other>(),
-                MoveType::Quiet => position.empty_squares(),
-            };
+        // let mut destinations = Bitboard::empty();
+        // if move_type != MoveType::Evasions || !position.state().checkers().more_than_one() {
+        //     destinations = match move_type {
+        //         MoveType::Evasions => {
+        //             // if the move type is evasions, then there must be exactly
+        //             // one piece delivering check
+        //             //
+        //             // in this case, the only moves we should consider are ones
+        //             // that would either block the check or capture that piece
+        //             debug_assert!(
+        //                 position.state().checkers().exactly_one(),
+        //                 "checkers should be exactly one"
+        //             );
+        //             let checker = position.state().checkers().must_first();
+        //             Bitboard::between(position.king_square::<SideT>(), checker)
+        //         }
+        //         MoveType::NonEvasions => !position.occupancy::<SideT>(),
+        //         MoveType::Capture => position.occupancy::<SideT::Other>(),
+        //         MoveType::Quiet => position.empty_squares(),
+        //     };
+
+        let destinations = !position.occupancy::<SideT>();
 
             self.generate_pawn_moves::<SideT, StateT>(position, list, destinations, move_type);
             self.generate_queen_moves::<SideT, StateT>(position, list, destinations);
             self.generate_rook_moves::<SideT, StateT>(position, list, destinations);
             self.generate_bishop_moves::<SideT, StateT>(position, list, destinations);
             self.generate_knight_moves::<SideT, StateT>(position, list, destinations);
-        }
+        // }
 
         self.generate_king_moves::<SideT, StateT>(position, list, destinations, move_type);
     }
@@ -217,11 +222,13 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         let promotable_rank = Bitboard::rank(SideT::PROMOTABLE_RANK);
 
         // get the enemies for the pawns to target
-        let enemies = if matches!(move_type, MoveType::Evasions) {
-            position.state().checkers()
-        } else {
-            position.occupancy::<SideT::Other>()
-        };
+        // TODO: reenable
+        // let enemies = if matches!(move_type, MoveType::Evasions) {
+        //     position.state().checkers()
+        // } else {
+        //     position.occupancy::<SideT::Other>()
+        // };
+        let enemies = position.occupancy::<SideT::Other>();
 
         // get the promotable and non-promotable pawns
         let promotable_pawns = position.get_piece::<SideT>(Pieces::Pawn) & promotable_rank;

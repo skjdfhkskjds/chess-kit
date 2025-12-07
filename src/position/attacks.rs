@@ -65,12 +65,11 @@ where
         // check if there is an intersection between an attack board and that
         // piece's respective occupancy
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
-        (rook_attacks & (self.get_piece::<SideT::Other>(Pieces::Rook) | queens)).not_empty()
-            || (bishop_attacks & (self.get_piece::<SideT::Other>(Pieces::Bishop) | queens))
-                .not_empty()
-            || (knight_attacks & self.get_piece::<SideT::Other>(Pieces::Knight)).not_empty()
-            || (pawn_attacks & self.get_piece::<SideT::Other>(Pieces::Pawn)).not_empty()
-            || (king_attacks & self.get_piece::<SideT::Other>(Pieces::King)).not_empty()
+        rook_attacks.intersects(self.get_piece::<SideT::Other>(Pieces::Rook) | queens)
+            || bishop_attacks.intersects(self.get_piece::<SideT::Other>(Pieces::Bishop) | queens)
+            || knight_attacks.intersects(self.get_piece::<SideT::Other>(Pieces::Knight))
+            || pawn_attacks.intersects(self.get_piece::<SideT::Other>(Pieces::Pawn))
+            || king_attacks.intersects(self.get_piece::<SideT::Other>(Pieces::King))
     }
 
     // is_attacked_by_sliders returns true if the given square is attacked by
@@ -83,12 +82,13 @@ where
     pub fn is_attacked_by_sliders<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> bool {
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
 
-        (self.attack_table.rook_targets(square, occupancy)
-            & (queens | self.get_piece::<SideT::Other>(Pieces::Rook)))
-        .not_empty()
-            || (self.attack_table.bishop_targets(square, occupancy)
-                & (queens | self.get_piece::<SideT::Other>(Pieces::Bishop)))
-            .not_empty()
+        self.attack_table
+            .rook_targets(square, occupancy)
+            .intersects(queens | self.get_piece::<SideT::Other>(Pieces::Rook))
+            || self
+                .attack_table
+                .bishop_targets(square, occupancy)
+                .intersects(queens | self.get_piece::<SideT::Other>(Pieces::Bishop))
     }
 
     // is_checked_by returns the bitboard of squares occupied by SideT::Other's
