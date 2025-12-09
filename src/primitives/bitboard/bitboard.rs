@@ -114,7 +114,7 @@ impl Bitboard {
     // @return: true if the bitboard has more than one bit set, false otherwise
     #[inline(always)]
     pub const fn more_than_one(&self) -> bool {
-        self.0.count_ones() > 1
+        self.0 & (self.0 - 1) != 0
     }
 
     // intersects checks whether there is an intersection between this and the
