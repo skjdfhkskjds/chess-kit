@@ -7,7 +7,7 @@ use chess_kit_derive::{Arithmetic, BitOps};
 pub type BitboardVec = Vec<Bitboard>;
 
 #[repr(transparent)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, Hash, BitOps, Arithmetic)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Default, BitOps, Arithmetic)]
 pub struct Bitboard(pub(crate) u64);
 
 impl Bitboard {

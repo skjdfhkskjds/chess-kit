@@ -72,21 +72,21 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
 
             // determine the direction of the attack ray
             let direction = if target_rank < source_rank && target_file < source_file {
-                Direction::DownLeft
+                Direction::SouthWest
             } else if target_rank < source_rank && target_file > source_file {
-                Direction::DownRight
+                Direction::SouthEast
             } else if target_rank > source_rank && target_file < source_file {
-                Direction::UpLeft
+                Direction::NorthWest
             } else if target_rank > source_rank && target_file > source_file {
-                Direction::UpRight
+                Direction::NorthEast
             } else if target_rank < source_rank {
-                Direction::Down
+                Direction::South
             } else if target_rank > source_rank {
-                Direction::Up
+                Direction::North
             } else if target_file < source_file {
-                Direction::Left
+                Direction::West
             } else {
-                Direction::Right
+                Direction::East
             };
 
             // get the attack ray from the source square to the occupancy board
@@ -140,21 +140,21 @@ pub const BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
             // opposite counterpart
             let (forward_dir, backward_dir) =
                 if target_rank < source_rank && target_file < source_file {
-                    (Direction::DownLeft, Direction::UpRight)
+                    (Direction::SouthWest, Direction::NorthEast)
                 } else if target_rank < source_rank && target_file > source_file {
-                    (Direction::DownRight, Direction::UpLeft)
+                    (Direction::SouthEast, Direction::NorthWest)
                 } else if target_rank > source_rank && target_file < source_file {
-                    (Direction::UpLeft, Direction::DownRight)
+                    (Direction::NorthWest, Direction::SouthEast)
                 } else if target_rank > source_rank && target_file > source_file {
-                    (Direction::UpRight, Direction::DownLeft)
+                    (Direction::NorthEast, Direction::SouthWest)
                 } else if target_rank < source_rank {
-                    (Direction::Down, Direction::Up)
+                    (Direction::South, Direction::North)
                 } else if target_rank > source_rank {
-                    (Direction::Up, Direction::Down)
+                    (Direction::North, Direction::South)
                 } else if target_file < source_file {
-                    (Direction::Left, Direction::Right)
+                    (Direction::West, Direction::East)
                 } else {
-                    (Direction::Right, Direction::Left)
+                    (Direction::East, Direction::West)
                 };
 
             // build the full edge‑to‑edge line by casting rays in both the

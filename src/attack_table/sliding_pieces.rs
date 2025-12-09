@@ -1,18 +1,5 @@
-use crate::attack_table::DefaultAttackTable;
+use crate::attack_table::{DefaultAttackTable, Direction};
 use crate::primitives::{Bitboard, BitboardVec, File, Rank, Square};
-
-// Direction is an enum that represents the movement direction of a sliding
-// piece.
-pub enum Direction {
-    Up,
-    Right,
-    Down,
-    Left,
-    UpLeft,
-    UpRight,
-    DownRight,
-    DownLeft,
-}
 
 impl DefaultAttackTable {
     // rook_mask returns the rook mask for the given square
@@ -35,10 +22,10 @@ impl DefaultAttackTable {
         let bitboard = Bitboard::empty();
         let bishop_at = Bitboard::square(square);
         let edges = DefaultAttackTable::get_edges(square);
-        let line_of_sight = DefaultAttackTable::attack_ray(&bitboard, square, Direction::UpLeft)
-            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::UpRight)
-            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::DownRight)
-            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::DownLeft);
+        let line_of_sight = DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthWest)
+            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthEast)
+            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthEast)
+            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthWest);
 
         line_of_sight & !edges & !bishop_at
     }
@@ -53,10 +40,11 @@ impl DefaultAttackTable {
         let mut attacks: BitboardVec = Vec::new();
 
         for bitboard in blockers.iter() {
-            let attacking = DefaultAttackTable::attack_ray(bitboard, square, Direction::Up)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::Right)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::Down)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::Left);
+            let attacking = DefaultAttackTable::attack_ray(bitboard, square, Direction::North)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::East)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::South)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::West);
+            
             attacks.push(attacking);
         }
 
@@ -73,10 +61,11 @@ impl DefaultAttackTable {
         let mut attacks: BitboardVec = Vec::new();
 
         for bitboard in blockers.iter() {
-            let attacking = DefaultAttackTable::attack_ray(bitboard, square, Direction::UpLeft)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::UpRight)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::DownRight)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::DownLeft);
+            let attacking = DefaultAttackTable::attack_ray(bitboard, square, Direction::NorthWest)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::NorthEast)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::SouthEast)
+                | DefaultAttackTable::attack_ray(bitboard, square, Direction::SouthWest);
+
             attacks.push(attacking);
         }
 
@@ -144,7 +133,7 @@ impl DefaultAttackTable {
         let occupancy = bitboard.const_unwrap();
         loop {
             match direction {
-                Direction::Up => {
+                Direction::North => {
                     if rank.const_eq(Rank::R8) {
                         break;
                     }
@@ -153,7 +142,7 @@ impl DefaultAttackTable {
                     ray |= square;
                     rank.inc();
                 }
-                Direction::Right => {
+                Direction::East => {
                     if file.const_eq(File::H) {
                         break;
                     }
@@ -162,7 +151,7 @@ impl DefaultAttackTable {
                     ray |= square;
                     file.inc();
                 }
-                Direction::Down => {
+                Direction::South => {
                     if rank.const_eq(Rank::R1) {
                         break;
                     }
@@ -171,7 +160,7 @@ impl DefaultAttackTable {
                     ray |= square;
                     rank.dec();
                 }
-                Direction::Left => {
+                Direction::West => {
                     if file.const_eq(File::A) {
                         break;
                     }
@@ -180,7 +169,7 @@ impl DefaultAttackTable {
                     ray |= square;
                     file.dec();
                 }
-                Direction::UpLeft => {
+                Direction::NorthWest => {
                     if rank.const_eq(Rank::R8) || file.const_eq(File::A) {
                         break;
                     }
@@ -190,7 +179,7 @@ impl DefaultAttackTable {
                     rank.inc();
                     file.dec();
                 }
-                Direction::UpRight => {
+                Direction::NorthEast => {
                     if rank.const_eq(Rank::R8) || file.const_eq(File::H) {
                         break;
                     }
@@ -200,7 +189,7 @@ impl DefaultAttackTable {
                     rank.inc();
                     file.inc();
                 }
-                Direction::DownRight => {
+                Direction::SouthEast => {
                     if rank.const_eq(Rank::R1) || file.const_eq(File::H) {
                         break;
                     }
@@ -210,7 +199,7 @@ impl DefaultAttackTable {
                     rank.dec();
                     file.inc();
                 }
-                Direction::DownLeft => {
+                Direction::SouthWest => {
                     if rank.const_eq(Rank::R1) || file.const_eq(File::A) {
                         break;
                     }

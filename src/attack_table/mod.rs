@@ -3,15 +3,30 @@ mod moving_pieces;
 mod sliding_pieces;
 mod table;
 
-pub(crate) use sliding_pieces::Direction;
+pub(crate) use moving_pieces::{NOT_A_FILE, NOT_H_FILE};
 pub use table::{DefaultAttackTable, default_attack_table};
 
 use crate::primitives::{Bitboard, Side, Square};
+
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+    NorthEast,
+    NorthWest,
+    SouthEast,
+    SouthWest,
+}
 
 pub enum PawnDirections {
     Up,
     Right,
     Left,
+}
+
+impl PawnDirections {
+    pub const TOTAL: usize = 3;
 }
 
 // AttackTable is a table that provides information about targeting/targetted

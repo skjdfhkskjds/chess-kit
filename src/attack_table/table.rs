@@ -1,6 +1,6 @@
 use crate::attack_table::magics::{BISHOP_TABLE_SIZE, Magic, ROOK_TABLE_SIZE};
-use crate::attack_table::{AttackTable, PawnDirections};
-use crate::primitives::{Bitboard, BitboardVec, File, Pieces, Side, Sides, Square};
+use crate::attack_table::{AttackTable, NOT_A_FILE, NOT_H_FILE, PawnDirections};
+use crate::primitives::{Bitboard, BitboardVec, Pieces, Side, Sides, Square};
 use std::sync::OnceLock;
 
 type BitboardTable = [Bitboard; Square::TOTAL];
@@ -89,7 +89,10 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::pawn_pushes
     #[inline(always)]
     fn pawn_pushes<SideT: Side>(&self, sq: Square) -> Bitboard {
-        self.pawn_push_table[SideT::INDEX][sq.idx()]
+        match SideT::SIDE {
+            Sides::White => Bitboard::square(sq) << 8u8,
+            Sides::Black => Bitboard::square(sq) >> 8u8,
+        }
     }
 
     // pawn_targets returns the squares that the pawn targets from the given
@@ -111,17 +114,20 @@ impl AttackTable for DefaultAttackTable {
         squares: Bitboard,
         direction: PawnDirections,
     ) -> Bitboard {
-        if SideT::SIDE == Sides::White {
-            match direction {
-                PawnDirections::Up => squares << 8u8,
-                PawnDirections::Right => (squares & !Bitboard::file(File::H)) << 9u8,
-                PawnDirections::Left => (squares & !Bitboard::file(File::A)) << 7u8,
+        match SideT::SIDE {
+            Sides::White => {
+                match direction {
+                    PawnDirections::Up => squares << 8u8,
+                    PawnDirections::Right => (squares & NOT_H_FILE) << 9u8,
+                    PawnDirections::Left => (squares & NOT_A_FILE) << 7u8,
+                }
             }
-        } else {
-            match direction {
-                PawnDirections::Up => squares >> 8u8,
-                PawnDirections::Right => (squares & !Bitboard::file(File::A)) >> 9u8,
-                PawnDirections::Left => (squares & !Bitboard::file(File::H)) >> 7u8,
+            Sides::Black => {
+                match direction {
+                    PawnDirections::Up => squares >> 8u8,
+                    PawnDirections::Right => (squares & NOT_A_FILE) >> 9u8,
+                    PawnDirections::Left => (squares & NOT_H_FILE) >> 7u8,
+                }
             }
         }
     }
