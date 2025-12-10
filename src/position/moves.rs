@@ -47,8 +47,13 @@ where
     // @side-effects: modifies the `position`
     #[inline(always)]
     fn move_piece_no_incrementals<SideT: Side>(&mut self, piece: Pieces, from: Square, to: Square) {
-        self.remove_piece_no_incrementals::<SideT>(piece, from);
-        self.set_piece_no_incrementals::<SideT>(piece, to);
+        let from_to = Bitboard::square(from) | Bitboard::square(to);
+
+        self.bitboards[SideT::INDEX][piece.idx()] ^= from_to;
+        self.sides[SideT::INDEX] ^= from_to;
+        self.sides[Sides::TOTAL] ^= from_to;
+        self.pieces[from.idx()] = Pieces::None;
+        self.pieces[to.idx()] = piece;
     }
 
     // move_piece moves SideT's piece from the given square to the given square
@@ -162,6 +167,7 @@ where
     //
     // @return: void
     // @side-effects: modifies the `state`
+    #[inline(always)]
     pub(crate) fn update_check_info<SideT: Side>(&mut self) {
         // update the blockers and pinners for each side
         self.update_blockers::<White>();
@@ -213,6 +219,7 @@ where
     //
     // @param: mv - move to check if is legal
     // @return: true if the move is legal, false otherwise
+    #[inline(always)]
     pub fn is_legal_move<SideT: Side>(&self, mv: Move) -> bool {
         let from = mv.from();
         let to = mv.to();
@@ -254,6 +261,7 @@ where
     //
     // @param: mv - move to check if delivers a check
     // @return: true if the move delivers a check, false otherwise
+    #[inline(always)]
     pub fn delivers_check<SideT: SideCastlingSquares>(&self, mv: Move) -> bool {
         let from = mv.from();
         let to = mv.to();
@@ -373,7 +381,6 @@ where
         let from = mv.from();
         let to = mv.to();
         let piece = self.piece_at(from);
-        let move_type = mv.type_of();
         let mut check_en_passant = false;
 
         // increment the move counters
@@ -387,22 +394,18 @@ where
         // handle a piece capture
         let captured = self.piece_at(to);
         if !matches!(captured, Pieces::None) {
-            // capture the piece from the board
             self.capture_piece::<SideT::Other>(captured, to);
         }
         // set the captured piece for the state
         self.state_mut().set_captured_piece(captured);
 
         // move the piece
-        if !matches!(piece, Pieces::Pawn) {
-            // if the moving piece is not a pawn, just perform a regular move
-            self.move_piece::<SideT>(piece, from, to);
+        match piece {
+            Pieces::King => {
+                self.move_piece::<SideT>(Pieces::King, from, to);
 
-            // if the moving piece is a king or a rook, we need to do some extra
-            // work to handle castling and revoke castling permissions if needed
-            if matches!(piece, Pieces::King) {
                 // if the move is a castle, move the appropriate rook as well
-                if matches!(move_type, MoveType::Castle) {
+                if matches!(mv.type_of(), MoveType::Castle) {
                     if to == SideT::KINGSIDE_DESTINATION {
                         // kingside castle
                         self.move_piece::<SideT>(
@@ -426,38 +429,49 @@ where
                     // left the starting square
                     self.set_castling(self.state().castling().revoke::<SideT>());
                 }
-            } else if matches!(piece, Pieces::Rook) && self.state().castling().can_castle::<SideT>()
-            {
+            }
+            Pieces::Rook => {
+                self.move_piece::<SideT>(Pieces::Rook, from, to);
+
                 // if the moving piece is a rook and that side can still castle,
                 // revoke the appropriate castling permissions if the rook is
                 // leaving the starting square
-                if from == SideT::KINGSIDE_ROOK {
-                    self.set_castling(self.state().castling().revoke_kingside::<SideT>());
-                } else if from == SideT::QUEENSIDE_ROOK {
-                    self.set_castling(self.state().castling().revoke_queenside::<SideT>());
+                if self.state().castling().can_castle::<SideT>() {
+                    if from == SideT::KINGSIDE_ROOK {
+                        self.set_castling(self.state().castling().revoke_kingside::<SideT>());
+                    } else if from == SideT::QUEENSIDE_ROOK {
+                        self.set_castling(self.state().castling().revoke_queenside::<SideT>());
+                    }
                 }
             }
-        } else {
-            // if the move is a pawn move, check if the move is a promotion and
-            // handle the piece move accordingly
-            if matches!(move_type, MoveType::Promotion) {
-                self.remove_piece::<SideT>(piece, from);
-                self.set_piece::<SideT>(mv.promoted_to(), to);
-            } else {
+            Pieces::Pawn => {
+                match mv.type_of() {
+                    MoveType::Promotion => {
+                        // remove the pawn from the board and set the promoted piece
+                        self.remove_piece::<SideT>(Pieces::Pawn, from);
+                        self.set_piece::<SideT>(mv.promoted_to(), to);
+                    }
+                    MoveType::EnPassant => {
+                        self.move_piece::<SideT>(Pieces::Pawn, from, to);
+
+                        // if the move is an en passant capture, remove the opponent's pawn
+                        self.remove_piece::<SideT::Other>(Pieces::Pawn, to ^ 8);
+                    },
+                    _ => {
+                        self.move_piece::<SideT>(Pieces::Pawn, from, to);
+
+                        // if the move is a double step, then an en passant capture may
+                        // be possible, and we should check for it later
+                        check_en_passant = to.distance(from) == 16;
+                    }
+                }
+
+                // reset the halfmove clock since a pawn moved
+                self.state_mut().set_halfmoves(0);
+            }
+            _ => {
                 self.move_piece::<SideT>(piece, from, to);
             }
-
-            // if the move is an en passant capture, remove the opponent's pawn
-            if matches!(move_type, MoveType::EnPassant) {
-                self.remove_piece::<SideT::Other>(Pieces::Pawn, to ^ 8);
-            } else if to.distance(from) == 16 {
-                // if the move is a double step, then an en passant capture may
-                // be possible, and we should check for it later
-                check_en_passant = true;
-            }
-
-            // reset the halfmove clock since a pawn moved
-            self.state_mut().set_halfmoves(0);
         }
 
         // TODO: reenable
@@ -605,32 +619,40 @@ where
         // extract key move data
         let from = mv.from();
         let to = mv.to();
-        let piece = self.piece_at(to);
-        let move_type = mv.type_of();
 
         // move the piece back to the original square, or restore the pawn if
         // it was promoted
-        if matches!(move_type, MoveType::Promotion) {
-            self.remove_piece_no_incrementals::<SideT>(mv.promoted_to(), to);
-            self.set_piece_no_incrementals::<SideT>(Pieces::Pawn, from);
-        } else {
-            self.move_piece_no_incrementals::<SideT>(piece, to, from);
-        }
+        match mv.type_of() {
+            MoveType::Promotion => {
+                self.remove_piece_no_incrementals::<SideT>(self.piece_at(to), to);
+                self.set_piece_no_incrementals::<SideT>(Pieces::Pawn, from);
+            }
+            MoveType::EnPassant => {
+                self.move_piece_no_incrementals::<SideT>(Pieces::Pawn, to, from);
 
-        // if the move was a castle, move the appropriate rook back as well
-        if matches!(move_type, MoveType::Castle) {
-            if to == SideT::KINGSIDE_DESTINATION {
-                self.move_piece_no_incrementals::<SideT>(
-                    Pieces::Rook,
-                    SideT::KINGSIDE_ROOK_DESTINATION,
-                    SideT::KINGSIDE_ROOK,
-                );
-            } else if to == SideT::QUEENSIDE_DESTINATION {
-                self.move_piece_no_incrementals::<SideT>(
-                    Pieces::Rook,
-                    SideT::QUEENSIDE_ROOK_DESTINATION,
-                    SideT::QUEENSIDE_ROOK,
-                );
+                // if the move was an en passant capture, restore the opponent's pawn
+                self.set_piece_no_incrementals::<SideT::Other>(Pieces::Pawn, to ^ 8);
+            }
+            MoveType::Castle => {
+                self.move_piece_no_incrementals::<SideT>(Pieces::King, to, from);
+
+                // if the move was a castle, move the appropriate rook back as well
+                if to == SideT::KINGSIDE_DESTINATION {
+                    self.move_piece_no_incrementals::<SideT>(
+                        Pieces::Rook,
+                        SideT::KINGSIDE_ROOK_DESTINATION,
+                        SideT::KINGSIDE_ROOK,
+                    );
+                } else if to == SideT::QUEENSIDE_DESTINATION {
+                    self.move_piece_no_incrementals::<SideT>(
+                        Pieces::Rook,
+                        SideT::QUEENSIDE_ROOK_DESTINATION,
+                        SideT::QUEENSIDE_ROOK,
+                    );
+                }
+            }
+            _ => {
+                self.move_piece_no_incrementals::<SideT>(self.piece_at(to), to, from);
             }
         }
 
@@ -638,11 +660,6 @@ where
         let captured = self.state().captured_piece();
         if !matches!(captured, Pieces::None) {
             self.set_piece_no_incrementals::<SideT::Other>(captured, to);
-        }
-
-        // if the move was an en passant capture, restore the opponent's pawn
-        if matches!(move_type, MoveType::EnPassant) {
-            self.set_piece_no_incrementals::<SideT::Other>(Pieces::Pawn, to ^ 8);
         }
 
         // revert the state

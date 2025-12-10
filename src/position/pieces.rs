@@ -1,6 +1,6 @@
 use crate::attack_table::AttackTable;
 use crate::position::Position;
-use crate::primitives::{Bitboard, GameStateExt, Pieces, Side, Square, State};
+use crate::primitives::{Bitboard, GameStateExt, Pieces, Side, Sides, Square, State};
 
 impl<AT, StateT> Position<AT, StateT>
 where
@@ -39,6 +39,7 @@ where
     ) {
         self.bitboards[SideT::INDEX][piece.idx()].remove_at(square);
         self.sides[SideT::INDEX].remove_at(square);
+        self.sides[Sides::TOTAL].remove_at(square);
         self.pieces[square.idx()] = Pieces::None;
     }
 
@@ -68,6 +69,7 @@ where
     pub(crate) fn set_piece_no_incrementals<SideT: Side>(&mut self, piece: Pieces, square: Square) {
         self.bitboards[SideT::INDEX][piece.idx()].set_at(square);
         self.sides[SideT::INDEX].set_at(square);
+        self.sides[Sides::TOTAL].set_at(square);
         self.pieces[square.idx()] = piece;
     }
 

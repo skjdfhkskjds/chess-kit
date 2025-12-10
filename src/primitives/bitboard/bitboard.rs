@@ -106,7 +106,7 @@ impl Bitboard {
     // @return: true if the bitboard has exactly one bit set, false otherwise
     #[inline(always)]
     pub const fn exactly_one(&self) -> bool {
-        self.0.count_ones() == 1
+        self.not_empty() && !self.more_than_one()
     }
 
     // more_than_one checks if the bitboard has more than one bit set
@@ -134,7 +134,7 @@ impl Bitboard {
     // @side-effects: modifies the `bitboard`
     #[inline(always)]
     pub fn remove_at(&mut self, square: Square) {
-        self.0 &= !Bitboard::square(square).0;
+        self.0 ^= Bitboard::square(square).0;
     }
 
     // set_at sets the piece at the given square

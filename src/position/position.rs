@@ -10,9 +10,9 @@ pub struct Position<AT: AttackTable, StateT: State + GameStateExt> {
     pub attack_table: &'static AT, // reference to the static attack table
     pub history: History<StateT>,  // history of the position state
 
-    pub sides: [Bitboard; Sides::TOTAL], // occupancy bitboard per side
+    pub sides: [Bitboard; Sides::TOTAL + 1], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
-    pub pieces: [Pieces; Square::TOTAL], // piece type on each square
+    pub pieces: [Pieces; Square::TOTAL],     // piece type on each square
 
     pub zobrist: ZobristTable, // zobrist random values for the position
 }
@@ -30,7 +30,7 @@ where
         Self {
             attack_table,
             history: History::default(),
-            sides: [Bitboard::empty(); Sides::TOTAL],
+            sides: [Bitboard::empty(); Sides::TOTAL + 1],
             bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
             pieces: [Pieces::None; Square::TOTAL],
             zobrist: ZobristTable::default(),
@@ -69,6 +69,8 @@ where
             self.sides[Sides::White.idx()] |= *w;
             self.sides[Sides::Black.idx()] |= *b;
         }
+
+        self.sides[Sides::TOTAL] = self.occupancy::<White>() | self.occupancy::<Black>();
     }
 
     // init_pieces initializes the `pieces` array by iterating through the
@@ -137,7 +139,7 @@ where
         self.history.clear();
         self.history.push(StateT::default());
         self.state_mut().reset();
-        self.sides = [Bitboard::empty(); Sides::TOTAL];
+        self.sides = [Bitboard::empty(); Sides::TOTAL + 1];
         self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
         self.pieces = [Pieces::None; Square::TOTAL];
     }
@@ -156,7 +158,7 @@ where
     // @return: full occupancy bitboard of both sides
     #[inline(always)]
     pub fn total_occupancy(&self) -> Bitboard {
-        self.sides[Sides::White.idx()] | self.sides[Sides::Black.idx()]
+        self.sides[Sides::TOTAL]
     }
 
     // empty_squares gets the bitboard of all empty squares

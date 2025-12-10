@@ -47,7 +47,7 @@ impl Square {
     // @return: distance between the two squares
     #[inline(always)]
     pub const fn distance(&self, other: Square) -> u8 {
-        (self.idx() as i8 - other.idx() as i8).abs() as u8
+        (self.idx() as i8 ^ other.idx() as i8) as u8
     }
 
     // on_rank returns true if the square is on the given rank
