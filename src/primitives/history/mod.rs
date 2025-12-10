@@ -40,8 +40,8 @@ impl<S: State> History<S> {
     #[inline(always)]
     pub fn push(&mut self, state: S) {
         debug_assert!(self.current < MAX_FULLMOVES, "history is full");
-        self.states[self.current] = state;
         self.current += 1;
+        self.states[self.current] = state;
     }
 
     // push_next adds a new state entry to the history by deriving it from the
@@ -55,12 +55,10 @@ impl<S: State> History<S> {
         debug_assert!(self.current > 0, "cannot clone from an empty history");
         debug_assert!(self.current < MAX_FULLMOVES, "history is full");
 
-        let src = self.current - 1;
-        let dst = self.current;
-        let src_state = self.states[src];
-        self.states[dst].copy_header_from(&src_state);
+        let src_state = self.states[self.current];
         self.current += 1;
-        &mut self.states[dst]
+        self.states[self.current].copy_header_from(&src_state);
+        &mut self.states[self.current]
     }
 
     // pop removes the last state entry from the history and returns it
@@ -69,7 +67,7 @@ impl<S: State> History<S> {
     // @requires: the current index is greater than 1
     #[inline(always)]
     pub fn pop(&mut self) {
-        if self.current <= 1 {
+        if self.current == 0 {
             return;
         }
 
@@ -83,7 +81,7 @@ impl<S: State> History<S> {
     #[inline(always)]
     pub fn current(&self) -> &S {
         debug_assert!(self.current > 0, "history is empty");
-        &self.states[self.current - 1]
+        &self.states[self.current]
     }
 
     // current_mut returns a mutable reference to the top state entry
@@ -93,8 +91,7 @@ impl<S: State> History<S> {
     #[inline(always)]
     pub fn current_mut(&mut self) -> &mut S {
         debug_assert!(self.current > 0, "history is empty");
-        let idx = self.current - 1;
-        &mut self.states[idx]
+        &mut self.states[self.current]
     }
 
     // size returns the number of state entries in the history
