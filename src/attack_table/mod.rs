@@ -82,12 +82,26 @@ pub trait AttackTable: Sized + 'static {
         direction: PawnDirections,
     ) -> Bitboard;
 
+    // empty_rook_targets returns the squares that the rook targets from the given
+    // square on an empty board
+    //
+    // @param: sq - square that the rook is on
+    // @return: a bitboard of the rook's targets from the given square
+    fn empty_rook_targets(&self, square: Square) -> Bitboard;
+    
     // rook_targets returns the squares that the rook targets from the given
     // square
     //
     // @param: sq - square that the rook is on
     // @return: a bitboard of the rook's targets from the given square
     fn rook_targets(&self, square: Square, occupancy: Bitboard) -> Bitboard;
+    
+    // empty_bishop_targets returns the squares that the bishop targets from the given
+    // square on an empty board
+    //
+    // @param: sq - square that the bishop is on
+    // @return: a bitboard of the bishop's targets from the given square
+    fn empty_bishop_targets(&self, square: Square) -> Bitboard;
 
     // bishop_targets returns the squares that the bishop targets from the given
     // square

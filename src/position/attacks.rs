@@ -132,7 +132,7 @@ where
         // the snipers are the union of SideT::Other's rooks/queens that can
         // see the square on an empty board and SideT::Other's bishops/queens
         // that can see the square on an empty board
-        (self.attack_table.rook_targets(square, Bitboard::empty()) & rooks_and_queens)
-            | (self.attack_table.bishop_targets(square, Bitboard::empty()) & bishops_and_queens)
+        (self.attack_table.empty_rook_targets(square) & rooks_and_queens)
+            | (self.attack_table.empty_bishop_targets(square) & bishops_and_queens)
     }
 }

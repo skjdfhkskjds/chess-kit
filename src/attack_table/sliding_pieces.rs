@@ -2,6 +2,17 @@ use crate::attack_table::{DefaultAttackTable, Direction};
 use crate::primitives::{Bitboard, BitboardVec, File, Rank, Square};
 
 impl DefaultAttackTable {
+    // init_empty_tables initializes the empty tables for the rook and bishop
+    // tables
+    //
+    // @return: void
+    pub(crate) fn init_empty_tables(&mut self) {
+        for square in Square::ALL {
+            self.empty_rook_table[square.idx()] = DefaultAttackTable::rook_mask(square);
+            self.empty_bishop_table[square.idx()] = DefaultAttackTable::bishop_mask(square);
+        }
+    }
+
     // rook_mask returns the rook mask for the given square
     //
     // @param: square - square to get the mask for

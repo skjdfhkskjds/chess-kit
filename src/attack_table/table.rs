@@ -22,8 +22,14 @@ pub struct DefaultAttackTable {
     // pawn attacks from each square for each side
     pub(crate) pawn_table: [BitboardTable; Sides::TOTAL],
 
+    // bishop targets from each square for an empty board
+    pub(crate) empty_bishop_table: BitboardTable,
+
     // bishop targets from each square for each occupancy
     pub(crate) bishop_table: BitboardVec,
+
+    // rook targets from each square for an empty board
+    pub(crate) empty_rook_table: BitboardTable,
 
     // rook targets from each square for each occupancy
     pub(crate) rook_table: BitboardVec,
@@ -45,7 +51,9 @@ impl AttackTable for DefaultAttackTable {
             king_table: [Bitboard::empty(); Square::TOTAL],
             knight_table: [Bitboard::empty(); Square::TOTAL],
             pawn_table: [[Bitboard::empty(); Square::TOTAL]; Sides::TOTAL],
+            empty_bishop_table: [Bitboard::empty(); Square::TOTAL],
             bishop_table: vec![Bitboard::empty(); BISHOP_TABLE_SIZE],
+            empty_rook_table: [Bitboard::empty(); Square::TOTAL],
             rook_table: vec![Bitboard::empty(); ROOK_TABLE_SIZE],
             rook_magics: [Magic::default(); Square::TOTAL],
             bishop_magics: [Magic::default(); Square::TOTAL],
@@ -55,6 +63,7 @@ impl AttackTable for DefaultAttackTable {
         attack_table.init_king_table();
         attack_table.init_knight_table();
         attack_table.init_pawn_table();
+        attack_table.init_empty_tables();
         attack_table.init_magics(Pieces::Rook);
         attack_table.init_magics(Pieces::Bishop);
 
@@ -111,21 +120,26 @@ impl AttackTable for DefaultAttackTable {
         direction: PawnDirections,
     ) -> Bitboard {
         match SideT::SIDE {
-            Sides::White => {
-                match direction {
-                    PawnDirections::Up => squares << 8u8,
-                    PawnDirections::Right => (squares & NOT_H_FILE) << 9u8,
-                    PawnDirections::Left => (squares & NOT_A_FILE) << 7u8,
-                }
-            }
-            Sides::Black => {
-                match direction {
-                    PawnDirections::Up => squares >> 8u8,
-                    PawnDirections::Right => (squares & NOT_A_FILE) >> 9u8,
-                    PawnDirections::Left => (squares & NOT_H_FILE) >> 7u8,
-                }
-            }
+            Sides::White => match direction {
+                PawnDirections::Up => squares << 8u8,
+                PawnDirections::Right => (squares & NOT_H_FILE) << 9u8,
+                PawnDirections::Left => (squares & NOT_A_FILE) << 7u8,
+            },
+            Sides::Black => match direction {
+                PawnDirections::Up => squares >> 8u8,
+                PawnDirections::Right => (squares & NOT_A_FILE) >> 9u8,
+                PawnDirections::Left => (squares & NOT_H_FILE) >> 7u8,
+            },
         }
+    }
+
+    // empty_rook_targets returns the squares that the rook targets from the given
+    // square on an empty board
+    //
+    // @impl: PieceTargetsTable::empty_rook_targets
+    #[inline(always)]
+    fn empty_rook_targets(&self, square: Square) -> Bitboard {
+        self.empty_rook_table[square.idx()]
     }
 
     // rook_targets returns the attacks for the given square and bitboard.
@@ -134,6 +148,15 @@ impl AttackTable for DefaultAttackTable {
     #[inline(always)]
     fn rook_targets(&self, square: Square, bitboard: Bitboard) -> Bitboard {
         self.rook_table[self.rook_magics[square.idx()].idx(bitboard)]
+    }
+
+    // empty_bishop_targets returns the squares that the bishop targets from the given
+    // square on an empty board
+    //
+    // @impl: PieceTargetsTable::empty_bishop_targets
+    #[inline(always)]
+    fn empty_bishop_targets(&self, square: Square) -> Bitboard {
+        self.empty_bishop_table[square.idx()]
     }
 
     // bishop_targets returns the attacks for the given square and bitboard.
