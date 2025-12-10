@@ -26,6 +26,7 @@ where
     // 
     // @param: key - key to fetch the data for
     // @return: data if the key is found, None otherwise
+    #[inline(always)]
     pub(crate) fn get(&self, key: u32) -> Option<&T> {
         for entry in self.entries.iter() {
             if entry.key() == key {
@@ -41,6 +42,7 @@ where
     // @param: key - key to set the value to
     // @param: data - data to set the value to
     // @return: true if an entry was set for the first time, false otherwise
+    #[inline(always)]
     pub(crate) fn set(&mut self, key: u32, data: T) -> bool {
         // find the index of the entry with the lowest depth
         let mut min_depth = i8::MAX;
@@ -68,6 +70,7 @@ where
     // 
     // @return: void
     // @side-effects: clears each entry in the bucket
+    #[inline(always)]
     pub(crate) fn clear(&mut self) {
         for entry in self.entries.iter_mut() {
             entry.clear();
