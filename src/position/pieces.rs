@@ -93,13 +93,10 @@ where
     // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_en_passant(&mut self, square: Square) {
-        let current_en_passant = self.state().en_passant();
-        let old_key = self.zobrist.en_passant(current_en_passant);
-        let new_key = self.zobrist.en_passant(Some(square));
-        let state = self.state_mut();
-        state.update_key(old_key);
-        state.set_en_passant(Some(square));
-        state.update_key(new_key);
+        let current_ep = self.state().en_passant();
+        let key = self.zobrist.en_passant(current_ep) ^ self.zobrist.en_passant(Some(square));
+        self.state_mut().set_en_passant(Some(square));
+        self.state_mut().update_key(key);
     }
 
     // clear_en_passant clears the en passant square in the state
@@ -108,13 +105,14 @@ where
     // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn clear_en_passant(&mut self) {
-        let current_en_passant = self.state().en_passant();
-        let old_key = self.zobrist.en_passant(current_en_passant);
-        let new_key = self.zobrist.en_passant(None);
-        let state = self.state_mut();
-        state.update_key(old_key);
-        state.set_en_passant(None);
-        state.update_key(new_key);
+        let current_ep = self.state().en_passant();
+        if current_ep.is_none() {
+            return;
+        }
+
+        let key = self.zobrist.en_passant(current_ep) ^ self.zobrist.en_passant(None);
+        self.state_mut().set_en_passant(None);
+        self.state_mut().update_key(key);
     }
 
     // has_bishop_pair checks if SideT has a bishop pair

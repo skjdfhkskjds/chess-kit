@@ -60,8 +60,9 @@ where
     // @side-effects: modifies the `position`
     #[inline(always)]
     fn move_piece<SideT: SideCastlingSquares>(&mut self, piece: Pieces, from: Square, to: Square) {
-        self.remove_piece::<SideT>(piece, from);
-        self.set_piece::<SideT>(piece, to);
+        self.move_piece_no_incrementals::<SideT>(piece, from, to);
+        let key = self.zobrist.piece::<SideT>(piece, from) ^ self.zobrist.piece::<SideT>(piece, to);
+        self.state_mut().update_key(key);
     }
 
     // capture_piece captures SideT's piece at the given square

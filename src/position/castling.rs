@@ -14,12 +14,8 @@ where
     // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_castling(&mut self, castling: Castling) {
-        let current_castling = self.state().castling();
-        let old_key = self.zobrist.castling(current_castling);
-        let new_key = self.zobrist.castling(castling);
-        let state = self.state_mut();
-        state.update_key(old_key);
-        state.set_castling(castling);
-        state.update_key(new_key);
+        let key = self.zobrist.castling(self.state().castling()) ^ self.zobrist.castling(castling);
+        self.state_mut().update_key(key);
+        self.state_mut().set_castling(castling);
     }
 }
