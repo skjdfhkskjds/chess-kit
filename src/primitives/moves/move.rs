@@ -45,10 +45,9 @@ impl Move {
     // @param: from - square to move from
     // @param: to - square to move to
     // @return: new instance of a move
+    #[inline(always)]
     pub fn new(from: Square, to: Square) -> Self {
-        let data = (from.idx() as u16) + ((to.idx() as u16) << TO_SHIFT);
-
-        Self { data }
+        Self { data: (from.idx() as u16) + ((to.idx() as u16) << TO_SHIFT) }
     }
 
     // with_promotion sets the promotion data for the move and sets the move

@@ -23,6 +23,7 @@ impl StateHeader {
     // new creates a new, empty state header
     //
     // @return: new, empty state header
+    #[inline(always)]
     pub fn new() -> Self {
         Self {
             turn: Sides::White,
@@ -332,6 +333,7 @@ impl GameStateExt for DefaultState {
 }
 
 impl Default for DefaultState {
+    #[inline(always)]
     fn default() -> Self {
         Self::new()
     }

@@ -54,6 +54,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: move_type - move type to generate moves for
     // @return: void
     // @side-effects: modifies the `move list`
+    #[inline(always)]
     fn generate_moves_for_side<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,
@@ -111,6 +112,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: move_type - move type to generate moves of
     // @return: void
     // @side-effects: modifies the `move list`
+    #[inline(always)]
     fn generate_queen_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,
@@ -136,6 +138,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: list - mutable reference to the move list
     // @param: move_type - move type to generate moves of
     // @return: void
+    #[inline(always)]
     fn generate_rook_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,
@@ -161,6 +164,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: list - mutable reference to the move list
     // @param: move_type - move type to generate moves of
     // @return: void
+    #[inline(always)]
     fn generate_bishop_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,
@@ -186,6 +190,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: list - mutable reference to the move list
     // @param: move_type - move type to generate moves of
     // @return: void
+    #[inline(always)]
     fn generate_knight_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,
@@ -210,6 +215,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: move_type - move type to generate moves of
     // @return: void
     // @side-effects: modifies the `move list`
+    #[inline(always)]
     fn generate_pawn_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,
@@ -378,6 +384,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: move_type - move type to generate moves of
     // @return: void
     // @side-effects: modifies the `move list`
+    #[inline(always)]
     fn generate_king_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,
@@ -414,6 +421,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @return: void
     // TODO: current implementation does not support chess960, as it assumes the
     //       squares along the path from the king and rook
+    #[inline(always)]
     fn generate_castle_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,

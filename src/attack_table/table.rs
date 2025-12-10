@@ -19,11 +19,8 @@ pub struct DefaultAttackTable {
     // knight targets from each square
     pub(crate) knight_table: BitboardTable,
 
-    // pawn pushes from each square for each side
-    pub(crate) pawn_push_table: [BitboardTable; Sides::TOTAL],
-
     // pawn attacks from each square for each side
-    pub(crate) pawn_attack_table: [BitboardTable; Sides::TOTAL],
+    pub(crate) pawn_table: [BitboardTable; Sides::TOTAL],
 
     // bishop targets from each square for each occupancy
     pub(crate) bishop_table: BitboardVec,
@@ -47,8 +44,7 @@ impl AttackTable for DefaultAttackTable {
         let mut attack_table = Self {
             king_table: [Bitboard::empty(); Square::TOTAL],
             knight_table: [Bitboard::empty(); Square::TOTAL],
-            pawn_push_table: [[Bitboard::empty(); Square::TOTAL]; Sides::TOTAL],
-            pawn_attack_table: [[Bitboard::empty(); Square::TOTAL]; Sides::TOTAL],
+            pawn_table: [[Bitboard::empty(); Square::TOTAL]; Sides::TOTAL],
             bishop_table: vec![Bitboard::empty(); BISHOP_TABLE_SIZE],
             rook_table: vec![Bitboard::empty(); ROOK_TABLE_SIZE],
             rook_magics: [Magic::default(); Square::TOTAL],
@@ -101,7 +97,7 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::pawn_targets
     #[inline(always)]
     fn pawn_targets<SideT: Side>(&self, sq: Square) -> Bitboard {
-        self.pawn_attack_table[SideT::INDEX][sq.idx()]
+        self.pawn_table[SideT::INDEX][sq.idx()]
     }
 
     // all_pawn_targets returns the squares that the all the pawns on the given

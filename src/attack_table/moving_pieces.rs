@@ -55,28 +55,10 @@ impl DefaultAttackTable {
     pub(crate) fn init_pawn_table(&mut self) {
         for sq in Square::ALL {
             let square = Bitboard::square(sq);
-
-            // generate the pawn pushes
-            self.pawn_push_table[Sides::White.idx()][sq.idx()] = (square & NOT_R8_RANK) << 8u8;
-            self.pawn_push_table[Sides::Black.idx()][sq.idx()] = (square & NOT_R1_RANK) >> 8u8;
-
-            assert!(
-                self.pawn_push_table[Sides::White.idx()][sq.idx()].count_ones() == if sq.on_rank(Rank::R8) { 0 } else { 1 },
-                "pawn push table should be at most one, square:\n{},table:\n{}",
-                sq,
-                self.pawn_push_table[Sides::White.idx()][sq.idx()],
-            );
-            assert!(
-                self.pawn_push_table[Sides::Black.idx()][sq.idx()].count_ones() == if sq.on_rank(Rank::R1) { 0 } else { 1 },
-                "pawn push table should be at most one, square:\n{},table:\n{}",
-                sq,
-                self.pawn_push_table[Sides::Black.idx()][sq.idx()],
-            );
-            
             // generate the pawn attacks
-            self.pawn_attack_table[Sides::White.idx()][sq.idx()] = ((square & NOT_A_FILE) << 7u8)
+            self.pawn_table[Sides::White.idx()][sq.idx()] = ((square & NOT_A_FILE) << 7u8)
                 | ((square & NOT_H_FILE) << 9u8);
-            self.pawn_attack_table[Sides::Black.idx()][sq.idx()] = ((square & NOT_A_FILE) >> 9u8)
+            self.pawn_table[Sides::Black.idx()][sq.idx()] = ((square & NOT_A_FILE) >> 9u8)
                 | ((square & NOT_H_FILE) >> 7u8);
         }
     }

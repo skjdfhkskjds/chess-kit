@@ -5,6 +5,7 @@ impl Sides {
     //
     // @param: self - side to get the opposing side for
     // @return: opposing side
+    #[inline(always)]
     pub const fn other(self) -> Self {
         match self {
             Sides::White => Sides::Black,

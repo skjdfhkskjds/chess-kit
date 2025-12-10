@@ -26,6 +26,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: list - mutable reference to the move list
     // @return: void
     // @side-effects: modifies the `move list`
+    #[inline(always)]
     pub(crate) fn push_moves(&self, from: Square, to_squares: Bitboard, list: &mut MoveList) {
         for to in to_squares.iter() {
             list.push(Move::new(from, to));
@@ -44,6 +45,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: list - mutable reference to the move list
     // @return: void
     // @side-effects: modifies the `move list`
+    #[inline(always)]
     pub(crate) fn push_pawn_moves(&self, to_squares: Bitboard, offset: i8, list: &mut MoveList) {
         for to in to_squares.iter() {
             let from = Square::from_idx((to.idx() as i8 - offset) as usize);
@@ -59,6 +61,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: list - mutable reference to the move list
     // @return: void
     // @side-effects: modifies the `move list`
+    #[inline(always)]
     pub(crate) fn push_pawn_en_passant_captures(
         &self,
         from_squares: Bitboard,
@@ -79,6 +82,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: is_capture - whether the pawn is capturing a piece when promoting
     // @param: list - mutable reference to the move list
     // @param: move_type - move type to generate promotions of
+    #[inline(always)]
     pub(crate) fn push_pawn_promotions(
         &self,
         to_squares: Bitboard,
@@ -113,6 +117,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @param: list - mutable reference to the move list
     // @return: void
     // @side-effects: modifies the `move list`
+    #[inline(always)]
     pub(crate) fn push_castling_moves(
         &self,
         from: Square,
