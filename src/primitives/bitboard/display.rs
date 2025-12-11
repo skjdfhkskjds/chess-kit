@@ -3,6 +3,7 @@ use std::fmt;
 
 impl fmt::Display for Bitboard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f)?;
         const LAST_BIT: u64 = 63;
         for rank in 0..8 {
             for file in (0..8).rev() {

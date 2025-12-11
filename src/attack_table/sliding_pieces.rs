@@ -8,8 +8,22 @@ impl DefaultAttackTable {
     // @return: void
     pub(crate) fn init_empty_tables(&mut self) {
         for square in Square::ALL {
-            self.empty_rook_table[square.idx()] = DefaultAttackTable::rook_mask(square);
-            self.empty_bishop_table[square.idx()] = DefaultAttackTable::bishop_mask(square);
+            // the rook attacks on empty squares are just the file and ranks
+            // excluding the square itself
+            self.empty_rook_table[square.idx()] = (Bitboard::file(square.file())
+                | Bitboard::rank(square.rank()))
+                ^ Bitboard::square(square);
+
+            // the bishop attacks on empty squares are the attack rays in all
+            // four directions
+            // 
+            // note: attack_ray excludes the source square already
+            let bitboard = Bitboard::empty();
+            self.empty_bishop_table[square.idx()] =
+                DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthWest)
+                    | DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthEast)
+                    | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthEast)
+                    | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthWest);
         }
     }
 
@@ -55,7 +69,7 @@ impl DefaultAttackTable {
                 | DefaultAttackTable::attack_ray(bitboard, square, Direction::East)
                 | DefaultAttackTable::attack_ray(bitboard, square, Direction::South)
                 | DefaultAttackTable::attack_ray(bitboard, square, Direction::West);
-            
+
             attacks.push(attacking);
         }
 

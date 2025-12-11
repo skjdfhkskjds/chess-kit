@@ -147,6 +147,10 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::rook_targets
     #[inline(always)]
     fn rook_targets(&self, square: Square, bitboard: Bitboard) -> Bitboard {
+        debug_assert!(
+            self.rook_magics[square.idx()].idx(bitboard) < self.rook_table.len(),
+            "Invalid index for square {square}. Error in Magics. occupancy:\n{bitboard}"
+        );
         self.rook_table[self.rook_magics[square.idx()].idx(bitboard)]
     }
 
@@ -173,5 +177,29 @@ impl AttackTable for DefaultAttackTable {
     #[inline(always)]
     fn queen_targets(&self, square: Square, bitboard: Bitboard) -> Bitboard {
         self.rook_targets(square, bitboard) | self.bishop_targets(square, bitboard)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_rook_targets_returns_correct_value() {
+        let attack_table = DefaultAttackTable::new();
+        let square = Square::A1;
+        let expected = (Bitboard::file(square.file()) | Bitboard::rank(square.rank()))
+            ^ Bitboard::square(square);
+        let actual = attack_table.empty_rook_targets(square);
+        assert_eq!(actual, expected, "Expected {expected}, got {actual}");
+    }
+
+    #[test]
+    fn empty_bishop_targets_returns_correct_value() {
+        let attack_table = DefaultAttackTable::new();
+        let square = Square::A1;
+        let expected = Bitboard::between(square, Square::H8);
+        let actual = attack_table.empty_bishop_targets(square);
+        assert_eq!(actual, expected, "Expected {expected}, got {actual}");
     }
 }

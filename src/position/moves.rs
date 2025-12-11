@@ -113,7 +113,7 @@ where
     fn is_preventing_check<SideT: Side>(&self, square: Square) -> bool {
         self.state()
             .king_blocker_pieces::<SideT>()
-            .intersects(Bitboard::square(square))
+            .has_square(square)
     }
 
     // update_blockers updates the blockers for SideT and pinners for
@@ -231,16 +231,11 @@ where
         //       possible if there are no other pieces delivering check other
         //       than the pawn to be captured
         if matches!(mv.type_of(), MoveType::EnPassant) {
-            let king_square = self.king_square::<SideT>();
             let en_passant_square = self.attack_table.pawn_pushes::<SideT::Other>(to);
-            debug_assert!(
-                en_passant_square.exactly_one(),
-                "en passant square should be exactly one"
-            );
             let occupancy = (self.total_occupancy() ^ Bitboard::square(from) ^ en_passant_square)
                 | Bitboard::square(to);
 
-            return !self.is_attacked_by_sliders::<SideT>(king_square, occupancy);
+            return !self.is_attacked_by_sliders::<SideT>(self.king_square::<SideT>(), occupancy);
         }
 
         // if the moving piece is a king, check whether or not the destination
@@ -301,12 +296,17 @@ where
                 // deliver a check to SideT::Other
                 //
                 // note: exclude the current occupancy of the pawn to promote
-                let occupancy = self.total_occupancy() ^ Bitboard::square(from);
                 let targets = match mv.promoted_to() {
                     Pieces::Knight => self.attack_table.knight_targets(to),
-                    Pieces::Bishop => self.attack_table.bishop_targets(to, occupancy),
-                    Pieces::Rook => self.attack_table.rook_targets(to, occupancy),
-                    Pieces::Queen => self.attack_table.queen_targets(to, occupancy),
+                    Pieces::Bishop => self
+                        .attack_table
+                        .bishop_targets(to, self.total_occupancy() ^ Bitboard::square(from)),
+                    Pieces::Rook => self
+                        .attack_table
+                        .rook_targets(to, self.total_occupancy() ^ Bitboard::square(from)),
+                    Pieces::Queen => self
+                        .attack_table
+                        .queen_targets(to, self.total_occupancy() ^ Bitboard::square(from)),
                     _ => unreachable!("promotion to non-promotable piece"),
                 };
 
@@ -316,6 +316,8 @@ where
             }
             MoveType::EnPassant => {
                 let captured_square = self.attack_table.pawn_pushes::<SideT::Other>(to);
+
+                // invariant checks for the captured square
                 debug_assert!(
                     captured_square.exactly_one(),
                     "captured square should be exactly one"
@@ -328,6 +330,7 @@ where
                     captured_square.must_first().distance(to) == 8,
                     "captured square and the square that the pawn just moved to should be one rank apart"
                 );
+
                 let occupancy = (self.total_occupancy() ^ Bitboard::square(from) ^ captured_square)
                     | Bitboard::square(to);
 
@@ -370,9 +373,8 @@ where
         SideT: SideCastlingSquares,
         SideT::Other: SideCastlingSquares,
     {
-        // TODO: reenable
-        // // TODO: move this delivers check logic outside of the make move logic
-        // let delivers_check = self.delivers_check::<SideT>(mv);
+        // TODO: move the delivers check logic outside of the make move logic
+        let delivers_check = self.delivers_check::<SideT>(mv);
 
         // push the current state into the history
         self.history.push_next();
@@ -385,7 +387,7 @@ where
 
         // increment the move counters
         //
-        // Note: if black is moving, increment the fullmove counter as well
+        // note: if black is moving, increment the fullmove counter as well
         self.state_mut().inc_halfmoves();
         if matches!(SideT::SIDE, Sides::Black) {
             self.state_mut().inc_fullmoves();
@@ -456,7 +458,7 @@ where
 
                         // if the move is an en passant capture, remove the opponent's pawn
                         self.remove_piece::<SideT::Other>(Pieces::Pawn, to ^ 8);
-                    },
+                    }
                     _ => {
                         self.move_piece::<SideT>(Pieces::Pawn, from, to);
 
@@ -474,29 +476,35 @@ where
             }
         }
 
-        // TODO: reenable
-        // // set the checkers to SideT::Other's king square if the move gives a
-        // // check
-        // let checkers = if delivers_check {
-        //     self.is_checked_by::<SideT::Other>()
-        // } else {
-        //     Bitboard::empty()
-        // };
-        // self.state_mut().set_checkers(checkers);
+        // set the checkers to SideT::Other's king square if the move gives a
+        // check
+        let checkers = if delivers_check {
+            self.is_checked_by::<SideT::Other>()
+        } else {
+            Bitboard::empty()
+        };
+        self.state_mut().set_checkers(checkers);
 
-        // // TODO: remove this once move generation is confirmed correct
-        // debug_assert!(
-        //     delivers_check == self.is_checked::<SideT::Other>(),
-        //     "delivers check flag should be equal to the checked status of SideT::Other after making the move: {mv}, in position\n{self}"
-        // );
-        // debug_assert!(
-        //     checkers == self.is_checked_by::<SideT::Other>(),
-        //     "checkers should be equal to the bitboard of squares that SideT::Other is checked by after making the move: {mv}, in position\n{self}"
-        // );
-        // debug_assert!(
-        //     !self.is_checked::<SideT>(),
-        //     "SideT cannot be in check after making the move: {mv}, in position\n{self}"
-        // );
+        // invariant checks for the move data after making the move
+        debug_assert!(
+            delivers_check == self.is_checked::<SideT::Other>(),
+            "delivers check flag should be equal to the checked status of SideT::Other after move: {}, in position {}",
+            mv,
+            self
+        );
+        debug_assert!(
+            checkers == self.is_checked_by::<SideT::Other>(),
+            "checkers should be equal to the bitboard of squares that SideT::Other is checked by after move: {}, in position {}",
+            mv,
+            self
+        );
+        debug_assert!(
+            !self.is_checked::<SideT>(),
+            "SideT cannot be in check after move: {}, in position {}, blockers for king: {}",
+            mv,
+            self,
+            self.state().king_blocker_pieces::<SideT>()
+        );
 
         // if the moving piece is a pawn, and the move is a double step, then an
         // en passant capture may be possible
@@ -509,20 +517,23 @@ where
                 .attack_table
                 .pawn_pushes::<SideT::Other>(to)
                 .must_first();
-            // debug_assert!(
-            //     self.attack_table
-            //         .pawn_pushes::<SideT::Other>(to)
-            //         .exactly_one(),
-            //     "en passant square should be exactly one"
-            // );
-            // debug_assert!(
-            //     en_passant_square.file() == to.file(),
-            //     "en passant square and the square that the pawn just moved to should be on the same file"
-            // );
-            // debug_assert!(
-            //     en_passant_square.distance(to) == 8,
-            //     "en passant square and the square that the pawn just moved to should be one rank apart"
-            // );
+
+            // invariant checks for the en passant square
+            debug_assert!(
+                self.attack_table
+                    .pawn_pushes::<SideT::Other>(to)
+                    .exactly_one(),
+                "en passant square should be exactly one"
+            );
+            debug_assert!(
+                en_passant_square.file() == to.file(),
+                "en passant square and the square that the pawn just moved to should be on the same file"
+            );
+            debug_assert!(
+                en_passant_square.distance(to) == 8,
+                "en passant square and the square that the pawn just moved to should be one rank apart"
+            );
+
             let mut attacking_pawns = self.get_piece::<SideT::Other>(Pieces::Pawn)
                 & self.attack_table.pawn_targets::<SideT>(en_passant_square);
 
@@ -533,56 +544,57 @@ where
                 break;
             }
 
-            // TODO: reenable
-            // // if there are other pieces delivering check other than the pawn
-            // // to be captured, then en passant is illegal
-            // if self.state().checkers().intersects(!Bitboard::square(to)) {
-            //     check_en_passant = false;
-            //     break;
-            // }
+            // if there are other pieces delivering check other than the pawn
+            // to be captured, then en passant is illegal
+            if self.state().checkers().intersects(!Bitboard::square(to)) {
+                check_en_passant = false;
+                break;
+            }
 
-            // // if multiple (two) pawns are attacking the en passant square, then
-            // // we need to check some more conditions to determine if en passant
-            // // is legal
-            // if attacking_pawns.more_than_one() {
-            //     // if neither pawn is pinned to the king, then en passant is
-            //     // legal
-            //     if !((self.state().king_blocker_pieces::<SideT::Other>() & attacking_pawns)
-            //         .more_than_one())
-            //     {
-            //         self.set_en_passant(en_passant_square);
-            //         break;
-            //     }
+            // if multiple (two) pawns are attacking the en passant square, then
+            // we need to check some more conditions to determine if en passant
+            // is legal
+            if attacking_pawns.more_than_one() {
+                // if neither pawn is pinned to the king, then en passant is
+                // legal
+                if !((self.state().king_blocker_pieces::<SideT::Other>() & attacking_pawns)
+                    .more_than_one())
+                {
+                    self.set_en_passant(en_passant_square);
+                    break;
+                }
 
-            //     // if both pawns are pinned to the king and neither is on the
-            //     // same file as the king, then both pawns are pinned by bishops
-            //     // and en passant is illegal
-            //     let king_file = Bitboard::file(self.king_square::<SideT::Other>().file());
-            //     if (king_file & attacking_pawns).is_empty() {
-            //         check_en_passant = false;
-            //         break;
-            //     }
+                // if both pawns are pinned to the king and neither is on the
+                // same file as the king, then both pawns are pinned by bishops
+                // and en passant is illegal
+                let king_file = Bitboard::file(self.king_square::<SideT::Other>().file());
+                if (king_file & attacking_pawns).is_empty() {
+                    check_en_passant = false;
+                    break;
+                }
 
-            //     // otherwise, there is a horizontally pinned pawn on the king's
-            //     // file, and remove it from consideration since an en passant
-            //     // from that pawn is illegal
-            //     attacking_pawns &= !king_file;
-            // }
+                // otherwise, there is a horizontally pinned pawn on the king's
+                // file, and remove it from consideration since an en passant
+                // from that pawn is illegal
+                attacking_pawns &= !king_file;
+            }
 
-            // debug_assert!(
-            //     attacking_pawns.exactly_one(),
-            //     "attacking pawns should be exactly one"
-            // );
-            // let king_square = self.king_square::<SideT::Other>();
-            // let occupancy = (self.total_occupancy() ^ Bitboard::square(to) ^ attacking_pawns)
-            //     | Bitboard::square(en_passant_square);
+            debug_assert!(
+                attacking_pawns.exactly_one(),
+                "attacking pawns should be exactly one"
+            );
+            let occupancy = (self.total_occupancy() ^ Bitboard::square(to) ^ attacking_pawns)
+                | Bitboard::square(en_passant_square);
 
-            // // if the king is attacked after capturing en passant, then it is
-            // // illegal
-            // if self.is_attacked_by_sliders::<SideT::Other>(king_square, occupancy) {
-            //     check_en_passant = false;
-            //     break;
-            // }
+            // if the king is attacked after capturing en passant, then it is
+            // illegal
+            if self.is_attacked_by_sliders::<SideT::Other>(
+                self.king_square::<SideT::Other>(),
+                occupancy,
+            ) {
+                check_en_passant = false;
+                break;
+            }
 
             // otherwise, en passant is legal, so set the square
             self.set_en_passant(en_passant_square);
@@ -598,8 +610,8 @@ where
         // swap the side to move
         self.swap_sides::<SideT>();
 
-        // // update the new check info for the new side to move
-        // self.update_check_info::<SideT::Other>();
+        // update the new check info for the new side to move
+        self.update_check_info::<SideT::Other>();
     }
 
     // unmake_move_for_side unmakes the last move from the current position as

@@ -34,6 +34,7 @@ where
         }
 
         // print the board
+        writeln!(f)?;
         for rank_idx in (0..Rank::TOTAL).rev() {
             writeln!(
                 f,

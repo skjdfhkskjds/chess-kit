@@ -12,6 +12,12 @@ where
     // @return: square of the king of SideT
     #[inline(always)]
     pub fn king_square<SideT: Side>(&self) -> Square {
+        debug_assert!(
+            self.get_piece::<SideT>(Pieces::King).exactly_one(),
+            "invalid number of kings found for side {}, position: {}",
+            SideT::SIDE,
+            self
+        );
         self.get_piece::<SideT>(Pieces::King).must_first()
     }
 
