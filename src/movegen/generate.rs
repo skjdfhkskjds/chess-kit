@@ -3,6 +3,7 @@ use crate::movegen::{MoveGenerator, MoveType, SideToMove};
 use crate::position::Position;
 use crate::primitives::{
     Bitboard, Black, GameStateExt, MoveList, Pieces, Rank, Sides, State, White,
+    moves::MoveType::EnPassant,
 };
 
 impl<AT: AttackTable> MoveGenerator<AT> {
@@ -43,7 +44,40 @@ impl<AT: AttackTable> MoveGenerator<AT> {
             MoveType::NonEvasions
         };
 
-        self.generate_moves(position, list, move_type);
+        match position.turn() {
+            Sides::White => {
+                let king_square = position.king_square::<White>();
+                let pinned =
+                    position.state().king_blocker_pieces::<White>() & position.occupancy::<White>();
+
+                // generate all the pseudo-legal moves
+                self.generate_moves_for_side::<White, StateT>(position, list, move_type);
+
+                // filter the moves to only include legal moves
+                list.filter(|mv| {
+                    !(((pinned.has_square(mv.from()))
+                        || mv.from() == king_square
+                        || matches!(mv.type_of(), EnPassant))
+                        && !position.is_legal_move::<White>(mv))
+                })
+            }
+            Sides::Black => {
+                let king_square = position.king_square::<Black>();
+                let pinned =
+                    position.state().king_blocker_pieces::<Black>() & position.occupancy::<Black>();
+
+                // generate all the pseudo-legal moves
+                self.generate_moves_for_side::<Black, StateT>(position, list, move_type);
+
+                // filter the moves to only include legal moves
+                list.filter(|mv| {
+                    !(((pinned.has_square(mv.from()))
+                        || mv.from() == king_square
+                        || matches!(mv.type_of(), EnPassant))
+                        && !position.is_legal_move::<Black>(mv))
+                })
+            }
+        }
     }
 
     // generate_moves_for_side generates all the pseudo-legal moves of the given
