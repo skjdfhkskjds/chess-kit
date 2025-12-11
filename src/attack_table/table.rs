@@ -3,6 +3,8 @@ use crate::attack_table::{AttackTable, NOT_A_FILE, NOT_H_FILE, PawnDirections};
 use crate::primitives::{Bitboard, BitboardVec, Pieces, Side, Sides, Square};
 use std::sync::OnceLock;
 
+include!(concat!(env!("OUT_DIR"), "/generated_attack_tables.rs"));
+
 type BitboardTable = [Bitboard; Square::TOTAL];
 type MagicTable = [Magic; Square::TOTAL];
 
@@ -25,20 +27,20 @@ pub struct DefaultAttackTable {
     // bishop targets from each square for an empty board
     pub(crate) empty_bishop_table: BitboardTable,
 
-    // bishop targets from each square for each occupancy
-    pub(crate) bishop_table: BitboardVec,
+    // // bishop targets from each square for each occupancy
+    // pub(crate) bishop_table: BitboardVec,
 
     // rook targets from each square for an empty board
     pub(crate) empty_rook_table: BitboardTable,
 
-    // rook targets from each square for each occupancy
-    pub(crate) rook_table: BitboardVec,
+    // // rook targets from each square for each occupancy
+    // pub(crate) rook_table: BitboardVec,
 
-    // magics for the bishop table
-    pub(crate) bishop_magics: MagicTable,
+    // // magics for the bishop table
+    // pub(crate) bishop_magics: MagicTable,
 
-    // magics for the rook table
-    pub(crate) rook_magics: MagicTable,
+    // // magics for the rook table
+    // pub(crate) rook_magics: MagicTable,
 }
 
 impl AttackTable for DefaultAttackTable {
@@ -52,11 +54,11 @@ impl AttackTable for DefaultAttackTable {
             knight_table: [Bitboard::empty(); Square::TOTAL],
             pawn_table: [[Bitboard::empty(); Square::TOTAL]; Sides::TOTAL],
             empty_bishop_table: [Bitboard::empty(); Square::TOTAL],
-            bishop_table: vec![Bitboard::empty(); BISHOP_TABLE_SIZE],
+            // bishop_table: vec![Bitboard::empty(); BISHOP_TABLE_SIZE],
             empty_rook_table: [Bitboard::empty(); Square::TOTAL],
-            rook_table: vec![Bitboard::empty(); ROOK_TABLE_SIZE],
-            rook_magics: [Magic::default(); Square::TOTAL],
-            bishop_magics: [Magic::default(); Square::TOTAL],
+            // rook_table: vec![Bitboard::empty(); ROOK_TABLE_SIZE],
+            // rook_magics: [Magic::default(); Square::TOTAL],
+            // bishop_magics: [Magic::default(); Square::TOTAL],
         };
 
         // initialize the attack table

@@ -16,7 +16,7 @@ impl DefaultAttackTable {
 
             // the bishop attacks on empty squares are the attack rays in all
             // four directions
-            // 
+            //
             // note: attack_ray excludes the source square already
             let bitboard = Bitboard::empty();
             self.empty_bishop_table[square.idx()] =
@@ -95,6 +95,39 @@ impl DefaultAttackTable {
         }
 
         attacks
+    }
+
+    // bishop_attack_board returns the attack board associated with the given
+    // square and blocker board.
+    //
+    // @param: square - square to get the attack board for
+    // @param: blocker - blocker to use to generate the attack board
+    // @return: attack board for the given square and blocker
+    pub(crate) const fn rook_attack_board(square: Square, blocker: &Bitboard) -> Bitboard {
+        Bitboard::new(
+            DefaultAttackTable::attack_ray(blocker, square, Direction::North).const_unwrap()
+                | DefaultAttackTable::attack_ray(blocker, square, Direction::East).const_unwrap()
+                | DefaultAttackTable::attack_ray(blocker, square, Direction::South).const_unwrap()
+                | DefaultAttackTable::attack_ray(blocker, square, Direction::West).const_unwrap(),
+        )
+    }
+
+    // bishop_attack_board returns the attack board associated with the given
+    // square and blocker board.
+    //
+    // @param: square - square to get the attack board for
+    // @param: blocker - blocker to use to generate the attack board
+    // @return: attack board for the given square and blocker
+    pub(crate) const fn bishop_attack_board(square: Square, blocker: &Bitboard) -> Bitboard {
+        Bitboard::new(
+            DefaultAttackTable::attack_ray(blocker, square, Direction::NorthWest).const_unwrap()
+                | DefaultAttackTable::attack_ray(blocker, square, Direction::NorthEast)
+                    .const_unwrap()
+                | DefaultAttackTable::attack_ray(blocker, square, Direction::SouthEast)
+                    .const_unwrap()
+                | DefaultAttackTable::attack_ray(blocker, square, Direction::SouthWest)
+                    .const_unwrap(),
+        )
     }
 
     // blocker_boards() takes a piece mask. This is a bitboard in which all

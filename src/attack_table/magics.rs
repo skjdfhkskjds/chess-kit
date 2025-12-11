@@ -66,7 +66,7 @@ pub const BISHOP_MAGIC_NUMS: [u64; Square::TOTAL] = [
 */
 #[derive(Copy, Clone, Default)]
 pub struct Magic {
-    pub mask: Bitboard,
+    pub mask: u64,
     pub shift: u8,
     pub offset: u64,
     pub num: u64,
@@ -78,33 +78,13 @@ impl Magic {
     // @param: occupancy - occupancy to get the magic index for
     // @return: magic index for the given occupancy
     #[inline(always)]
-    pub fn idx(&self, occupancy: Bitboard) -> usize {
-        let blockerboard = occupancy & self.mask;
-        u64::from((blockerboard.wrapping_mul(self.num) >> self.shift) + self.offset) as usize
+    pub const fn idx(&self, occupancy: Bitboard) -> usize {
+        let blockerboard = occupancy.const_unwrap() & self.mask;
+        ((blockerboard.wrapping_mul(self.num) >> self.shift) + self.offset) as usize
     }
 }
 
 impl DefaultAttackTable {
-    // assert_table_initialized asserts that the table is initialized to the
-    // expected size for the given piece
-    //
-    // @param: size - actual size of the table
-    // @param: piece - piece to assert the table size for
-    // @return: void
-    // @panic: if the table size is not the expected size
-    fn assert_table_initialized(&self, size: usize, piece: Pieces) {
-        let expected_size = match piece {
-            Pieces::Rook => ROOK_TABLE_SIZE,
-            Pieces::Bishop => BISHOP_TABLE_SIZE,
-            _ => panic!("Illegal piece type for magics: {piece}"),
-        };
-
-        assert!(
-            size == expected_size,
-            "Table size mismatch for {piece}, expected {expected_size} but got {size}",
-        );
-    }
-
     // init_square_magics initializes the magics for the given piece and square
     //
     // @param: offset - offset for the attack table
@@ -113,25 +93,30 @@ impl DefaultAttackTable {
     // @return: void
     // @panic: if the piece is illegal
     // @panic: if the magic at the computed index is invalid or not empty
-    fn init_square_magics(&mut self, offset: &mut u64, square: Square, piece: Pieces) {
+    const fn init_square_magics(
+        offset: &mut u64,
+        square: Square,
+        piece: Pieces,
+        table: &mut [Bitboard],
+    ) -> Magic {
         // get the mask for the given piece and square
         let mask = match piece {
             Pieces::Rook => DefaultAttackTable::rook_mask(square),
             Pieces::Bishop => DefaultAttackTable::bishop_mask(square),
             _ => panic!("Illegal piece type for magics: {piece}"),
-        };
+        }.const_unwrap();
 
         let bits = mask.count_ones(); // number of set bits in the mask
         let permutations = 2u64.pow(bits); // number of blocker boards to be indexed
         let end = *offset + permutations - 1; // end point in the attack table
-        let blocker_boards = DefaultAttackTable::blocker_boards(mask);
+        // let blocker_boards = DefaultAttackTable::blocker_boards(mask);
 
-        // get the attack boards for the given piece and square
-        let attack_boards = match piece {
-            Pieces::Rook => DefaultAttackTable::rook_attack_boards(square, &blocker_boards),
-            Pieces::Bishop => DefaultAttackTable::bishop_attack_boards(square, &blocker_boards),
-            _ => panic!("Illegal piece type for magics: {piece}"),
-        };
+        // // get the attack boards for the given piece and square
+        // let attack_boards = match piece {
+        //     Pieces::Rook => DefaultAttackTable::rook_attack_boards(square, &blocker_boards),
+        //     Pieces::Bishop => DefaultAttackTable::bishop_attack_boards(square, &blocker_boards),
+        //     _ => panic!("Illegal piece type for magics: {piece}"),
+        // };
 
         // create the magic for the given piece and square
         let mut magic: Magic = Default::default();
@@ -144,43 +129,41 @@ impl DefaultAttackTable {
             _ => panic!("Illegal piece type for magics: {piece}"),
         };
 
-        // get a mutable reference to the table for the given piece
-        let table = match piece {
-            Pieces::Rook => &mut self.rook_table[..],
-            Pieces::Bishop => &mut self.bishop_table[..],
-            _ => panic!("Illegal piece type for magics: {piece}"),
-        };
-
         // index the attack boards for the given piece and square
-        for i in 0..permutations {
-            let next = i as usize;
-            let index = magic.idx(blocker_boards[next]);
+        let mut next = 0;
+        let mut n: u64 = 0;
+        while next < permutations {
+            let blocker_board = Bitboard::new(n);
+            let index = magic.idx(blocker_board);
 
             // assert that the attack table index is currently empty
             assert!(
                 table[index].is_empty(),
                 "Attack table index not empty for square {square}. Error in Magics."
             );
-
+    
             // assert that the attack table index is within the valid range
             assert!(
                 index >= *offset as usize && index <= end as usize,
                 "Invalid index for square {square}. Error in Magics."
             );
 
-            // store the attack board in the attack table
-            table[index] = attack_boards[next];
-        }
+            // get the respective attack board for the given piece, square, and
+            // blocker board
+            table[index] = match piece {
+                Pieces::Rook => DefaultAttackTable::rook_attack_board(square, &blocker_board),
+                Pieces::Bishop => DefaultAttackTable::bishop_attack_board(square, &blocker_board),
+                _ => panic!("Illegal piece type for magics: {piece}"),
+            };
 
-        // store the magic for the given piece and square
-        match piece {
-            Pieces::Rook => self.rook_magics[square.idx()] = magic,
-            Pieces::Bishop => self.bishop_magics[square.idx()] = magic,
-            _ => panic!("Illegal piece type for magics: {piece}"),
+            next += 1;
+            n = n.wrapping_sub(mask) & mask;
         }
 
         // increment the offset for the next magic
         *offset += permutations;
+
+        magic
     }
 
     // init_magics initializes the magics for the given piece
@@ -190,19 +173,21 @@ impl DefaultAttackTable {
     // @panic: if the piece is illegal
     // @panic: if the table is successfully initialized
     // @panic: if the table size is not the expected size
-    pub(crate) fn init_magics(&mut self, piece: Pieces) {
+    pub(crate) fn init_magics(piece: Pieces, table: &mut [Bitboard]) -> [Magic; Square::TOTAL] {
         assert!(
             piece == Pieces::Rook || piece == Pieces::Bishop,
             "Illegal piece: {piece}"
         );
 
+        let mut magics: [Magic; Square::TOTAL] = [Magic::default(); Square::TOTAL];
+
         // initialize the magics for the given piece
         let mut offset = 0;
         for square in Square::ALL {
-            self.init_square_magics(&mut offset, square, piece);
+            magics[square.idx()] =
+                DefaultAttackTable::init_square_magics(&mut offset, square, piece, table);
         }
 
-        // assert that all permutations (blocker boards) have been indexed
-        self.assert_table_initialized(offset as usize, piece);
+        magics
     }
 }
