@@ -31,6 +31,13 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         }
     }
 
+    // generate_legal_moves generates all the legal moves from the current position
+    // and pushes them to the move list
+    //
+    // @param: position - immutable reference to the position
+    // @param: list - mutable reference to the move list
+    // @return: void
+    // @side-effects: modifies the `move list`
     pub fn generate_legal_moves<StateT: State + GameStateExt>(
         &self,
         position: &Position<AT, StateT>,
