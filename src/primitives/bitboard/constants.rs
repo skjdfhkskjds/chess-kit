@@ -1,4 +1,4 @@
-use crate::attack_table::{DefaultAttackTable, Direction};
+use crate::attack_table::{Direction, attack_ray};
 use crate::primitives::bitboard::Bitboard;
 use crate::primitives::{File, Rank, Square};
 
@@ -92,7 +92,7 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
             // get the attack ray from the source square to the occupancy board
             // which contains our "target" square
             let occupancy = Bitboard::square(target);
-            between[i][j] = DefaultAttackTable::attack_ray(occupancy, source, direction);
+            between[i][j] = attack_ray(occupancy, source, direction);
 
             j += 1;
         }
@@ -160,8 +160,8 @@ pub const BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
             // build the full edge‑to‑edge line by casting rays in both the
             // forward and opposite directions on an empty board, then include
             // the source square itself
-            let forward = DefaultAttackTable::attack_ray(Bitboard::empty(), source, forward_dir);
-            let backward = DefaultAttackTable::attack_ray(Bitboard::empty(), source, backward_dir);
+            let forward = attack_ray(Bitboard::empty(), source, forward_dir);
+            let backward = attack_ray(Bitboard::empty(), source, backward_dir);
 
             lines[i][j] = Bitboard::new(
                 forward.const_unwrap()

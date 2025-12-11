@@ -5,9 +5,9 @@ use crate::primitives::{
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use std::marker::PhantomData;
 
 pub struct Position<AT: AttackTable, StateT: State + GameStateExt> {
-    pub attack_table: &'static AT, // reference to the static attack table
     pub history: History<StateT>,  // history of the position state
 
     pub sides: [Bitboard; Sides::TOTAL + 1], // occupancy bitboard per side
@@ -15,6 +15,8 @@ pub struct Position<AT: AttackTable, StateT: State + GameStateExt> {
     pub pieces: [Pieces; Square::TOTAL],     // piece type on each square
 
     pub zobrist: ZobristTable, // zobrist random values for the position
+
+    _attack_table: PhantomData<AT>,
 }
 
 impl<AT, StateT> Position<AT, StateT>
@@ -26,14 +28,14 @@ where
     // and the zobrist random values set to 0
     //
     // @return: new position
-    pub fn new(attack_table: &'static AT) -> Self {
+    pub fn new() -> Self {
         Self {
-            attack_table,
             history: History::default(),
             sides: [Bitboard::empty(); Sides::TOTAL + 1],
             bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
             pieces: [Pieces::None; Square::TOTAL],
             zobrist: ZobristTable::default(),
+            _attack_table: PhantomData,
         }
     }
 

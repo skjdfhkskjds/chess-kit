@@ -1,4 +1,7 @@
-use crate::attack_table::{DefaultAttackTable, table::MagicTable};
+use crate::attack_table::sliding_pieces::{
+    bishop_attack_board, bishop_mask, rook_attack_board, rook_mask,
+};
+use crate::attack_table::table::MagicTable;
 /**
  * The magics as used by Rustic can be found just below. If you want to see the function used to
  * generate them, look for the "find_magics()" function. This function can be found in the module
@@ -107,110 +110,103 @@ impl Magic {
     }
 }
 
-impl DefaultAttackTable {
-    // new_square_magics creates a new magic for the given piece and square
-    //
-    // @param: offset - offset into the existing attack table
-    // @param: square - square to create the magic for
-    // @param: piece - piece to create the magic for
-    // @param: table - attack table to create the magic for
-    // @return: new magic for the given piece and square
-    // @side-effect: modifies the attack table to contain the bitboard(s) for
-    //               the given piece and square
-    const fn new_square_magics(
-        offset: &mut u64,
-        square: Square,
-        piece: Pieces,
-        table: &mut [Bitboard],
-    ) -> Magic {
-        // get the mask for the given piece and square
-        let mask = match piece {
-            Pieces::Rook => DefaultAttackTable::rook_mask(square),
-            Pieces::Bishop => DefaultAttackTable::bishop_mask(square),
+// new_square_magics creates a new magic for the given piece and square
+//
+// @param: offset - offset into the existing attack table
+// @param: square - square to create the magic for
+// @param: piece - piece to create the magic for
+// @param: table - attack table to create the magic for
+// @return: new magic for the given piece and square
+// @side-effect: modifies the attack table to contain the bitboard(s) for
+//               the given piece and square
+const fn new_square_magics(
+    offset: &mut u64,
+    square: Square,
+    piece: Pieces,
+    table: &mut [Bitboard],
+) -> Magic {
+    // get the mask for the given piece and square
+    let mask = match piece {
+        Pieces::Rook => rook_mask(square),
+        Pieces::Bishop => bishop_mask(square),
+        _ => unreachable!(),
+    }
+    .const_unwrap();
+
+    let bits = mask.count_ones(); // number of set bits in the mask
+    let permutations = 2u64.pow(bits); // number of blocker boards to be indexed
+    let end = *offset + permutations - 1; // end point in the attack table
+
+    // create the magic for the given piece and square
+    let magic = Magic::new(
+        mask,
+        (64 - bits) as u8, // shift
+        *offset,
+        match piece {
+            Pieces::Rook => ROOK_MAGIC_NUMS[square.idx()],
+            Pieces::Bishop => BISHOP_MAGIC_NUMS[square.idx()],
             _ => unreachable!(),
-        }
-        .const_unwrap();
+        },
+    );
 
-        let bits = mask.count_ones(); // number of set bits in the mask
-        let permutations = 2u64.pow(bits); // number of blocker boards to be indexed
-        let end = *offset + permutations - 1; // end point in the attack table
-
-        // create the magic for the given piece and square
-        let magic = Magic::new(
-            mask,
-            (64 - bits) as u8, // shift
-            *offset,
-            match piece {
-                Pieces::Rook => ROOK_MAGIC_NUMS[square.idx()],
-                Pieces::Bishop => BISHOP_MAGIC_NUMS[square.idx()],
-                _ => unreachable!(),
-            },
-        );
-
-        // index the attack boards for the given piece and square
-        //
-        // note: this loop uses the Carry-Rippler method to iterate through
-        //       all the possible blocker boards for the given mask
-        let mut next = 0;
-        let mut n: u64 = 0;
-        while next < permutations {
-            let blocker_board = Bitboard::new(n);
-            let index = magic.idx(blocker_board);
-
-            // assert that the attack table index is currently empty
-            if !table[index].is_empty() {
-                panic!("attack table index not empty");
-            }
-
-            // assert that the attack table index is within the valid range
-            if !(index >= *offset as usize && index <= end as usize) {
-                panic!("invalid index");
-            }
-
-            // get the respective attack board for the given piece, square, and
-            // blocker board
-            table[index] = match piece {
-                Pieces::Rook => DefaultAttackTable::rook_attack_board(square, blocker_board),
-                Pieces::Bishop => DefaultAttackTable::bishop_attack_board(square, blocker_board),
-                _ => unreachable!(),
-            };
-
-            next += 1;
-            n = n.wrapping_sub(mask) & mask;
-        }
-
-        // increment the offset for the next magic
-        *offset += permutations;
-
-        magic
-    }
-
-    // new_magics creates a new magic for the given piece
+    // index the attack boards for the given piece and square
     //
-    // @param: piece - piece to create the magic for
-    // @param: table - attack table to create the magic for
-    // @return: new magic table for the given piece
-    // @side-effect: modifies the attack table to contain the bitboards for the
-    //               given piece
-    pub(crate) const fn new_magics(piece: Pieces, table: &mut [Bitboard]) -> MagicTable {
-        let mut magics: MagicTable = [Magic::default(); Square::TOTAL];
+    // note: this loop uses the Carry-Rippler method to iterate through
+    //       all the possible blocker boards for the given mask
+    let mut next = 0;
+    let mut n: u64 = 0;
+    while next < permutations {
+        let blocker_board = Bitboard::new(n);
+        let index = magic.idx(blocker_board);
 
-        // initialize the mutable offset for the magics
-        let mut offset = 0;
-
-        // initialize the magics for each square
-        let mut sq = 0;
-        while sq < Square::TOTAL {
-            magics[sq] = DefaultAttackTable::new_square_magics(
-                &mut offset,
-                Square::from_idx(sq),
-                piece,
-                table,
-            );
-
-            sq += 1;
+        // assert that the attack table index is currently empty
+        if !table[index].is_empty() {
+            panic!("attack table index not empty");
         }
 
-        magics
+        // assert that the attack table index is within the valid range
+        if !(index >= *offset as usize && index <= end as usize) {
+            panic!("invalid index");
+        }
+
+        // get the respective attack board for the given piece, square, and
+        // blocker board
+        table[index] = match piece {
+            Pieces::Rook => rook_attack_board(square, blocker_board),
+            Pieces::Bishop => bishop_attack_board(square, blocker_board),
+            _ => unreachable!(),
+        };
+
+        next += 1;
+        n = n.wrapping_sub(mask) & mask;
     }
+
+    // increment the offset for the next magic
+    *offset += permutations;
+
+    magic
+}
+
+// new_magics creates a new magic for the given piece
+//
+// @param: piece - piece to create the magic for
+// @param: table - attack table to create the magic for
+// @return: new magic table for the given piece
+// @side-effect: modifies the attack table to contain the bitboards for the
+//               given piece
+pub(crate) const fn new_magics(piece: Pieces, table: &mut [Bitboard]) -> MagicTable {
+    let mut magics: MagicTable = [Magic::default(); Square::TOTAL];
+
+    // initialize the mutable offset for the magics
+    let mut offset = 0;
+
+    // initialize the magics for each square
+    let mut sq = 0;
+    while sq < Square::TOTAL {
+        magics[sq] = new_square_magics(&mut offset, Square::from_idx(sq), piece, table);
+
+        sq += 1;
+    }
+
+    magics
 }

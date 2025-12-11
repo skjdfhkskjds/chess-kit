@@ -164,7 +164,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         // to move
         let to_move = position.get_piece::<SideT>(Pieces::Queen);
         for from in to_move.iter() {
-            let targets = self.attack_table.queen_targets(from, occupancy) & destinations;
+            let targets = AT::queen_targets(from, occupancy) & destinations;
             self.push_moves(from, targets, list);
         }
     }
@@ -190,7 +190,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         // to move
         let to_move = position.get_piece::<SideT>(Pieces::Rook);
         for from in to_move.iter() {
-            let targets = self.attack_table.rook_targets(from, occupancy) & destinations;
+            let targets = AT::rook_targets(from, occupancy) & destinations;
             self.push_moves(from, targets, list);
         }
     }
@@ -216,7 +216,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         // to move
         let to_move = position.get_piece::<SideT>(Pieces::Bishop);
         for from in to_move.iter() {
-            let targets = self.attack_table.bishop_targets(from, occupancy) & destinations;
+            let targets = AT::bishop_targets(from, occupancy) & destinations;
             self.push_moves(from, targets, list);
         }
     }
@@ -240,7 +240,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         // to move
         let to_move = position.get_piece::<SideT>(Pieces::Knight);
         for from in to_move.iter() {
-            let targets = self.attack_table.knight_targets(from) & destinations;
+            let targets = AT::knight_targets(from) & destinations;
             self.push_moves(from, targets, list);
         }
     }
@@ -296,13 +296,12 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         // generate pawn pushes for non-promotable pawns
         if !matches!(move_type, MoveType::Capture) {
             // regular pawn pushes are a single step from the current square
-            let mut single_step_pawns = self
-                .attack_table
-                .all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Up)
-                & empty_squares;
+            let mut single_step_pawns =
+                AT::all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Up)
+                    & empty_squares;
 
             // double step pawn pushes are two steps from the current square
-            let mut double_step_pawns = self.attack_table.all_pawn_targets::<SideT>(
+            let mut double_step_pawns = AT::all_pawn_targets::<SideT>(
                 single_step_pawns & single_step_rank,
                 PawnDirections::Up,
             ) & empty_squares;
@@ -326,22 +325,16 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         // generate captures and quiet moves for promotable pawns
         if promotable_pawns.not_empty() {
             // get the target squares on the right of the promotable pawns
-            let right_targets = self
-                .attack_table
-                .all_pawn_targets::<SideT>(promotable_pawns, PawnDirections::Right)
-                & enemies;
+            let right_targets =
+                AT::all_pawn_targets::<SideT>(promotable_pawns, PawnDirections::Right) & enemies;
 
             // get the target squares on the left of the promotable pawns
-            let left_targets = self
-                .attack_table
-                .all_pawn_targets::<SideT>(promotable_pawns, PawnDirections::Left)
-                & enemies;
+            let left_targets =
+                AT::all_pawn_targets::<SideT>(promotable_pawns, PawnDirections::Left) & enemies;
 
             // get the squares that a pawn can push to and promote
-            let mut pushes = self
-                .attack_table
-                .all_pawn_targets::<SideT>(promotable_pawns, PawnDirections::Up)
-                & empty_squares;
+            let mut pushes =
+                AT::all_pawn_targets::<SideT>(promotable_pawns, PawnDirections::Up) & empty_squares;
 
             // again, if the move type is evasions, we only need to generate
             // moves for squares that would block a check
@@ -370,16 +363,13 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         // generate pawn captures for non-promotable pawns
         if !matches!(move_type, MoveType::Quiet) {
             // get the target squares on the right of the non-promotable pawns
-            let right_targets = self
-                .attack_table
-                .all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Right)
-                & enemies;
+            let right_targets =
+                AT::all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Right)
+                    & enemies;
 
             // get the target squares on the left of the non-promotable pawns
-            let left_targets = self
-                .attack_table
-                .all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Left)
-                & enemies;
+            let left_targets =
+                AT::all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Left) & enemies;
 
             // push the pawn captures to the move list
             self.push_pawn_moves(right_targets, SideT::PAWN_RIGHT_TARGET_OFFSET, list);
@@ -394,7 +384,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
             // get the en passant and source square of the pawn that was just
             // pushed to enable en passant
             let ep_square = en_passant.unwrap();
-            let source_square = self.attack_table.pawn_pushes::<SideT>(ep_square);
+            let source_square = AT::pawn_pushes::<SideT>(ep_square);
 
             // if the move type is evasions, and the pawn that was just pushed
             // used to be on a square that is now a line of attack, the pawn push
@@ -406,7 +396,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
 
             // get the attacking pawns that can capture en passant
             let attacking_pawns =
-                self.attack_table.pawn_targets::<SideT::Other>(ep_square) & non_promotable_pawns;
+                AT::pawn_targets::<SideT::Other>(ep_square) & non_promotable_pawns;
 
             // push the en passant captures to the move list
             self.push_pawn_en_passant_captures(attacking_pawns, ep_square, list);
@@ -431,7 +421,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         move_type: MoveType,
     ) {
         let king_square = position.king_square::<SideT>();
-        let targets = self.attack_table.king_targets(king_square);
+        let targets = AT::king_targets(king_square);
 
         // filter the moves according to the requested move type
         let moves = match move_type {
