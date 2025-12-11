@@ -9,15 +9,15 @@ pub(crate) type MagicTable = [Magic; Square::TOTAL];
 
 pub struct DefaultAttackTable {}
 
-const KING_TABLE: BitboardTable = new_king_table();
-const KNIGHT_TABLE: BitboardTable = new_knight_table();
-const PAWN_TABLE: [BitboardTable; Sides::TOTAL] = new_pawn_table();
-const EMPTY_BISHOP_TABLE: BitboardTable = new_empty_bishop_table();
-const EMPTY_ROOK_TABLE: BitboardTable = new_empty_rook_table();
-const BISHOP_MAGICS_TABLE: BishopMagicsTable = BishopMagicsTable::new();
+static KING_TABLE: BitboardTable = new_king_table();
+static KNIGHT_TABLE: BitboardTable = new_knight_table();
+static PAWN_TABLE: [BitboardTable; Sides::TOTAL] = new_pawn_table();
+static EMPTY_BISHOP_TABLE: BitboardTable = new_empty_bishop_table();
+static EMPTY_ROOK_TABLE: BitboardTable = new_empty_rook_table();
+static BISHOP_MAGICS_TABLE: BishopMagicsTable = BishopMagicsTable::new();
 
 #[cfg_attr(true, allow(long_running_const_eval))]
-const ROOK_MAGICS_TABLE: RookMagicsTable = RookMagicsTable::new();
+static ROOK_MAGICS_TABLE: RookMagicsTable = RookMagicsTable::new();
 
 struct BishopMagicsTable {
     table: [Bitboard; BISHOP_TABLE_SIZE],
