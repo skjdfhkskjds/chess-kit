@@ -73,6 +73,22 @@ pub struct Magic {
 }
 
 impl Magic {
+    // new creates a new magic with the given mask, shift, offset, and num
+    //
+    // @param: mask - mask for the magic
+    // @param: shift - shift for the magic
+    // @param: offset - offset for the magic
+    // @param: num - num for the magic
+    // @return: new magic
+    pub const fn new(mask: u64, shift: u8, offset: u64, num: u64) -> Self {
+        Self {
+            mask,
+            shift,
+            offset,
+            num,
+        }
+    }
+
     // idx gets the magic index for the given occupancy
     //
     // @param: occupancy - occupancy to get the magic index for
@@ -103,8 +119,9 @@ impl DefaultAttackTable {
         let mask = match piece {
             Pieces::Rook => DefaultAttackTable::rook_mask(square),
             Pieces::Bishop => DefaultAttackTable::bishop_mask(square),
-            _ => panic!("Illegal piece type for magics: {piece}"),
-        }.const_unwrap();
+            _ => unreachable!(),
+        }
+        .const_unwrap();
 
         let bits = mask.count_ones(); // number of set bits in the mask
         let permutations = 2u64.pow(bits); // number of blocker boards to be indexed
@@ -119,15 +136,16 @@ impl DefaultAttackTable {
         // };
 
         // create the magic for the given piece and square
-        let mut magic: Magic = Default::default();
-        magic.mask = mask;
-        magic.shift = (64 - bits) as u8;
-        magic.offset = *offset;
-        magic.num = match piece {
-            Pieces::Rook => ROOK_MAGIC_NUMS[square.idx()],
-            Pieces::Bishop => BISHOP_MAGIC_NUMS[square.idx()],
-            _ => panic!("Illegal piece type for magics: {piece}"),
-        };
+        let magic = Magic::new(
+            mask,
+            (64 - bits) as u8, // shift
+            *offset,
+            match piece {
+                Pieces::Rook => ROOK_MAGIC_NUMS[square.idx()],
+                Pieces::Bishop => BISHOP_MAGIC_NUMS[square.idx()],
+                _ => unreachable!(),
+            },
+        );
 
         // index the attack boards for the given piece and square
         let mut next = 0;
@@ -137,23 +155,21 @@ impl DefaultAttackTable {
             let index = magic.idx(blocker_board);
 
             // assert that the attack table index is currently empty
-            assert!(
-                table[index].is_empty(),
-                "Attack table index not empty for square {square}. Error in Magics."
-            );
-    
+            if !table[index].is_empty() {
+                panic!("attack table index not empty");
+            }
+
             // assert that the attack table index is within the valid range
-            assert!(
-                index >= *offset as usize && index <= end as usize,
-                "Invalid index for square {square}. Error in Magics."
-            );
+            if !(index >= *offset as usize && index <= end as usize) {
+                panic!("invalid index");
+            }
 
             // get the respective attack board for the given piece, square, and
             // blocker board
             table[index] = match piece {
                 Pieces::Rook => DefaultAttackTable::rook_attack_board(square, &blocker_board),
                 Pieces::Bishop => DefaultAttackTable::bishop_attack_board(square, &blocker_board),
-                _ => panic!("Illegal piece type for magics: {piece}"),
+                _ => unreachable!(),
             };
 
             next += 1;
@@ -173,19 +189,21 @@ impl DefaultAttackTable {
     // @panic: if the piece is illegal
     // @panic: if the table is successfully initialized
     // @panic: if the table size is not the expected size
-    pub(crate) fn init_magics(piece: Pieces, table: &mut [Bitboard]) -> [Magic; Square::TOTAL] {
-        assert!(
-            piece == Pieces::Rook || piece == Pieces::Bishop,
-            "Illegal piece: {piece}"
-        );
-
-        let mut magics: [Magic; Square::TOTAL] = [Magic::default(); Square::TOTAL];
+    pub(crate) const fn init_magics(
+        piece: Pieces,
+        table: &mut [Bitboard],
+    ) -> [Magic; Square::TOTAL] {
+        let mut magics: [Magic; Square::TOTAL] = [Magic::new(0, 0, 0, 0); Square::TOTAL];
 
         // initialize the magics for the given piece
         let mut offset = 0;
-        for square in Square::ALL {
+        let mut sq = 0;
+        while sq < Square::TOTAL {
+            let square = Square::from_idx(sq);
             magics[square.idx()] =
                 DefaultAttackTable::init_square_magics(&mut offset, square, piece, table);
+
+            sq += 1;
         }
 
         magics

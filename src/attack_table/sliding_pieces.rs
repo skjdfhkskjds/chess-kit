@@ -6,24 +6,35 @@ impl DefaultAttackTable {
     // tables
     //
     // @return: void
-    pub(crate) fn init_empty_tables(&mut self) {
-        for square in Square::ALL {
+    pub(crate) const fn init_empty_tables(&mut self) {
+        let mut sq = 0;
+        while sq < Square::TOTAL {
+            let square = Square::from_idx(sq);
             // the rook attacks on empty squares are just the file and ranks
             // excluding the square itself
-            self.empty_rook_table[square.idx()] = (Bitboard::file(square.file())
-                | Bitboard::rank(square.rank()))
-                ^ Bitboard::square(square);
+            self.empty_rook_table[square.idx()] = Bitboard::new(
+                (Bitboard::file(square.file()).const_unwrap()
+                    | Bitboard::rank(square.rank()).const_unwrap())
+                    ^ Bitboard::square(square).const_unwrap(),
+            );
 
             // the bishop attacks on empty squares are the attack rays in all
             // four directions
             //
             // note: attack_ray excludes the source square already
             let bitboard = Bitboard::empty();
-            self.empty_bishop_table[square.idx()] =
+            self.empty_bishop_table[square.idx()] = Bitboard::new(
                 DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthWest)
+                    .const_unwrap()
                     | DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthEast)
+                        .const_unwrap()
                     | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthEast)
-                    | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthWest);
+                        .const_unwrap()
+                    | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthWest)
+                        .const_unwrap(),
+            );
+
+            sq += 1;
         }
     }
 
@@ -31,28 +42,33 @@ impl DefaultAttackTable {
     //
     // @param: square - square to get the mask for
     // @return: masking bitboard for the given square
-    pub(crate) fn rook_mask(square: Square) -> Bitboard {
-        let rook_at = Bitboard::square(square);
-        let edges = DefaultAttackTable::get_edges(square);
-        let line_of_sight = Bitboard::file(square.file()) | Bitboard::rank(square.rank());
+    pub(crate) const fn rook_mask(square: Square) -> Bitboard {
+        let rook_at = Bitboard::square(square).const_unwrap();
+        let edges = DefaultAttackTable::get_edges(square).const_unwrap();
+        let line_of_sight = Bitboard::file(square.file()).const_unwrap()
+            | Bitboard::rank(square.rank()).const_unwrap();
 
-        line_of_sight & !edges & !rook_at
+        Bitboard::new(line_of_sight & !edges & !rook_at)
     }
 
     // bishop_mask returns the bishop mask for the given square
     //
     // @param: square - square to get the mask for
     // @return: masking bitboard for the given square
-    pub(crate) fn bishop_mask(square: Square) -> Bitboard {
+    pub(crate) const fn bishop_mask(square: Square) -> Bitboard {
+        let bishop_at = Bitboard::square(square).const_unwrap();
+        let edges = DefaultAttackTable::get_edges(square).const_unwrap();
         let bitboard = Bitboard::empty();
-        let bishop_at = Bitboard::square(square);
-        let edges = DefaultAttackTable::get_edges(square);
         let line_of_sight = DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthWest)
+            .const_unwrap()
             | DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthEast)
+                .const_unwrap()
             | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthEast)
-            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthWest);
+                .const_unwrap()
+            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthWest)
+                .const_unwrap();
 
-        line_of_sight & !edges & !bishop_at
+        Bitboard::new(line_of_sight & !edges & !bishop_at)
     }
 
     // rook_attack_boards returns the attack boards for the given square and
@@ -160,14 +176,16 @@ impl DefaultAttackTable {
     // @param: exclude - square to exclude from the edges
     // @return: bitboard of all the edges of the board
     // TODO: think about moving this function elsewhere
-    fn get_edges(exclude: Square) -> Bitboard {
-        let exclude_file = Bitboard::file(exclude.file());
-        let exclude_rank = Bitboard::rank(exclude.rank());
+    const fn get_edges(exclude: Square) -> Bitboard {
+        let exclude_file = Bitboard::file(exclude.file()).const_unwrap();
+        let exclude_rank = Bitboard::rank(exclude.rank()).const_unwrap();
 
-        (Bitboard::file(File::A) & !exclude_file)
-            | (Bitboard::file(File::H) & !exclude_file)
-            | (Bitboard::rank(Rank::R1) & !exclude_rank)
-            | (Bitboard::rank(Rank::R8) & !exclude_rank)
+        Bitboard::new(
+            (Bitboard::file(File::A).const_unwrap() & !exclude_file)
+                | (Bitboard::file(File::H).const_unwrap() & !exclude_file)
+                | (Bitboard::rank(Rank::R1).const_unwrap() & !exclude_rank)
+                | (Bitboard::rank(Rank::R8).const_unwrap() & !exclude_rank),
+        )
     }
 
     // attack_ray returns the attack ray from the current square in the given
