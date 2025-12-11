@@ -1,41 +1,71 @@
-use crate::attack_table::{DefaultAttackTable, Direction};
-use crate::primitives::{Bitboard, BitboardVec, File, Rank, Square};
+use crate::attack_table::{DefaultAttackTable, Direction, table::BitboardTable};
+use crate::primitives::{Bitboard, File, Rank, Square};
 
 impl DefaultAttackTable {
-    // init_empty_tables initializes the empty tables for the rook and bishop
-    // tables
+    // new_empty_rook_table creates a new empty rook table
     //
-    // @return: void
-    pub(crate) const fn init_empty_tables(&mut self) {
+    // @return: new empty rook table
+    pub(crate) const fn new_empty_rook_table() -> BitboardTable {
+        let mut empty_rook_table: BitboardTable = [Bitboard::empty(); Square::TOTAL];
+
         let mut sq = 0;
         while sq < Square::TOTAL {
             let square = Square::from_idx(sq);
+
             // the rook attacks on empty squares are just the file and ranks
             // excluding the square itself
-            self.empty_rook_table[square.idx()] = Bitboard::new(
-                (Bitboard::file(square.file()).const_unwrap()
-                    | Bitboard::rank(square.rank()).const_unwrap())
-                    ^ Bitboard::square(square).const_unwrap(),
-            );
+            let attacks = (Bitboard::file(square.file()).const_unwrap()
+                | Bitboard::rank(square.rank()).const_unwrap())
+                ^ Bitboard::square(square).const_unwrap();
+
+            empty_rook_table[sq] = Bitboard::new(attacks);
+            sq += 1;
+        }
+
+        empty_rook_table
+    }
+
+    // new_empty_bishop_table creates a new empty bishop table
+    //
+    // @return: new empty bishop table
+    pub(crate) const fn new_empty_bishop_table() -> BitboardTable {
+        let mut empty_bishop_table: BitboardTable = [Bitboard::empty(); Square::TOTAL];
+
+        let mut sq = 0;
+        while sq < Square::TOTAL {
+            let square = Square::from_idx(sq);
 
             // the bishop attacks on empty squares are the attack rays in all
             // four directions
             //
             // note: attack_ray excludes the source square already
-            let bitboard = Bitboard::empty();
-            self.empty_bishop_table[square.idx()] = Bitboard::new(
-                DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthWest)
+            let attacks =
+                DefaultAttackTable::attack_ray(Bitboard::empty(), square, Direction::NorthWest)
                     .const_unwrap()
-                    | DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthEast)
-                        .const_unwrap()
-                    | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthEast)
-                        .const_unwrap()
-                    | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthWest)
-                        .const_unwrap(),
-            );
+                    | DefaultAttackTable::attack_ray(
+                        Bitboard::empty(),
+                        square,
+                        Direction::NorthEast,
+                    )
+                    .const_unwrap()
+                    | DefaultAttackTable::attack_ray(
+                        Bitboard::empty(),
+                        square,
+                        Direction::SouthEast,
+                    )
+                    .const_unwrap()
+                    | DefaultAttackTable::attack_ray(
+                        Bitboard::empty(),
+                        square,
+                        Direction::SouthWest,
+                    )
+                    .const_unwrap();
 
+            empty_bishop_table[sq] = Bitboard::new(attacks);
             sq += 1;
         }
+
+        empty_bishop_table
     }
 
     // rook_mask returns the rook mask for the given square
@@ -58,59 +88,17 @@ impl DefaultAttackTable {
     pub(crate) const fn bishop_mask(square: Square) -> Bitboard {
         let bishop_at = Bitboard::square(square).const_unwrap();
         let edges = DefaultAttackTable::get_edges(square).const_unwrap();
-        let bitboard = Bitboard::empty();
-        let line_of_sight = DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthWest)
-            .const_unwrap()
-            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::NorthEast)
+        let line_of_sight =
+            DefaultAttackTable::attack_ray(Bitboard::empty(), square, Direction::NorthWest)
                 .const_unwrap()
-            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthEast)
-                .const_unwrap()
-            | DefaultAttackTable::attack_ray(&bitboard, square, Direction::SouthWest)
-                .const_unwrap();
+                | DefaultAttackTable::attack_ray(Bitboard::empty(), square, Direction::NorthEast)
+                    .const_unwrap()
+                | DefaultAttackTable::attack_ray(Bitboard::empty(), square, Direction::SouthEast)
+                    .const_unwrap()
+                | DefaultAttackTable::attack_ray(Bitboard::empty(), square, Direction::SouthWest)
+                    .const_unwrap();
 
         Bitboard::new(line_of_sight & !edges & !bishop_at)
-    }
-
-    // rook_attack_boards returns the attack boards for the given square and
-    // blockers.
-    //
-    // @param: square - square to get the attack boards for
-    // @param: blockers - blockers to use to generate the attack boards
-    // @return: attack boards for the given square and blockers
-    pub(crate) fn rook_attack_boards(square: Square, blockers: &[Bitboard]) -> BitboardVec {
-        let mut attacks: BitboardVec = Vec::new();
-
-        for bitboard in blockers.iter() {
-            let attacking = DefaultAttackTable::attack_ray(bitboard, square, Direction::North)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::East)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::South)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::West);
-
-            attacks.push(attacking);
-        }
-
-        attacks
-    }
-
-    // bishop_attack_boards returns the attack boards for the given square and
-    // blockers.
-    //
-    // @param: square - square to get the attack boards for
-    // @param: blockers - blockers to use to generate the attack boards
-    // @return: attack boards for the given square and blockers
-    pub(crate) fn bishop_attack_boards(square: Square, blockers: &[Bitboard]) -> BitboardVec {
-        let mut attacks: BitboardVec = Vec::new();
-
-        for bitboard in blockers.iter() {
-            let attacking = DefaultAttackTable::attack_ray(bitboard, square, Direction::NorthWest)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::NorthEast)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::SouthEast)
-                | DefaultAttackTable::attack_ray(bitboard, square, Direction::SouthWest);
-
-            attacks.push(attacking);
-        }
-
-        attacks
     }
 
     // bishop_attack_board returns the attack board associated with the given
@@ -119,7 +107,7 @@ impl DefaultAttackTable {
     // @param: square - square to get the attack board for
     // @param: blocker - blocker to use to generate the attack board
     // @return: attack board for the given square and blocker
-    pub(crate) const fn rook_attack_board(square: Square, blocker: &Bitboard) -> Bitboard {
+    pub(crate) const fn rook_attack_board(square: Square, blocker: Bitboard) -> Bitboard {
         Bitboard::new(
             DefaultAttackTable::attack_ray(blocker, square, Direction::North).const_unwrap()
                 | DefaultAttackTable::attack_ray(blocker, square, Direction::East).const_unwrap()
@@ -134,7 +122,7 @@ impl DefaultAttackTable {
     // @param: square - square to get the attack board for
     // @param: blocker - blocker to use to generate the attack board
     // @return: attack board for the given square and blocker
-    pub(crate) const fn bishop_attack_board(square: Square, blocker: &Bitboard) -> Bitboard {
+    pub(crate) const fn bishop_attack_board(square: Square, blocker: Bitboard) -> Bitboard {
         Bitboard::new(
             DefaultAttackTable::attack_ray(blocker, square, Direction::NorthWest).const_unwrap()
                 | DefaultAttackTable::attack_ray(blocker, square, Direction::NorthEast)
@@ -144,30 +132,6 @@ impl DefaultAttackTable {
                 | DefaultAttackTable::attack_ray(blocker, square, Direction::SouthWest)
                     .const_unwrap(),
         )
-    }
-
-    // blocker_boards() takes a piece mask. This is a bitboard in which all
-    // the bits are set for a square where a slider can move to, without
-    // the edges. (As generated by the functions in the mask.rs file.)
-    // blocker_boards() generates all possible permutations for the given
-    // mask, using the Carry Rippler method. See the given link, or
-    // http://rustic-chess.org for more information.
-    // TODO: revisit this function later
-    pub(crate) fn blocker_boards(mask: Bitboard) -> BitboardVec {
-        let mut bb_blocker_boards: BitboardVec = Vec::new();
-        let mut n: Bitboard = Bitboard::empty();
-
-        // Carry-Rippler
-        // https://www.chessprogramming.org/Traversing_Subsets_of_a_Set
-        loop {
-            bb_blocker_boards.push(n);
-            n = n.wrapping_sub(mask) & mask;
-            if n.is_empty() {
-                break;
-            }
-        }
-
-        bb_blocker_boards
     }
 
     // get_edges generates a bitboard of all the edges of the board excluding
@@ -194,19 +158,19 @@ impl DefaultAttackTable {
     // note: we unwrap the bitboards to u64 as a hack to enable const bitwise
     //       operations
     //
-    // @param: bitboard - bitboard to use as the base for the attack ray
+    // @param: occupancy - occupancy bitboard to use as the base for the attack ray
     // @param: square - square to start the attack ray from
     // @param: direction - direction to attack in
     // @return: attack ray bitboard
-    pub const fn attack_ray(bitboard: &Bitboard, square: Square, direction: Direction) -> Bitboard {
+    pub const fn attack_ray(occupancy: Bitboard, square: Square, direction: Direction) -> Bitboard {
         // get the file and rank and the square to analyze
         let mut file = square.file();
         let mut rank = square.rank();
         let mut square = Bitboard::square(square).const_unwrap();
 
         // build the ray bitboard in the given direction
-        let mut ray = 0u64;
-        let occupancy = bitboard.const_unwrap();
+        let mut ray = Bitboard::empty().const_unwrap();
+        let occupancy = occupancy.const_unwrap();
         loop {
             match direction {
                 Direction::North => {
