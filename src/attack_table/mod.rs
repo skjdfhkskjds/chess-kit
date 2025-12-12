@@ -19,15 +19,13 @@ impl PawnDirections {
 }
 
 // AttackTable is a table that provides information about targeting/targetted
-// squares for the board.
+// squares for the board
+// 
+// note: the usage pattern of this trait is a phantom marker type that is used
+//       to allow *constant* resolution of the attack table
 //
 // @trait
-pub trait AttackTable: Sized + 'static {
-    // // new creates and initializes a new attack table
-    // //
-    // // @return: a new, initialized attack table
-    // fn new() -> Self;
-
+pub trait AttackTable {
     // king_targets returns the squares that the king targets from the given
     // square
     //
