@@ -13,8 +13,54 @@ use crate::primitives::{Bitboard, Pieces, Square};
 // These are the exact sizes needed for the rook and bishop moves. These
 // can be calculated by adding all the possible blocker boards for a rook
 // or a bishop.
-pub const ROOK_TABLE_SIZE: usize = 102_400; // Total permutations of all rook blocker boards.
-pub const BISHOP_TABLE_SIZE: usize = 5_248; // Total permutations of all bishop blocker boards.
+const ROOK_TABLE_SIZE: usize = 102_400; // Total permutations of all rook blocker boards.
+const BISHOP_TABLE_SIZE: usize = 5_248; // Total permutations of all bishop blocker boards.
+
+pub(crate) struct BishopMagicsTable {
+    pub table: [Bitboard; BISHOP_TABLE_SIZE],
+    pub magics: MagicTable,
+}
+
+pub(crate) struct RookMagicsTable {
+    pub table: [Bitboard; ROOK_TABLE_SIZE],
+    pub magics: MagicTable,
+}
+
+impl BishopMagicsTable {
+    // new creates and initializes a new attack table
+    //
+    // @impl: AttackTable::new
+    pub const fn new() -> Self {
+        // create a new, empty table
+        let mut attack_table = Self {
+            table: [Bitboard::empty(); BISHOP_TABLE_SIZE],
+            magics: [Magic::default(); Square::TOTAL],
+        };
+
+        // initialize the attack table
+        attack_table.magics = new_magics(Pieces::Bishop, &mut attack_table.table);
+
+        attack_table
+    }
+}
+
+impl RookMagicsTable {
+    // new creates and initializes a new attack table
+    //
+    // @impl: AttackTable::new
+    pub const fn new() -> Self {
+        // create a new, empty table
+        let mut attack_table = Self {
+            table: [Bitboard::empty(); ROOK_TABLE_SIZE],
+            magics: [Magic::default(); Square::TOTAL],
+        };
+
+        // initialize the attack table
+        attack_table.magics = new_magics(Pieces::Rook, &mut attack_table.table);
+
+        attack_table
+    }
+}
 
 /** Rook magic numbers. Don't touch them. Changing these numbers breaks the program. */
 #[rustfmt::skip]
@@ -69,10 +115,10 @@ pub const BISHOP_MAGIC_NUMS: [u64; Square::TOTAL] = [
 */
 #[derive(Copy, Clone)]
 pub struct Magic {
-    pub mask: u64,
-    pub shift: u8,
-    pub offset: u64,
-    pub num: u64,
+    mask: u64,
+    shift: u8,
+    offset: u64,
+    num: u64,
 }
 
 impl Magic {
@@ -134,7 +180,7 @@ const fn new_square_magics(
     .const_unwrap();
 
     let bits = mask.count_ones(); // number of set bits in the mask
-    let permutations = 2u64.pow(bits); // number of blocker boards to be indexed
+    let permutations = 1u64 << bits; // number of blocker boards to be indexed
 
     // create the magic for the given piece and square
     let magic = Magic::new(

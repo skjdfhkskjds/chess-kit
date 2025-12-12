@@ -1,8 +1,8 @@
-use crate::attack_table::magics::{BISHOP_TABLE_SIZE, Magic, ROOK_TABLE_SIZE, new_magics};
+use crate::attack_table::magics::{BishopMagicsTable, RookMagicsTable, Magic};
 use crate::attack_table::moving_pieces::{new_king_table, new_knight_table, new_pawn_table};
 use crate::attack_table::sliding_pieces::{new_empty_bishop_table, new_empty_rook_table};
 use crate::attack_table::{AttackTable, NOT_A_FILE, NOT_H_FILE, PawnDirections};
-use crate::primitives::{Bitboard, Pieces, Side, Sides, Square};
+use crate::primitives::{Bitboard, Side, Sides, Square};
 
 pub(crate) type BitboardTable = [Bitboard; Square::TOTAL];
 pub(crate) type MagicTable = [Magic; Square::TOTAL];
@@ -18,52 +18,6 @@ pub(crate) const EMPTY_ROOK_TABLE: BitboardTable = new_empty_rook_table();
 #[cfg_attr(true, allow(long_running_const_eval))]
 static ROOK_MAGICS_TABLE: RookMagicsTable = RookMagicsTable::new();
 static BISHOP_MAGICS_TABLE: BishopMagicsTable = BishopMagicsTable::new();
-
-struct BishopMagicsTable {
-    table: [Bitboard; BISHOP_TABLE_SIZE],
-    magics: MagicTable,
-}
-
-struct RookMagicsTable {
-    table: [Bitboard; ROOK_TABLE_SIZE],
-    magics: MagicTable,
-}
-
-impl BishopMagicsTable {
-    // new creates and initializes a new attack table
-    //
-    // @impl: AttackTable::new
-    const fn new() -> Self {
-        // create a new, empty table
-        let mut attack_table = Self {
-            table: [Bitboard::empty(); BISHOP_TABLE_SIZE],
-            magics: [Magic::default(); Square::TOTAL],
-        };
-
-        // initialize the attack table
-        attack_table.magics = new_magics(Pieces::Bishop, &mut attack_table.table);
-
-        attack_table
-    }
-}
-
-impl RookMagicsTable {
-    // new creates and initializes a new attack table
-    //
-    // @impl: AttackTable::new
-    const fn new() -> Self {
-        // create a new, empty table
-        let mut attack_table = Self {
-            table: [Bitboard::empty(); ROOK_TABLE_SIZE],
-            magics: [Magic::default(); Square::TOTAL],
-        };
-
-        // initialize the attack table
-        attack_table.magics = new_magics(Pieces::Rook, &mut attack_table.table);
-
-        attack_table
-    }
-}
 
 impl AttackTable for DefaultAttackTable {
     // king_targets returns the squares that the king targets from the given

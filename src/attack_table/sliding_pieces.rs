@@ -77,8 +77,8 @@ pub(crate) const fn bishop_mask(square: Square) -> Bitboard {
     Bitboard::new(attacks & !edges)
 }
 
-// bishop_attack_board returns the attack board associated with the given
-// square and blocker board.
+// rook_attack_board returns the attack board associated with the given
+// square and blocker board
 //
 // @param: square - square to get the attack board for
 // @param: blocker - blocker to use to generate the attack board
