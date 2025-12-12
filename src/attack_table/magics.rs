@@ -135,7 +135,6 @@ const fn new_square_magics(
 
     let bits = mask.count_ones(); // number of set bits in the mask
     let permutations = 2u64.pow(bits); // number of blocker boards to be indexed
-    let end = *offset + permutations - 1; // end point in the attack table
 
     // create the magic for the given piece and square
     let magic = Magic::new(
@@ -158,16 +157,6 @@ const fn new_square_magics(
     while next < permutations {
         let blocker_board = Bitboard::new(n);
         let index = magic.idx(blocker_board);
-
-        // assert that the attack table index is currently empty
-        if !table[index].is_empty() {
-            panic!("attack table index not empty");
-        }
-
-        // assert that the attack table index is within the valid range
-        if !(index >= *offset as usize && index <= end as usize) {
-            panic!("invalid index");
-        }
 
         // get the respective attack board for the given piece, square, and
         // blocker board

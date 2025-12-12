@@ -4,22 +4,9 @@ mod sliding_pieces;
 mod table;
 
 pub(crate) use moving_pieces::{NOT_A_FILE, NOT_H_FILE};
-pub(crate) use sliding_pieces::{attack_ray};
 pub use table::DefaultAttackTable;
 
 use crate::primitives::{Bitboard, Side, Square};
-
-#[derive(Copy, Clone)]
-pub enum Direction {
-    North,
-    East,
-    South,
-    West,
-    NorthEast,
-    NorthWest,
-    SouthEast,
-    SouthWest,
-}
 
 pub enum PawnDirections {
     Up,

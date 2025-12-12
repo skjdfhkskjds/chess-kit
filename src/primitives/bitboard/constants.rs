@@ -1,15 +1,14 @@
-use crate::attack_table::{Direction, attack_ray};
 use crate::primitives::bitboard::Bitboard;
-use crate::primitives::{File, Rank, Square};
+use crate::primitives::{Direction, File, Rank, Square};
 
-// BITBOARD_RANKS is a constant array of bitboards, where each bitboard is has
+// BITBOARD_RANKS is a constant array of bitboards, where each bitboard has
 // the bits for that rank set to 1
 pub const BITBOARD_RANKS: [Bitboard; Rank::TOTAL] = {
     const RANK_1: u64 = 0xFF;
     let mut ranks = [Bitboard::empty(); Rank::TOTAL];
     let mut i = 0;
 
-    // Note: while loop hack to get around const fn loop limitations
+    // note: while loop hack to get around const fn loop limitations
     while i < Rank::TOTAL {
         ranks[i] = Bitboard::new(RANK_1 << (i * 8));
         i += 1;
@@ -18,14 +17,14 @@ pub const BITBOARD_RANKS: [Bitboard; Rank::TOTAL] = {
     ranks
 };
 
-// BITBOARD_FILES is a constant array of bitboards, where each bitboard is has
+// BITBOARD_FILES is a constant array of bitboards, where each bitboard has
 // the bits for that file set to 1
 pub const BITBOARD_FILES: [Bitboard; File::TOTAL] = {
     const FILE_A: u64 = 0x0101_0101_0101_0101;
     let mut files = [Bitboard::empty(); File::TOTAL];
     let mut i = 0;
 
-    // Note: while loop hack to get around const fn loop limitations
+    // note: while loop hack to get around const fn loop limitations
     while i < File::TOTAL {
         files[i] = Bitboard::new(FILE_A << i);
         i += 1;
@@ -34,6 +33,88 @@ pub const BITBOARD_FILES: [Bitboard; File::TOTAL] = {
     files
 };
 
+// diagonal_mask returns the mask for the diagonal of the given square
+//
+// @param: sq - square to get the diagonal mask for
+// @return: diagonal mask for the given square
+#[inline(always)]
+const fn diagonal_mask(sq: Square) -> Bitboard {
+    let f0 = sq.file() as i8;
+    let r0 = sq.rank() as i8;
+    let d0 = f0 - r0;
+
+    let mut mask = 0u64;
+    let mut rank = 0u8;
+    while rank < 8 {
+        let mut file = 0u8;
+        while file < 8 {
+            if (file as i8 - rank as i8) == d0 {
+                mask |= 1u64 << ((rank as u64) * 8 + (file as u64));
+            }
+            file += 1;
+        }
+        rank += 1;
+    }
+
+    Bitboard::new(mask)
+}
+
+// anti_diagonal_mask returns the mask for the anti-diagonal of the given square
+//
+// @param: sq - square to get the anti-diagonal mask for
+// @return: anti-diagonal mask for the given square
+#[inline(always)]
+const fn anti_diagonal_mask(sq: Square) -> Bitboard {
+    let f0 = sq.file() as i8;
+    let r0 = sq.rank() as i8;
+    let s0 = f0 + r0;
+
+    let mut mask = 0u64;
+    let mut rank = 0u8;
+    while rank < 8 {
+        let mut file = 0u8;
+        while file < 8 {
+            if (file as i8 + rank as i8) == s0 {
+                mask |= 1u64 << ((rank as u64) * 8 + (file as u64));
+            }
+            file += 1;
+        }
+        rank += 1;
+    }
+
+    Bitboard::new(mask)
+}
+
+// BITBOARD_DIAGONALS is a constant array of bitboards, where each bitboard has
+// the bits for that diagonal set to 1
+pub const BITBOARD_DIAGONALS: [Bitboard; Square::TOTAL] = {
+    let mut diagonals = [Bitboard::empty(); Square::TOTAL];
+    let mut i = 0;
+    while i < Square::TOTAL {
+        diagonals[i] = diagonal_mask(Square::from_idx(i));
+        i += 1;
+    }
+    diagonals
+};
+
+// BITBOARD_ANTI_DIAGONALS is a constant array of bitboards, where each bitboard
+// has the bits for that anti-diagonal set to 1
+pub const BITBOARD_ANTI_DIAGONALS: [Bitboard; Square::TOTAL] = {
+    let mut anti_diagonals = [Bitboard::empty(); Square::TOTAL];
+    let mut i = 0;
+    while i < Square::TOTAL {
+        anti_diagonals[i] = anti_diagonal_mask(Square::from_idx(i));
+        i += 1;
+    }
+    anti_diagonals
+};
+
+// BITBOARD_BETWEEN is a constant array of bitboards, where each bitboard has
+// the bits for that between set to 1
+//
+// @note: we define the between bitboard as the bitboard that contains the bits
+//        for the squares that are on the line between the two given squares,
+//        excluding the start square and including the end square
 pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
     let mut between = [[Bitboard::empty(); Square::TOTAL]; Square::TOTAL];
     let mut i = 0;
@@ -46,7 +127,7 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
         let source_rank = source.rank().idx();
         let source_file = source.file().idx();
 
-        let mut j = 0;
+        let mut j = i;
         while j < Square::TOTAL {
             let target = Square::from_idx(j);
             let target_rank = target.rank().idx();
@@ -54,8 +135,10 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
 
             let same_rank = target_rank == source_rank;
             let same_file = target_file == source_file;
-            let same_diagonal = (target_file as isize - source_file as isize).abs()
-                == (target_rank as isize - source_rank as isize).abs();
+            let same_diagonal = target_file > source_file
+                && (target_file - source_file) == (target_rank - source_rank);
+            let same_anti_diagonal = target_file < source_file
+                && (source_file - target_file) == (target_rank - source_rank);
 
             // we only want to compute the between bitboard for pairs of squares
             // that are
@@ -64,35 +147,46 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
             // 2. on the same rank, file, or diagonal
             //
             // otherwise, the entry should just contain the end square's bitboard
-            if i == j || !(same_rank || same_file || same_diagonal) {
+            if i == j || !(same_rank || same_file || same_diagonal || same_anti_diagonal) {
                 between[i][j] = Bitboard::square(target);
+                between[j][i] = Bitboard::square(source);
                 j += 1;
                 continue;
             }
 
             // determine the direction of the attack ray
-            let direction = if target_rank < source_rank && target_file < source_file {
-                Direction::SouthWest
-            } else if target_rank < source_rank && target_file > source_file {
-                Direction::SouthEast
-            } else if target_rank > source_rank && target_file < source_file {
-                Direction::NorthWest
-            } else if target_rank > source_rank && target_file > source_file {
-                Direction::NorthEast
-            } else if target_rank < source_rank {
-                Direction::South
-            } else if target_rank > source_rank {
-                Direction::North
-            } else if target_file < source_file {
-                Direction::West
+            //
+            // note: since we have the invariant that target > source, we only
+            //       need to check for north(west/east) or east directions
+            let (distance, direction) = if same_rank {
+                (target_file - source_file, Direction::East)
+            } else if same_file {
+                (target_rank - source_rank, Direction::North)
+            } else if same_diagonal {
+                (target_rank - source_rank, Direction::NorthEast)
             } else {
-                Direction::East
+                (target_rank - source_rank, Direction::NorthWest)
             };
 
-            // get the attack ray from the source square to the occupancy board
-            // which contains our "target" square
-            let occupancy = Bitboard::square(target);
-            between[i][j] = attack_ray(occupancy, source, direction);
+            // aggregate the attack rays in the given direction
+            let mut ray = 0u64;
+            let mut s = Bitboard::square(source);
+            let mut count = 0;
+            while count < distance {
+                s = s.shift(direction);
+                ray |= s.const_unwrap();
+                count += 1;
+            }
+
+            // set the attack ray for the source and target squares
+            // 
+            // note: for the inverse direction, exclude the target and include
+            //       the source square to get the inverse between bitboard
+            between[i][j] = Bitboard::new(ray);
+            between[j][i] = Bitboard::new(
+                ray ^ Bitboard::square(source).const_unwrap()
+                    ^ Bitboard::square(target).const_unwrap(),
+            );
 
             j += 1;
         }
@@ -108,17 +202,17 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
 // to 1
 pub const BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
     let mut lines = [[Bitboard::empty(); Square::TOTAL]; Square::TOTAL];
-    let mut i = 0;
 
     // for each ordered pair of squares [i, j], if they are on the same line
     // (rank, file, or diagonal), build the edge‑to‑edge ray that passes through
     // them; otherwise leave the entry empty
+    let mut i = 0;
     while i < Square::TOTAL {
         let source = Square::from_idx(i);
         let source_rank = source.rank().idx();
         let source_file = source.file().idx();
 
-        let mut j = 0;
+        let mut j = i + 1;
         while j < Square::TOTAL {
             let target = Square::from_idx(j);
             let target_rank = target.rank().idx();
@@ -126,48 +220,30 @@ pub const BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
 
             let same_rank = target_rank == source_rank;
             let same_file = target_file == source_file;
-            let same_diagonal = (target_file as isize - source_file as isize).abs()
-                == (target_rank as isize - source_rank as isize).abs();
+            let same_diagonal = target_file > source_file
+                && (target_file - source_file) == (target_rank - source_rank);
+            let same_anti_diagonal = target_file < source_file
+                && (source_file - target_file) == (target_rank - source_rank);
 
             // only build a line if the squares are distinct and lie on a
             // straight / diagonal line; otherwise keep the entry empty
-            if i == j || !(same_rank || same_file || same_diagonal) {
+            if !(same_rank || same_file || same_diagonal || same_anti_diagonal) {
                 j += 1;
                 continue;
             }
 
-            // determine the primary direction from source -> target and its
-            // opposite counterpart
-            let (forward_dir, backward_dir) =
-                if target_rank < source_rank && target_file < source_file {
-                    (Direction::SouthWest, Direction::NorthEast)
-                } else if target_rank < source_rank && target_file > source_file {
-                    (Direction::SouthEast, Direction::NorthWest)
-                } else if target_rank > source_rank && target_file < source_file {
-                    (Direction::NorthWest, Direction::SouthEast)
-                } else if target_rank > source_rank && target_file > source_file {
-                    (Direction::NorthEast, Direction::SouthWest)
-                } else if target_rank < source_rank {
-                    (Direction::South, Direction::North)
-                } else if target_rank > source_rank {
-                    (Direction::North, Direction::South)
-                } else if target_file < source_file {
-                    (Direction::West, Direction::East)
-                } else {
-                    (Direction::East, Direction::West)
-                };
+            let line = if same_rank {
+                Bitboard::rank(source.rank())
+            } else if same_file {
+                Bitboard::file(source.file())
+            } else if same_diagonal {
+                Bitboard::diagonal(source)
+            } else {
+                Bitboard::anti_diagonal(source)
+            };
 
-            // build the full edge‑to‑edge line by casting rays in both the
-            // forward and opposite directions on an empty board, then include
-            // the source square itself
-            let forward = attack_ray(Bitboard::empty(), source, forward_dir);
-            let backward = attack_ray(Bitboard::empty(), source, backward_dir);
-
-            lines[i][j] = Bitboard::new(
-                forward.const_unwrap()
-                    | backward.const_unwrap()
-                    | Bitboard::square(source).const_unwrap(),
-            );
+            lines[i][j] = line;
+            lines[j][i] = line;
 
             j += 1;
         }
@@ -182,23 +258,76 @@ pub const BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
 mod tests {
     use crate::primitives::{Bitboard, File, Rank, Square};
 
-    #[test]
-    fn print_bitboard_between_samples() {
-        let samples = [
-            (Square::D4, Square::D7),
-            (Square::A1, Square::H8),
-            (Square::B2, Square::F2),
-            (Square::H1, Square::A8),
-            (Square::E4, Square::B8),
-        ];
+    fn bb(squares: &[Square]) -> Bitboard {
+        squares
+            .iter()
+            .fold(Bitboard::empty(), |acc, &sq| acc | Bitboard::square(sq))
+    }
 
-        for (target, source) in samples {
-            let bitboard = Bitboard::between(target, source);
-            println!("start {target} end {source}");
-            println!("start bitboard:\n{}", Bitboard::square(target));
-            println!("end bitboard:\n{}", Bitboard::square(source));
-            println!("bitboard:\n{bitboard}");
-        }
+    #[test]
+    fn between_d4_to_d7_includes_vertical_segment() {
+        let expected = bb(&[Square::D5, Square::D6, Square::D7]);
+        assert_eq!(
+            Bitboard::between(Square::D4, Square::D7),
+            expected,
+            "between(D4, D7) should include D5, D6, D7"
+        );
+    }
+
+    #[test]
+    fn between_a1_to_h8_includes_main_diagonal() {
+        let expected = bb(&[
+            Square::B2,
+            Square::C3,
+            Square::D4,
+            Square::E5,
+            Square::F6,
+            Square::G7,
+            Square::H8,
+        ]);
+        assert_eq!(
+            Bitboard::between(Square::A1, Square::H8),
+            expected,
+            "between(A1, H8) should include all main-diagonal squares"
+        );
+    }
+
+    #[test]
+    fn between_b2_to_f2_includes_rank_segment() {
+        let expected = bb(&[Square::C2, Square::D2, Square::E2, Square::F2]);
+        assert_eq!(
+            Bitboard::between(Square::B2, Square::F2),
+            expected,
+            "between(B2, F2) should include C2, D2, E2, F2"
+        );
+    }
+
+    #[test]
+    fn between_h1_to_a8_includes_anti_diagonal() {
+        let expected = bb(&[
+            Square::G2,
+            Square::F3,
+            Square::E4,
+            Square::D5,
+            Square::C6,
+            Square::B7,
+            Square::A8,
+        ]);
+        assert_eq!(
+            Bitboard::between(Square::H1, Square::A8),
+            expected,
+            "between(H1, A8) should include all anti-diagonal squares"
+        );
+    }
+
+    #[test]
+    fn between_e4_to_b8_returns_target_when_not_aligned() {
+        let expected = bb(&[Square::B8]);
+        assert_eq!(
+            Bitboard::between(Square::E4, Square::B8),
+            expected,
+            "between(E4, B8) should fall back to the target square"
+        );
     }
 
     #[test]

@@ -1,4 +1,4 @@
-use crate::primitives::bitboard::Bitboard;
+use crate::primitives::{Bitboard, Direction};
 
 impl Bitboard {
     // wrapping_sub performs a wrapping subtraction of a bitboard with any type
@@ -50,5 +50,24 @@ impl Bitboard {
     #[inline(always)]
     pub const fn trailing_zeros(&self) -> u32 {
         self.0.trailing_zeros()
+    }
+
+    // shift shifts the bitboard in the given direction
+    //
+    // @param: self - immutable reference to the bitboard
+    // @param: direction - direction to shift the bitboard in
+    // @return: result of the shift
+    #[inline(always)]
+    pub const fn shift(self, direction: Direction) -> Self {
+        match direction {
+            Direction::North => Self(self.0 << 8),
+            Direction::East => Self(self.0 << 1),
+            Direction::South => Self(self.0 >> 8),
+            Direction::West => Self(self.0 >> 1),
+            Direction::NorthEast => Self(self.0 << 9),
+            Direction::NorthWest => Self(self.0 << 7),
+            Direction::SouthEast => Self(self.0 >> 7),
+            Direction::SouthWest => Self(self.0 >> 9),
+        }
     }
 }
