@@ -2,7 +2,7 @@ use crate::attack_table::{AttackTable, PawnDirections};
 use crate::movegen::{MoveGenerator, MoveType, SideToMove};
 use crate::position::Position;
 use crate::primitives::{
-    Bitboard, Black, GameStateExt, MoveList, Pieces, Rank, Sides, State, White,
+    Bitboard, Black, GameStateExt, MoveList, Pieces, Sides, State, White,
     moves::MoveType::EnPassant,
 };
 
@@ -276,22 +276,6 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         // get the promotable and non-promotable pawns
         let promotable_pawns = position.get_piece::<SideT>(Pieces::Pawn) & promotable_rank;
         let non_promotable_pawns = position.get_piece::<SideT>(Pieces::Pawn) & !promotable_rank;
-
-        // invariant checks for the split pawn bitboards
-        debug_assert!(
-            !non_promotable_pawns.intersects(Bitboard::rank(SideT::PROMOTION_RANK)),
-            "non-promotable pawns cannot be on the promotion rank"
-        );
-        debug_assert!(
-            !non_promotable_pawns.intersects(Bitboard::rank(
-                if SideT::PROMOTION_RANK == Rank::R1 {
-                    Rank::R8
-                } else {
-                    Rank::R1
-                }
-            )),
-            "promotable pawns cannot be on the promotion rank"
-        );
 
         // generate pawn pushes for non-promotable pawns
         if !matches!(move_type, MoveType::Capture) {

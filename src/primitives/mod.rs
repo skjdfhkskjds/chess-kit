@@ -18,7 +18,7 @@ pub use files::File;
 pub use history::History;
 pub use moves::{Move, MoveList, MoveType};
 pub use pieces::Pieces;
-pub use ranks::{Rank, SideRanks};
+pub use ranks::Rank;
 pub use sides::{Black, Side, Sides, White};
 pub use squares::Square;
 pub use state::{Clock, DefaultState, GameStateExt, ReadOnlyState, State, WriteOnlyState};

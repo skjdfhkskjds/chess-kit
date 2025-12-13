@@ -1,12 +1,12 @@
 mod generate;
-mod movegen;
 mod move_type;
+mod movegen;
 
 pub use move_type::MoveType;
 pub use movegen::MoveGenerator;
 
 use crate::position::SideCastlingSquares;
-use crate::primitives::{Black, SideRanks, White};
+use crate::primitives::{Black, Rank, White};
 
 // `SideToMove` is a trait that defines the contract required for a side to be
 // able to move pieces
@@ -36,4 +36,27 @@ impl SideToMove for Black {
     const PAWN_PUSH_OFFSET: i8 = -8;
     const PAWN_RIGHT_TARGET_OFFSET: i8 = -9;
     const PAWN_LEFT_TARGET_OFFSET: i8 = -7;
+}
+
+// `SideRanks` is a trait that provides specific rank information with respect
+// to a given side
+//
+// @trait
+pub trait SideRanks {
+    // SINGLE_STEP_RANK is the rank that a pawn can single step to
+    const SINGLE_STEP_RANK: Rank;
+
+    // PROMOTABLE_RANK is the rank that a pawn is on when it promotes on its
+    // next move
+    const PROMOTABLE_RANK: Rank;
+}
+
+impl SideRanks for White {
+    const SINGLE_STEP_RANK: Rank = Rank::R3;
+    const PROMOTABLE_RANK: Rank = Rank::R7;
+}
+
+impl SideRanks for Black {
+    const SINGLE_STEP_RANK: Rank = Rank::R6;
+    const PROMOTABLE_RANK: Rank = Rank::R2;
 }
