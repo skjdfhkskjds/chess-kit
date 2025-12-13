@@ -1,4 +1,3 @@
-use crate::attack_table::AttackTable;
 use crate::movegen::MoveGenerator;
 use crate::perft::{Depth, NodeCount, PerftData};
 use crate::position::{PositionAttacks, PositionMoves, PositionState};
@@ -13,14 +12,14 @@ use crate::transposition::TranspositionTable;
 // @param: tt - mutable reference to the transposition table
 // @param: depth - depth to calculate the perft for
 // @return: number of leaf nodes at the given depth
-pub fn perft<AT, PositionT>(
+pub fn perft<MoveGeneratorT, PositionT>(
     position: &mut PositionT,
-    move_generator: &MoveGenerator<AT>,
+    move_generator: &MoveGeneratorT,
     tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
 ) -> NodeCount
 where
-    AT: AttackTable,
+    MoveGeneratorT: MoveGenerator,
     PositionT: PositionState + PositionAttacks + PositionMoves,
 {
     // base case: if the depth is 0, return 1
@@ -72,14 +71,14 @@ where
 // @param: tt - mutable reference to the transposition table
 // @param: depth - depth to calculate the perft for
 // @return: vector of branches of moves from the current position
-fn perft_divide<AT, PositionT>(
+fn perft_divide<MoveGeneratorT, PositionT>(
     position: &mut PositionT,
-    move_generator: &MoveGenerator<AT>,
+    move_generator: &MoveGeneratorT,
     tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
 ) -> Vec<(Move, NodeCount)>
 where
-    AT: AttackTable,
+    MoveGeneratorT: MoveGenerator,
     PositionT: PositionState + PositionAttacks + PositionMoves,
 {
     assert!(depth > 0);
@@ -111,14 +110,14 @@ where
 // @param: tt - mutable reference to the transposition table
 // @param: depth - depth to calculate the perft for
 // @return: number of leaf nodes at the given depth
-pub fn perft_divide_print<AT, PositionT>(
+pub fn perft_divide_print<MoveGeneratorT, PositionT>(
     position: &mut PositionT,
-    move_generator: &MoveGenerator<AT>,
+    move_generator: &MoveGeneratorT,
     tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
 ) -> NodeCount
 where
-    AT: AttackTable,
+    MoveGeneratorT: MoveGenerator,
     PositionT: PositionState + PositionAttacks + PositionMoves,
 {
     let entries = perft_divide(position, move_generator, tt, depth);

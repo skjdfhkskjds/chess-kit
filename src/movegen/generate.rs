@@ -1,91 +1,9 @@
 use crate::attack_table::{AttackTable, PawnDirections};
-use crate::movegen::{MoveGenerator, MoveType, SideToMove};
-use crate::position::{PositionAttacks, PositionMoves, PositionState};
-use crate::primitives::{
-    Bitboard, Black, MoveList, Pieces, Sides, White, moves::MoveType::EnPassant,
-};
+use crate::movegen::{DefaultMoveGenerator, MoveType, SideToMove};
+use crate::position::{PositionAttacks, PositionState};
+use crate::primitives::{Bitboard, MoveList, Pieces};
 
-impl<AT: AttackTable> MoveGenerator<AT> {
-    // generate_moves generates all the pseudo-legal moves of the given move type
-    // from the current position and pushes them to the move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate moves for
-    // @return: void
-    // @side-effects: modifies the `move list`
-    pub fn generate_moves<PositionT: PositionState + PositionAttacks>(
-        &self,
-        position: &PositionT,
-        list: &mut MoveList,
-        move_type: MoveType,
-    ) {
-        match position.turn() {
-            Sides::White => {
-                self.generate_moves_for_side::<White, PositionT>(position, list, move_type)
-            }
-            Sides::Black => {
-                self.generate_moves_for_side::<Black, PositionT>(position, list, move_type)
-            }
-        }
-    }
-
-    // generate_legal_moves generates all the legal moves from the current position
-    // and pushes them to the move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @return: void
-    // @side-effects: modifies the `move list`
-    pub fn generate_legal_moves<PositionT: PositionState + PositionAttacks + PositionMoves>(
-        &self,
-        position: &PositionT,
-        list: &mut MoveList,
-    ) {
-        // if the side to move is in check, just generate evasions during legal
-        // move generation
-        let move_type = if position.checkers().not_empty() {
-            MoveType::Evasions
-        } else {
-            MoveType::NonEvasions
-        };
-
-        match position.turn() {
-            Sides::White => {
-                let king_square = position.king_square::<White>();
-                let pinned =
-                    position.king_blocker_pieces::<White>() & position.occupancy::<White>();
-
-                // generate all the pseudo-legal moves
-                self.generate_moves_for_side::<White, PositionT>(position, list, move_type);
-
-                // filter the moves to only include legal moves
-                list.filter(|mv| {
-                    !(((pinned.has_square(mv.from()))
-                        || mv.from() == king_square
-                        || matches!(mv.type_of(), EnPassant))
-                        && !position.is_legal_move::<White>(mv))
-                })
-            }
-            Sides::Black => {
-                let king_square = position.king_square::<Black>();
-                let pinned =
-                    position.king_blocker_pieces::<Black>() & position.occupancy::<Black>();
-
-                // generate all the pseudo-legal moves
-                self.generate_moves_for_side::<Black, PositionT>(position, list, move_type);
-
-                // filter the moves to only include legal moves
-                list.filter(|mv| {
-                    !(((pinned.has_square(mv.from()))
-                        || mv.from() == king_square
-                        || matches!(mv.type_of(), EnPassant))
-                        && !position.is_legal_move::<Black>(mv))
-                })
-            }
-        }
-    }
-
+impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // generate_moves_for_side generates all the pseudo-legal moves of the given
     // move type for the side to move from the current position and pushes them to
     // the move list
@@ -96,7 +14,10 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @return: void
     // @side-effects: modifies the `move list`
     #[inline(always)]
-    fn generate_moves_for_side<SideT: SideToMove, PositionT: PositionState + PositionAttacks>(
+    pub(crate) fn generate_moves_for_side<
+        SideT: SideToMove,
+        PositionT: PositionState + PositionAttacks,
+    >(
         &self,
         position: &PositionT,
         list: &mut MoveList,
