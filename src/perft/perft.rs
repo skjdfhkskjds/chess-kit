@@ -1,8 +1,8 @@
 use crate::attack_table::AttackTable;
 use crate::movegen::MoveGenerator;
 use crate::perft::{Depth, NodeCount, PerftData};
-use crate::position::DefaultPosition;
-use crate::primitives::{GameStateExt, Move, MoveList, State};
+use crate::position::{PositionAttacks, PositionMoves, PositionState};
+use crate::primitives::{Move, MoveList};
 use crate::transposition::TranspositionTable;
 
 // perft calculates the number of leaf nodes at the given depth from the current
@@ -13,15 +13,15 @@ use crate::transposition::TranspositionTable;
 // @param: tt - mutable reference to the transposition table
 // @param: depth - depth to calculate the perft for
 // @return: number of leaf nodes at the given depth
-pub fn perft<AT, StateT>(
-    position: &mut DefaultPosition<AT, StateT>,
+pub fn perft<AT, PositionT>(
+    position: &mut PositionT,
     move_generator: &MoveGenerator<AT>,
     tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
 ) -> NodeCount
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    PositionT: PositionState + PositionAttacks + PositionMoves,
 {
     // base case: if the depth is 0, return 1
     if depth == 0 {
@@ -29,7 +29,7 @@ where
     }
 
     // check if we have a cached result in the transposition table
-    if let Some(data) = tt.probe(position.state().key())
+    if let Some(data) = tt.probe(position.key())
         && data.depth() == depth
     {
         return data.node_count();
@@ -59,7 +59,7 @@ where
     }
 
     // cache the result in the transposition table
-    tt.insert(position.state().key(), PerftData::new(depth, nodes));
+    tt.insert(position.key(), PerftData::new(depth, nodes));
 
     nodes
 }
@@ -72,15 +72,15 @@ where
 // @param: tt - mutable reference to the transposition table
 // @param: depth - depth to calculate the perft for
 // @return: vector of branches of moves from the current position
-fn perft_divide<AT, StateT>(
-    position: &mut DefaultPosition<AT, StateT>,
+fn perft_divide<AT, PositionT>(
+    position: &mut PositionT,
     move_generator: &MoveGenerator<AT>,
     tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
 ) -> Vec<(Move, NodeCount)>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    PositionT: PositionState + PositionAttacks + PositionMoves,
 {
     assert!(depth > 0);
 
@@ -111,15 +111,15 @@ where
 // @param: tt - mutable reference to the transposition table
 // @param: depth - depth to calculate the perft for
 // @return: number of leaf nodes at the given depth
-pub fn perft_divide_print<AT, StateT>(
-    position: &mut DefaultPosition<AT, StateT>,
+pub fn perft_divide_print<AT, PositionT>(
+    position: &mut PositionT,
     move_generator: &MoveGenerator<AT>,
     tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
 ) -> NodeCount
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    PositionT: PositionState + PositionAttacks + PositionMoves,
 {
     let entries = perft_divide(position, move_generator, tt, depth);
 

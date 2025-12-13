@@ -2,7 +2,7 @@ use crate::perft_utils::PerftTest;
 use chess_kit::attack_table::DefaultAttackTable;
 use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
-use chess_kit::position::DefaultPosition;
+use chess_kit::position::{DefaultPosition, Position, PositionFromFEN};
 use chess_kit::primitives::DefaultState;
 use chess_kit::transposition::{DefaultTranspositionTable, TranspositionTable};
 use std::time::Instant;
