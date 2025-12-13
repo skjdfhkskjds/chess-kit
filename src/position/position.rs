@@ -7,7 +7,7 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use std::marker::PhantomData;
 
-pub struct Position<AT: AttackTable, StateT: State + GameStateExt> {
+pub struct DefaultPosition<AT: AttackTable, StateT: State + GameStateExt> {
     pub history: History<StateT>,  // history of the position state
 
     pub sides: [Bitboard; Sides::TOTAL + 1], // occupancy bitboard per side
@@ -19,7 +19,7 @@ pub struct Position<AT: AttackTable, StateT: State + GameStateExt> {
     _attack_table: PhantomData<AT>,
 }
 
-impl<AT, StateT> Position<AT, StateT>
+impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
     StateT: State + GameStateExt,
@@ -207,7 +207,7 @@ where
     }
 }
 
-impl<AT, StateT> Position<AT, StateT>
+impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
     StateT: State + GameStateExt,

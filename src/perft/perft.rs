@@ -1,7 +1,7 @@
 use crate::attack_table::AttackTable;
 use crate::movegen::MoveGenerator;
 use crate::perft::{Depth, NodeCount, PerftData};
-use crate::position::Position;
+use crate::position::DefaultPosition;
 use crate::primitives::{GameStateExt, Move, MoveList, State};
 use crate::transposition::TranspositionTable;
 
@@ -14,7 +14,7 @@ use crate::transposition::TranspositionTable;
 // @param: depth - depth to calculate the perft for
 // @return: number of leaf nodes at the given depth
 pub fn perft<AT, StateT>(
-    position: &mut Position<AT, StateT>,
+    position: &mut DefaultPosition<AT, StateT>,
     move_generator: &MoveGenerator<AT>,
     tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
@@ -73,7 +73,7 @@ where
 // @param: depth - depth to calculate the perft for
 // @return: vector of branches of moves from the current position
 fn perft_divide<AT, StateT>(
-    position: &mut Position<AT, StateT>,
+    position: &mut DefaultPosition<AT, StateT>,
     move_generator: &MoveGenerator<AT>,
     tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,
@@ -112,7 +112,7 @@ where
 // @param: depth - depth to calculate the perft for
 // @return: number of leaf nodes at the given depth
 pub fn perft_divide_print<AT, StateT>(
-    position: &mut Position<AT, StateT>,
+    position: &mut DefaultPosition<AT, StateT>,
     move_generator: &MoveGenerator<AT>,
     tt: &mut impl TranspositionTable<PerftData>,
     depth: Depth,

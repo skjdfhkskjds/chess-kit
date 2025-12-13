@@ -1,9 +1,9 @@
 use crate::attack_table::AttackTable;
-use crate::position::Position;
+use crate::position::DefaultPosition;
 use crate::primitives::{File, GameStateExt, Pieces, Rank, Sides, State};
 use std::fmt;
 
-impl<AT, StateT> fmt::Display for Position<AT, StateT>
+impl<AT, StateT> fmt::Display for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
     StateT: State + GameStateExt,

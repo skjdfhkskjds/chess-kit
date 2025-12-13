@@ -1,6 +1,6 @@
 use crate::attack_table::{AttackTable, PawnDirections};
 use crate::movegen::{MoveGenerator, MoveType, SideToMove};
-use crate::position::Position;
+use crate::position::DefaultPosition;
 use crate::primitives::{
     Bitboard, Black, GameStateExt, MoveList, Pieces, Sides, State, White,
     moves::MoveType::EnPassant,
@@ -17,7 +17,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @side-effects: modifies the `move list`
     pub fn generate_moves<StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
         move_type: MoveType,
     ) {
@@ -40,7 +40,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     // @side-effects: modifies the `move list`
     pub fn generate_legal_moves<StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
     ) {
         // if the side to move is in check, just generate evasions during legal
@@ -99,7 +99,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     #[inline(always)]
     fn generate_moves_for_side<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
         move_type: MoveType,
     ) {
@@ -154,7 +154,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     #[inline(always)]
     fn generate_queen_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
         destinations: Bitboard,
     ) {
@@ -180,7 +180,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     #[inline(always)]
     fn generate_rook_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
         destinations: Bitboard,
     ) {
@@ -206,7 +206,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     #[inline(always)]
     fn generate_bishop_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
         destinations: Bitboard,
     ) {
@@ -232,7 +232,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     #[inline(always)]
     fn generate_knight_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
         destinations: Bitboard,
     ) {
@@ -257,7 +257,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     #[inline(always)]
     fn generate_pawn_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
         destinations: Bitboard,
         move_type: MoveType,
@@ -399,7 +399,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     #[inline(always)]
     fn generate_king_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
         destinations: Bitboard,
         move_type: MoveType,
@@ -436,7 +436,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
     #[inline(always)]
     fn generate_castle_moves<SideT: SideToMove, StateT: State + GameStateExt>(
         &self,
-        position: &Position<AT, StateT>,
+        position: &DefaultPosition<AT, StateT>,
         list: &mut MoveList,
     ) {
         // get the castling rights for the side to move

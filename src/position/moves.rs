@@ -1,10 +1,10 @@
 use crate::attack_table::AttackTable;
-use crate::position::{Position, SideCastlingSquares};
+use crate::position::{DefaultPosition, SideCastlingSquares};
 use crate::primitives::{
     Bitboard, Black, GameStateExt, Move, MoveType, Pieces, Side, Sides, Square, State, White,
 };
 
-impl<AT, StateT> Position<AT, StateT>
+impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
     StateT: State + GameStateExt,

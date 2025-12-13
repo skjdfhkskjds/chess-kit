@@ -1,14 +1,14 @@
-pub mod position;
-pub mod castling;
-pub mod display;
-pub mod fen;
-pub mod moves;
-pub mod pieces;
-pub mod rules;
-pub mod sides;
+mod position;
+mod castling;
+mod display;
+mod fen;
+mod moves;
+mod pieces;
+mod rules;
+mod sides;
 mod attacks;
 
-pub use position::Position;
+pub use position::DefaultPosition;
 pub use fen::{FENError, FENParser, Parser};
 
 use crate::primitives::{Black, SideCastling, Square, White};
