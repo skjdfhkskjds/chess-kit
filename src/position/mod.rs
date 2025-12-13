@@ -14,8 +14,15 @@ pub use position::DefaultPosition;
 use crate::primitives::{
     Bitboard, Black, Castling, Move, Pieces, Side, SideCastling, Sides, Square, White, ZobristKey,
 };
+use std::fmt::Display;
 
-pub trait Position {
+// Position is the full composed trait of all operations that must be supported
+// by a position
+//
+// @trait
+pub trait Position:
+    PositionState + PositionAttacks + PositionMoves + PositionFromFEN + Display
+{
     // new creates a new, uninitialized position with zero occupancy, state, and
     // piece information
     //
@@ -29,6 +36,10 @@ pub trait Position {
     fn reset(&mut self);
 }
 
+// PositionFromFEN is a trait that defines the ability to load a position from a
+// FEN string
+//
+// @trait
 pub trait PositionFromFEN {
     // load_fen loads and initializes a new position from the given FEN string
     //
@@ -38,7 +49,11 @@ pub trait PositionFromFEN {
     fn load_fen(&mut self, fen: &str) -> Result<(), FENError>;
 }
 
-pub trait PositionReader {
+// PositionState is a trait that defines all state-related readonly queries on a
+// given position
+//
+// @trait
+pub trait PositionState {
     // total_occupancy gets the occupancy bitboard of all pieces on the board
     //
     // @return: full occupancy bitboard of both sides
@@ -101,6 +116,10 @@ pub trait PositionReader {
     fn key(&self) -> ZobristKey;
 }
 
+// PositionAttacks is a trait that defines all the attack-related queries that
+// can be made to a position
+//
+// @trait
 pub trait PositionAttacks {
     // is_attacked_by returns a bitboard of all the squares that are attacked by
     // SideT::Other's pieces
@@ -157,7 +176,11 @@ pub trait PositionAttacks {
     fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard;
 }
 
-pub trait PositionWriter {
+// PositionMoves is a trait that defines all the move-making operations that can
+// be made in a position
+//
+// @trait
+pub trait PositionMoves {
     // make_move makes the given move from the current position
     //
     // @param: mv - move to make
