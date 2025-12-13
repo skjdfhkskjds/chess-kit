@@ -1,19 +1,20 @@
 use crate::attack_table::AttackTable;
 use crate::position::fen::{FENError, FENParser, Parser};
+use crate::position::{Position, PositionFromFEN, PositionState};
 use crate::primitives::{
-    Bitboard, Black, GameStateExt, History, Pieces, Side, Sides, Square, State, White, ZobristTable,
+    Bitboard, Black, GameStateExt, History, Pieces, Sides, Square, State, White, ZobristTable,
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use std::marker::PhantomData;
 
 pub struct DefaultPosition<AT: AttackTable, StateT: State + GameStateExt> {
-    pub history: History<StateT>,  // history of the position state
-
+    pub history: History<StateT>,            // history of the position state
     pub sides: [Bitboard; Sides::TOTAL + 1], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
     pub pieces: [Pieces; Square::TOTAL],     // piece type on each square
 
+    // TODO: make the zobrist table a marker type as well
     pub zobrist: ZobristTable, // zobrist random values for the position
 
     _attack_table: PhantomData<AT>,
@@ -24,25 +25,10 @@ where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
-    // new creates a new position with all bitboards and pieces initialized to 0
-    // and the zobrist random values set to 0
-    //
-    // @return: new position
-    pub fn new() -> Self {
-        Self {
-            history: History::default(),
-            sides: [Bitboard::empty(); Sides::TOTAL + 1],
-            bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
-            pieces: [Pieces::None; Square::TOTAL],
-            zobrist: ZobristTable::default(),
-            _attack_table: PhantomData,
-        }
-    }
-
     // init initializes the position with the given rng
     //
     // @param: rng - an optional, mutable reference to the rng, useful for seeding
-    pub fn init(&mut self, rng: Option<&mut StdRng>) {
+    fn init(&mut self, rng: Option<&mut StdRng>) {
         if self.history.is_empty() {
             self.history.init(StateT::default());
         }
@@ -133,11 +119,32 @@ where
             }
         }
     }
+}
+
+impl<AT, StateT> Position for DefaultPosition<AT, StateT>
+where
+    AT: AttackTable,
+    StateT: State + GameStateExt,
+{
+    // new creates a new position with all bitboards and pieces initialized to 0
+    // and the zobrist random values set to 0
+    //
+    // @impl: Position::new
+    fn new() -> Self {
+        Self {
+            history: History::default(),
+            sides: [Bitboard::empty(); Sides::TOTAL + 1],
+            bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
+            pieces: [Pieces::None; Square::TOTAL],
+            zobrist: ZobristTable::default(),
+            _attack_table: PhantomData,
+        }
+    }
 
     // reset resets the position to a new initial state
     //
-    // @side-effects: modifies the `position`
-    pub fn reset(&mut self) {
+    // @impl: Position::reset
+    fn reset(&mut self) {
         self.history.clear();
         self.history.push(StateT::default());
         self.state_mut().reset();
@@ -145,78 +152,17 @@ where
         self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
         self.pieces = [Pieces::None; Square::TOTAL];
     }
-
-    // occupancy gets the occupancy bitboard of SideT
-    //
-    // @param: side - side to get the occupancy for
-    // @return: occupancy bitboard of SideT
-    #[inline(always)]
-    pub fn occupancy<SideT: Side>(&self) -> Bitboard {
-        self.sides[SideT::INDEX]
-    }
-
-    // total_occupancy gets the full occupancy bitboard of both sides
-    //
-    // @return: full occupancy bitboard of both sides
-    #[inline(always)]
-    pub fn total_occupancy(&self) -> Bitboard {
-        self.sides[Sides::TOTAL]
-    }
-
-    // empty_squares gets the bitboard of all empty squares
-    //
-    // note: logically equivalent to `!(self.occupancy())`
-    //
-    // @return: bitboard of all the empty squares
-    #[inline(always)]
-    pub fn empty_squares(&self) -> Bitboard {
-        !self.total_occupancy()
-    }
-
-    // piece_at gets the piece type at the given square
-    //
-    // @param: square - square to get the piece type at
-    // @return: piece type at the given square
-    #[inline(always)]
-    pub fn piece_at(&self, square: Square) -> Pieces {
-        self.pieces[square.idx()]
-    }
-
-    // turn gets the side to move
-    //
-    // @return: side to move
-    #[inline(always)]
-    pub fn turn(&self) -> Sides {
-        self.state().turn()
-    }
-
-    // state returns a reference to the current state
-    //
-    // @return: reference to the current state
-    #[inline(always)]
-    pub fn state(&self) -> &StateT {
-        self.history.current()
-    }
-
-    // state_mut returns a mutable reference to the current state
-    //
-    // @return: mutable reference to the current state
-    #[inline(always)]
-    pub fn state_mut(&mut self) -> &mut StateT {
-        self.history.current_mut()
-    }
 }
 
-impl<AT, StateT> DefaultPosition<AT, StateT>
+impl<AT, StateT> PositionFromFEN for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
     // load_fen loads a new position from the given FEN string
     //
-    // @param: fen - FEN string to create the position from
-    // @return: initialized position, or an error if the FEN string is invalid
-    pub fn load_fen(&mut self, fen: &str) -> Result<(), FENError> {
+    // @impl: PositionFromFEN::load_fen
+    fn load_fen(&mut self, fen: &str) -> Result<(), FENError> {
         let fen_parser = FENParser::parse(fen);
         if fen_parser.is_err() {
             return Err(fen_parser.err().unwrap());

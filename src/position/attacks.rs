@@ -1,8 +1,8 @@
 use crate::attack_table::AttackTable;
-use crate::position::DefaultPosition;
+use crate::position::{DefaultPosition, PositionAttacks, PositionState};
 use crate::primitives::{Bitboard, GameStateExt, Pieces, Side, Square, State};
 
-impl<AT, StateT> DefaultPosition<AT, StateT>
+impl<AT, StateT> PositionAttacks for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
     StateT: State + GameStateExt,
@@ -11,11 +11,9 @@ where
     // SideT::Other's pieces that are attacking the given SideT at the given
     // square
     //
-    // @param: square - square to check if is attacked by SideT::Other
-    // @return: bitboard of the occupied squares of SideT::Other that are
-    //          attacking the given square
-    #[inline(always)]
-    pub fn is_attacked_by<SideT: Side>(&self, square: Square) -> Bitboard {
+    // @impl: PositionAttacks::is_attacked_by
+    #[inline]
+    fn is_attacked_by<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> Bitboard {
         // idea: our square `T` is attacked iff SideT::Other has at least one
         //       piece in square `S` such that attack board generated from `T`
         //       includes `S`
@@ -27,7 +25,6 @@ where
         // of SideT::Other
 
         // generate the attack boards for each piece
-        let occupancy = self.total_occupancy();
         let king_attacks = AT::king_targets(square);
         let rook_attacks = AT::rook_targets(square, occupancy);
         let bishop_attacks = AT::bishop_targets(square, occupancy);
@@ -56,11 +53,9 @@ where
     // note: this is the same implementation as `attacked_by`, but we leverage
     //       early termination to improve performance
     //
-    // @param: square - square to check if is attacked by SideT::Other
-    // @param: occupancy - occupancy of the board
-    // @return: true if the given square is attacked by SideT::Other, false otherwise
+    // @impl: PositionAttacks::is_attacked
     #[inline(always)]
-    pub fn is_attacked<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> bool {
+    fn is_attacked<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> bool {
         // generate the attack boards for each piece
         let king_attacks = AT::king_targets(square);
         let rook_attacks = AT::rook_targets(square, occupancy);
@@ -78,6 +73,48 @@ where
             || king_attacks.intersects(self.get_piece::<SideT::Other>(Pieces::King))
     }
 
+    // checkers returns the bitboard of pieces that are checking the side-to-
+    // move's king on the board
+    //
+    // @impl: PositionAttacks::checkers
+    #[inline(always)]
+    fn checkers(&self) -> Bitboard {
+        self.state().checkers()
+    }
+
+    // king_blocker_pieces gets the occupancy bitboard of all pieces that are
+    // blocking SideT's king from being in check
+    //
+    // @impl: PositionAttacks::king_blocker_pieces
+    #[inline(always)]
+    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
+        self.state().king_blocker_pieces::<SideT>()
+    }
+
+    // pinning_pieces gets the occupancy bitboard of SideT's pieces that are
+    // attacking SideT::Other's king-blocker pieces
+    //
+    // @impl: PositionAttacks::pinning_pieces
+    #[inline(always)]
+    fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
+        self.state().pinning_pieces::<SideT>()
+    }
+
+    // check_squares returns the bitboard of squares that a given piece on SideT
+    // would have to be on to deliver check to SideT::Other's king
+    //
+    // @impl: PositionAttacks::check_squares
+    #[inline(always)]
+    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
+        self.state().check_squares::<SideT>(piece)
+    }
+}
+
+impl<AT, StateT> DefaultPosition<AT, StateT>
+where
+    AT: AttackTable,
+    StateT: State + GameStateExt,
+{
     // is_attacked_by_sliders returns true if the given square is attacked by
     // SideT::Other's sliding pieces
     //
@@ -100,7 +137,7 @@ where
     // @return: bitboard of squares that SideT is checked by
     #[inline(always)]
     pub fn is_checked_by<SideT: Side>(&self) -> Bitboard {
-        self.is_attacked_by::<SideT>(self.king_square::<SideT>())
+        self.is_attacked_by::<SideT>(self.king_square::<SideT>(), self.total_occupancy())
     }
 
     // is_checked returns true if SideT is currently in check

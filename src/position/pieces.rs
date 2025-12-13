@@ -1,35 +1,12 @@
 use crate::attack_table::AttackTable;
-use crate::position::DefaultPosition;
-use crate::primitives::{Bitboard, GameStateExt, Pieces, Side, Sides, Square, State};
+use crate::position::{DefaultPosition, PositionState};
+use crate::primitives::{GameStateExt, Pieces, Side, Sides, Square, State};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
-    // king_square gets the square of the king of SideT
-    //
-    // @return: square of the king of SideT
-    #[inline(always)]
-    pub fn king_square<SideT: Side>(&self) -> Square {
-        debug_assert!(
-            self.get_piece::<SideT>(Pieces::King).exactly_one(),
-            "invalid number of kings found for side {}, position: {}",
-            SideT::SIDE,
-            self
-        );
-        self.get_piece::<SideT>(Pieces::King).must_first()
-    }
-
-    // get_piece returns the bitboard of SideT's piece
-    //
-    // @param: piece - piece to get the bitboard for
-    // @return: bitboard of the piece for the given side
-    #[inline(always)]
-    pub fn get_piece<SideT: Side>(&self, piece: Pieces) -> Bitboard {
-        self.bitboards[SideT::INDEX][piece.idx()]
-    }
-
     // remove_piece_no_incrementals removes SideT's piece from the given square
     // without updating the zobrist key or any incremental game state
     //

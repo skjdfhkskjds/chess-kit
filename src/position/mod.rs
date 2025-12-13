@@ -7,6 +7,7 @@ mod pieces;
 mod position;
 mod rules;
 mod sides;
+mod state;
 
 pub use fen::{FENError, FENParser, Parser};
 pub use position::DefaultPosition;
@@ -216,7 +217,7 @@ pub trait PositionMoves {
     // @marker: SideT - side to check if the move delivers a check for
     // @param: mv - move to check if delivers a check
     // @return: true if the move delivers a check, false otherwise
-    fn delivers_check<SideT: Side>(&self, mv: Move) -> bool;
+    fn delivers_check<SideT: SideCastlingSquares>(&self, mv: Move) -> bool;
 }
 
 // `SideCastlingSquares` is a trait that defines the squares for the king and
