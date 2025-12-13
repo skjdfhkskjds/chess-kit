@@ -448,10 +448,7 @@ impl<AT: AttackTable> MoveGenerator<AT> {
         let occupancy = position.total_occupancy();
 
         // check if the side to move can castle
-        //
-        // note: a side can castle iff they have either kingside or queenside
-        //       permissions and they are not currently in check
-        if !(kingside || queenside) || position.is_attacked::<SideT>(from, occupancy) {
+        if !(kingside || queenside) {
             return;
         }
 
