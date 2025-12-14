@@ -20,6 +20,39 @@ pub struct DefaultPosition<AT: AttackTable, StateT: State + GameStateExt> {
     _attack_table: PhantomData<AT>,
 }
 
+impl<AT, StateT> Position for DefaultPosition<AT, StateT>
+where
+    AT: AttackTable,
+    StateT: State + GameStateExt,
+{
+    // new creates a new position with all bitboards and pieces initialized to 0
+    // and the zobrist random values set to 0
+    //
+    // @impl: Position::new
+    fn new() -> Self {
+        Self {
+            history: History::default(),
+            sides: [Bitboard::empty(); Sides::TOTAL + 1],
+            bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
+            pieces: [Pieces::None; Square::TOTAL],
+            zobrist: ZobristTable::default(),
+            _attack_table: PhantomData,
+        }
+    }
+
+    // reset resets the position to a new initial state
+    //
+    // @impl: Position::reset
+    fn reset(&mut self) {
+        self.history.clear();
+        self.history.push(StateT::default());
+        self.state_mut().reset();
+        self.sides = [Bitboard::empty(); Sides::TOTAL + 1];
+        self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
+        self.pieces = [Pieces::None; Square::TOTAL];
+    }
+}
+
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
@@ -118,39 +151,6 @@ where
                 self.update_check_info::<Black>();
             }
         }
-    }
-}
-
-impl<AT, StateT> Position for DefaultPosition<AT, StateT>
-where
-    AT: AttackTable,
-    StateT: State + GameStateExt,
-{
-    // new creates a new position with all bitboards and pieces initialized to 0
-    // and the zobrist random values set to 0
-    //
-    // @impl: Position::new
-    fn new() -> Self {
-        Self {
-            history: History::default(),
-            sides: [Bitboard::empty(); Sides::TOTAL + 1],
-            bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
-            pieces: [Pieces::None; Square::TOTAL],
-            zobrist: ZobristTable::default(),
-            _attack_table: PhantomData,
-        }
-    }
-
-    // reset resets the position to a new initial state
-    //
-    // @impl: Position::reset
-    fn reset(&mut self) {
-        self.history.clear();
-        self.history.push(StateT::default());
-        self.state_mut().reset();
-        self.sides = [Bitboard::empty(); Sides::TOTAL + 1];
-        self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
-        self.pieces = [Pieces::None; Square::TOTAL];
     }
 }
 
