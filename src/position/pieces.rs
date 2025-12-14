@@ -1,6 +1,6 @@
 use crate::attack_table::AttackTable;
 use crate::position::{DefaultPosition, PositionState};
-use crate::primitives::{Pieces, Side, Sides, Square};
+use crate::primitives::{Pieces, Side, Sides, Square, ZobristTable};
 use crate::state::{GameStateExt, State};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
@@ -36,7 +36,7 @@ where
     #[inline(always)]
     pub(crate) fn remove_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
         self.remove_piece_no_incrementals::<SideT>(piece, square);
-        let delta = self.zobrist.piece::<SideT>(piece, square);
+        let delta = ZobristTable::piece::<SideT>(piece, square);
         self.state_mut().update_key(delta);
 
         // TODO: make updates to game state for things like phase, turn, piece square valuation
@@ -66,7 +66,7 @@ where
     #[inline(always)]
     pub(crate) fn set_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
         self.set_piece_no_incrementals::<SideT>(piece, square);
-        let delta = self.zobrist.piece::<SideT>(piece, square);
+        let delta = ZobristTable::piece::<SideT>(piece, square);
         self.state_mut().update_key(delta);
 
         // TODO: make updates to game state for things like phase, turn, piece square valuation
@@ -80,9 +80,9 @@ where
     #[inline(always)]
     pub(crate) fn set_en_passant(&mut self, square: Square) {
         let current_ep = self.state().en_passant();
-        let key = self.zobrist.en_passant(current_ep) ^ self.zobrist.en_passant(Some(square));
-        self.state_mut().set_en_passant(Some(square));
+        let key = ZobristTable::en_passant(current_ep) ^ ZobristTable::en_passant(Some(square));
         self.state_mut().update_key(key);
+        self.state_mut().set_en_passant(Some(square));
     }
 
     // clear_en_passant clears the en passant square in the state
@@ -96,7 +96,7 @@ where
             return;
         }
 
-        let key = self.zobrist.en_passant(current_ep) ^ self.zobrist.en_passant(None);
+        let key = ZobristTable::en_passant(current_ep) ^ ZobristTable::en_passant(None);
         self.state_mut().set_en_passant(None);
         self.state_mut().update_key(key);
     }

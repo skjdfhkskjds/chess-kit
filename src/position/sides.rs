@@ -1,6 +1,6 @@
 use crate::attack_table::AttackTable;
 use crate::position::position::DefaultPosition;
-use crate::primitives::Side;
+use crate::primitives::{Side, ZobristTable};
 use crate::state::{GameStateExt, State};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
@@ -15,7 +15,7 @@ where
     #[inline(always)]
     pub(crate) fn swap_sides<SideT: Side>(&mut self) {
         // compute the new key for the position
-        let key = self.zobrist.side::<SideT>() ^ self.zobrist.side::<SideT::Other>();
+        let key = ZobristTable::side::<SideT>() ^ ZobristTable::side::<SideT::Other>();
         self.state_mut().update_key(key);
 
         // set the new turn in the state

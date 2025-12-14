@@ -1,6 +1,6 @@
 use crate::attack_table::AttackTable;
 use crate::position::position::DefaultPosition;
-use crate::primitives::Castling;
+use crate::primitives::{Castling, ZobristTable};
 use crate::state::{GameStateExt, State};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
@@ -15,7 +15,8 @@ where
     // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_castling(&mut self, castling: Castling) {
-        let key = self.zobrist.castling(self.state().castling()) ^ self.zobrist.castling(castling);
+        let key =
+            ZobristTable::castling(self.state().castling()) ^ ZobristTable::castling(castling);
         self.state_mut().update_key(key);
         self.state_mut().set_castling(castling);
     }
