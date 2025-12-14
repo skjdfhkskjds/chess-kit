@@ -10,6 +10,7 @@ lto = true
 [features]
 no_tt = []
 
+
 [dependencies]
 chess-kit-derive = { path = "crates/chess-kit-derive" }
 

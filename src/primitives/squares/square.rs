@@ -8,7 +8,7 @@ impl Square {
     // @return: new square
     #[inline(always)]
     pub const fn new(file: File, rank: Rank) -> Self {
-        Self::from_idx((rank.idx() * 8) + file.idx())
+        Self::from_idx((rank.idx() << 3) + file.idx())
     }
 
     // rank returns the rank of the square
@@ -17,7 +17,7 @@ impl Square {
     // @return: rank of the square
     #[inline(always)]
     pub const fn rank(&self) -> Rank {
-        Rank::from_idx(self.idx() / 8)
+        Rank::from_idx(self.idx() >> 3)
     }
 
     // file returns the file of the square
@@ -26,7 +26,7 @@ impl Square {
     // @return: file of the square
     #[inline(always)]
     pub const fn file(&self) -> File {
-        File::from_idx(self.idx() % 8)
+        File::from_idx(self.idx() & 7)
     }
 
     // is_white returns true if the square is a white square
@@ -35,7 +35,7 @@ impl Square {
     // @return: true if the square is a white square, false otherwise
     #[inline(always)]
     pub const fn is_white(&self) -> bool {
-        let even_rank = ((self.idx() / 8) & 1) == 0;
+        let even_rank = (self.rank().idx() & 1) == 0;
         let even_square = (self.idx() & 1) == 0;
         even_rank ^ even_square
     }

@@ -1,5 +1,6 @@
 use crate::primitives::bitboard::constants::{
-    BITBOARD_BETWEEN, BITBOARD_FILES, BITBOARD_LINES, BITBOARD_RANKS,
+    BITBOARD_ANTI_DIAGONALS, BITBOARD_BETWEEN, BITBOARD_DIAGONALS, BITBOARD_FILES, BITBOARD_LINES,
+    BITBOARD_RANKS,
 };
 use crate::primitives::{File, Rank, Square};
 use chess_kit_derive::{Arithmetic, BitOps};
@@ -63,6 +64,26 @@ impl Bitboard {
         BITBOARD_RANKS[rank.idx()]
     }
 
+    // diagonal creates a new bitboard with the bits for the given diagonal of
+    // the given square set to 1
+    //
+    // @param: sq - square to create the bitboard from
+    // @return: new bitboard
+    #[inline(always)]
+    pub const fn diagonal(sq: Square) -> Self {
+        BITBOARD_DIAGONALS[sq.idx()]
+    }
+
+    // anti_diagonal creates a new bitboard with the bits for the given anti-
+    // diagonal of the given square set to 1
+    //
+    // @param: sq - square to create the bitboard from
+    // @return: new bitboard
+    #[inline(always)]
+    pub const fn anti_diagonal(sq: Square) -> Self {
+        BITBOARD_ANTI_DIAGONALS[sq.idx()]
+    }
+    
     // between returns the between bitboard for the given start (exclusive) and
     // end (inclusive) squares
     //

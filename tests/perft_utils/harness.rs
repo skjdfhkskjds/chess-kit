@@ -1,5 +1,5 @@
 use crate::perft_utils::PerftTest;
-use chess_kit::attack_table::{DefaultAttackTable, default_attack_table};
+use chess_kit::attack_table::DefaultAttackTable;
 use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
 use chess_kit::position::Position;
@@ -20,11 +20,10 @@ pub enum PerftHarnessMode {
 
 // PerftHarness is a test harness for running perft tests
 pub struct PerftHarness {
-    mode: PerftHarnessMode,                    // the mode to run the harness in
-    test_cases: Vec<PerftTest>,                // the test cases to run
-    attack_table: &'static DefaultAttackTable, // global attack table, shared across tests
+    mode: PerftHarnessMode,     // the mode to run the harness in
+    test_cases: Vec<PerftTest>, // the test cases to run
     move_generator: MoveGenerator<DefaultAttackTable>, // global move generator, shared across tests
-    tt: DefaultTranspositionTable<PerftData>,  // global transposition table, shared across tests
+    tt: DefaultTranspositionTable<PerftData>, // global transposition table, shared across tests
     position: Position<DefaultAttackTable, DefaultState>, // global position, shared across tests
 }
 
@@ -41,14 +40,12 @@ impl PerftHarness {
             tt.capacity()
         );
 
-        let attack_table = default_attack_table();
         Self {
             mode,
             test_cases,
-            attack_table,
-            move_generator: MoveGenerator::<DefaultAttackTable>::new(attack_table),
+            move_generator: MoveGenerator::<DefaultAttackTable>::new(),
             tt,
-            position: Position::<DefaultAttackTable, DefaultState>::new(attack_table),
+            position: Position::<DefaultAttackTable, DefaultState>::new(),
         }
     }
 
@@ -57,7 +54,7 @@ impl PerftHarness {
     // @param: test - the test case to run
     fn run_test(&mut self, test: &PerftTest) {
         // setup the board from the FEN string
-        self.position = Position::<DefaultAttackTable, DefaultState>::new(self.attack_table);
+        self.position = Position::<DefaultAttackTable, DefaultState>::new();
         let result = self.position.load_fen(test.fen);
         if result.is_err() {
             println!(

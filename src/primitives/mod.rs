@@ -1,5 +1,6 @@
 pub mod bitboard;
 pub mod castling;
+pub mod direction;
 pub mod files;
 pub mod history;
 pub mod moves;
@@ -12,11 +13,12 @@ pub mod zobrist;
 
 pub use bitboard::{Bitboard, BitboardVec};
 pub use castling::{CastleRights, Castling, SideCastling};
+pub use direction::Direction;
 pub use files::File;
 pub use history::History;
-pub use moves::{Move, MoveType, MoveList};
+pub use moves::{Move, MoveList, MoveType};
 pub use pieces::Pieces;
-pub use ranks::{Rank, SideRanks};
+pub use ranks::Rank;
 pub use sides::{Black, Side, Sides, White};
 pub use squares::Square;
 pub use state::{Clock, DefaultState, GameStateExt, ReadOnlyState, State, WriteOnlyState};

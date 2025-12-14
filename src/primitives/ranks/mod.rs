@@ -1,8 +1,5 @@
-mod display;
-mod rank;
-
 use chess_kit_derive::IndexableEnum;
-use crate::primitives::{White, Black};
+use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, IndexableEnum)]
 #[repr(u8)]
@@ -21,35 +18,40 @@ impl Rank {
     pub const TOTAL: usize = 8;
 }
 
-// 'SideRanks' is a trait that provides specific rank information with respect
-// to a given side
-// 
-// @trait
-pub trait SideRanks {
-    // SINGLE_STEP_RANK is the rank that a pawn can single step to
-    const SINGLE_STEP_RANK: Rank;
+impl TryFrom<&str> for Rank {
+    type Error = &'static str;
 
-    // DOUBLE_STEP_RANK is the rank that a pawn can double step to
-    const DOUBLE_STEP_RANK: Rank;
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        if s.len() != 1 {
+            return Err("invalid rank");
+        }
 
-    // PROMOTABLE_RANK is the rank that a pawn is on when it promotes on its
-    // next move
-    const PROMOTABLE_RANK: Rank;
-
-    // PROMOTION_RANK is the rank that a pawn promotes at
-    const PROMOTION_RANK: Rank;
+        let char = s.chars().next().unwrap();
+        match char {
+            '1' => Ok(Rank::R1),
+            '2' => Ok(Rank::R2),
+            '3' => Ok(Rank::R3),
+            '4' => Ok(Rank::R4),
+            '5' => Ok(Rank::R5),
+            '6' => Ok(Rank::R6),
+            '7' => Ok(Rank::R7),
+            '8' => Ok(Rank::R8),
+            _ => Err("invalid rank"),
+        }
+    }
 }
 
-impl SideRanks for White {
-    const SINGLE_STEP_RANK: Rank = Rank::R3;
-    const DOUBLE_STEP_RANK: Rank = Rank::R4;
-    const PROMOTABLE_RANK: Rank = Rank::R7;
-    const PROMOTION_RANK: Rank = Rank::R8;
-}
-
-impl SideRanks for Black {
-    const SINGLE_STEP_RANK: Rank = Rank::R6;
-    const DOUBLE_STEP_RANK: Rank = Rank::R5;
-    const PROMOTABLE_RANK: Rank = Rank::R2;
-    const PROMOTION_RANK: Rank = Rank::R1;
+impl fmt::Display for Rank {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Rank::R1 => write!(f, "1"),
+            Rank::R2 => write!(f, "2"),
+            Rank::R3 => write!(f, "3"),
+            Rank::R4 => write!(f, "4"),
+            Rank::R5 => write!(f, "5"),
+            Rank::R6 => write!(f, "6"),
+            Rank::R7 => write!(f, "7"),
+            Rank::R8 => write!(f, "8"),
+        }
+    }
 }

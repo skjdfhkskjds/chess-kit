@@ -1,19 +1,21 @@
 use crate::attack_table::AttackTable;
 use crate::movegen::MoveType;
 use crate::primitives::{Bitboard, Move, MoveList, Pieces, Square};
+use std::marker::PhantomData;
 
 pub struct MoveGenerator<AT: AttackTable> {
-    pub(crate) attack_table: &'static AT,
+    _attack_table: PhantomData<AT>,
 }
 
 impl<AT: AttackTable> MoveGenerator<AT> {
     // new creates a new move generator
     //
-    // @param: attack_table - attack table to use for the move generator
     // @return: new move generator
     #[inline(always)]
-    pub fn new(attack_table: &'static AT) -> Self {
-        Self { attack_table }
+    pub fn new() -> Self {
+        Self {
+            _attack_table: PhantomData,
+        }
     }
 }
 

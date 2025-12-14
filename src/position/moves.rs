@@ -185,10 +185,10 @@ where
         // square and the mask
         //
         // see `Position::is_attacked_by` for more details on the pattern
-        let pawn_targets = self.attack_table.pawn_targets::<SideT::Other>(king_square);
-        let knight_targets = self.attack_table.knight_targets(king_square);
-        let rook_targets = self.attack_table.rook_targets(king_square, occupancy);
-        let bishop_targets = self.attack_table.bishop_targets(king_square, occupancy);
+        let pawn_targets = AT::pawn_targets::<SideT::Other>(king_square);
+        let knight_targets = AT::knight_targets(king_square);
+        let rook_targets = AT::rook_targets(king_square, occupancy);
+        let bishop_targets = AT::bishop_targets(king_square, occupancy);
         let queen_targets = rook_targets | bishop_targets;
 
         // set the squares that would deliver check to SideT::Other for each
@@ -231,7 +231,7 @@ where
         //       possible if there are no other pieces delivering check other
         //       than the pawn to be captured
         if matches!(mv.type_of(), MoveType::EnPassant) {
-            let en_passant_square = self.attack_table.pawn_pushes::<SideT::Other>(to);
+            let en_passant_square = AT::pawn_pushes::<SideT::Other>(to);
             let occupancy = (self.total_occupancy() ^ Bitboard::square(from) ^ en_passant_square)
                 | Bitboard::square(to);
 
@@ -297,16 +297,16 @@ where
                 //
                 // note: exclude the current occupancy of the pawn to promote
                 let targets = match mv.promoted_to() {
-                    Pieces::Knight => self.attack_table.knight_targets(to),
-                    Pieces::Bishop => self
-                        .attack_table
-                        .bishop_targets(to, self.total_occupancy() ^ Bitboard::square(from)),
-                    Pieces::Rook => self
-                        .attack_table
-                        .rook_targets(to, self.total_occupancy() ^ Bitboard::square(from)),
-                    Pieces::Queen => self
-                        .attack_table
-                        .queen_targets(to, self.total_occupancy() ^ Bitboard::square(from)),
+                    Pieces::Knight => AT::knight_targets(to),
+                    Pieces::Bishop => {
+                        AT::bishop_targets(to, self.total_occupancy() ^ Bitboard::square(from))
+                    }
+                    Pieces::Rook => {
+                        AT::rook_targets(to, self.total_occupancy() ^ Bitboard::square(from))
+                    }
+                    Pieces::Queen => {
+                        AT::queen_targets(to, self.total_occupancy() ^ Bitboard::square(from))
+                    }
                     _ => unreachable!("promotion to non-promotable piece"),
                 };
 
@@ -315,7 +315,7 @@ where
                 targets.has_square(self.king_square::<SideT::Other>())
             }
             MoveType::EnPassant => {
-                let captured_square = self.attack_table.pawn_pushes::<SideT::Other>(to);
+                let captured_square = AT::pawn_pushes::<SideT::Other>(to);
 
                 // invariant checks for the captured square
                 debug_assert!(
@@ -513,16 +513,11 @@ where
         //       passant capture is possible
         // note: the while loop is a hack to conditionally break out
         while check_en_passant {
-            let en_passant_square = self
-                .attack_table
-                .pawn_pushes::<SideT::Other>(to)
-                .must_first();
+            let en_passant_square = AT::pawn_pushes::<SideT::Other>(to).must_first();
 
             // invariant checks for the en passant square
             debug_assert!(
-                self.attack_table
-                    .pawn_pushes::<SideT::Other>(to)
-                    .exactly_one(),
+                AT::pawn_pushes::<SideT::Other>(to).exactly_one(),
                 "en passant square should be exactly one"
             );
             debug_assert!(
@@ -535,7 +530,7 @@ where
             );
 
             let mut attacking_pawns = self.get_piece::<SideT::Other>(Pieces::Pawn)
-                & self.attack_table.pawn_targets::<SideT>(en_passant_square);
+                & AT::pawn_targets::<SideT>(en_passant_square);
 
             // if there are no pawns that can attack the en passant square, then
             // no en passant capture is possible

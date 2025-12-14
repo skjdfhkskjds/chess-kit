@@ -28,11 +28,11 @@ where
 
         // generate the attack boards for each piece
         let occupancy = self.total_occupancy();
-        let king_attacks = self.attack_table.king_targets(square);
-        let rook_attacks = self.attack_table.rook_targets(square, occupancy);
-        let bishop_attacks = self.attack_table.bishop_targets(square, occupancy);
-        let knight_attacks = self.attack_table.knight_targets(square);
-        let pawn_attacks = self.attack_table.pawn_targets::<SideT>(square);
+        let king_attacks = AT::king_targets(square);
+        let rook_attacks = AT::rook_targets(square, occupancy);
+        let bishop_attacks = AT::bishop_targets(square, occupancy);
+        let knight_attacks = AT::knight_targets(square);
+        let pawn_attacks = AT::pawn_targets::<SideT>(square);
 
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
         let rooks_and_queens = self.get_piece::<SideT::Other>(Pieces::Rook) | queens;
@@ -62,11 +62,11 @@ where
     #[inline(always)]
     pub fn is_attacked<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> bool {
         // generate the attack boards for each piece
-        let king_attacks = self.attack_table.king_targets(square);
-        let rook_attacks = self.attack_table.rook_targets(square, occupancy);
-        let bishop_attacks = self.attack_table.bishop_targets(square, occupancy);
-        let knight_attacks = self.attack_table.knight_targets(square);
-        let pawn_attacks = self.attack_table.pawn_targets::<SideT>(square);
+        let king_attacks = AT::king_targets(square);
+        let rook_attacks = AT::rook_targets(square, occupancy);
+        let bishop_attacks = AT::bishop_targets(square, occupancy);
+        let knight_attacks = AT::knight_targets(square);
+        let pawn_attacks = AT::pawn_targets::<SideT>(square);
 
         // check if there is an intersection between an attack board and that
         // piece's respective occupancy
@@ -88,12 +88,9 @@ where
     pub fn is_attacked_by_sliders<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> bool {
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
 
-        self.attack_table
-            .rook_targets(square, occupancy)
+        AT::rook_targets(square, occupancy)
             .intersects(queens | self.get_piece::<SideT::Other>(Pieces::Rook))
-            || self
-                .attack_table
-                .bishop_targets(square, occupancy)
+            || AT::bishop_targets(square, occupancy)
                 .intersects(queens | self.get_piece::<SideT::Other>(Pieces::Bishop))
     }
 
@@ -132,7 +129,7 @@ where
         // the snipers are the union of SideT::Other's rooks/queens that can
         // see the square on an empty board and SideT::Other's bishops/queens
         // that can see the square on an empty board
-        (self.attack_table.empty_rook_targets(square) & rooks_and_queens)
-            | (self.attack_table.empty_bishop_targets(square) & bishops_and_queens)
+        (AT::empty_rook_targets(square) & rooks_and_queens)
+            | (AT::empty_bishop_targets(square) & bishops_and_queens)
     }
 }
