@@ -1,6 +1,6 @@
 use chess_kit::attack_table::DefaultAttackTable;
 use chess_kit::position::{DefaultPosition, Position, PositionFromFEN};
-use chess_kit::primitives::DefaultState;
+use chess_kit::state::DefaultState;
 
 const DEFAULT_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 

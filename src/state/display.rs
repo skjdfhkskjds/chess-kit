@@ -1,4 +1,4 @@
-use crate::primitives::DefaultState;
+use crate::state::DefaultState;
 use std::fmt;
 
 impl fmt::Display for DefaultState {

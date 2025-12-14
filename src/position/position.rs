@@ -1,9 +1,8 @@
 use crate::attack_table::AttackTable;
 use crate::position::fen::{FENError, FENParser, Parser};
 use crate::position::{Position, PositionFromFEN, PositionState};
-use crate::primitives::{
-    Bitboard, Black, GameStateExt, History, Pieces, Sides, Square, State, White, ZobristTable,
-};
+use crate::state::{GameStateExt, History, State};
+use crate::primitives::{Bitboard, Black, Pieces, Sides, Square, White, ZobristTable};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use std::marker::PhantomData;

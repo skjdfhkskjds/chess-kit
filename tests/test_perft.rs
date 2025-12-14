@@ -6,7 +6,7 @@ use chess_kit::attack_table::DefaultAttackTable;
 use chess_kit::movegen::DefaultMoveGenerator;
 use chess_kit::perft::PerftData;
 use chess_kit::position::DefaultPosition;
-use chess_kit::primitives::DefaultState;
+use chess_kit::state::DefaultState;
 use chess_kit::transposition::DefaultTranspositionTable;
 
 // run_perft_tests runs the perft tests

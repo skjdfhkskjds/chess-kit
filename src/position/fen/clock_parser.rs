@@ -1,5 +1,5 @@
 use crate::position::fen::{FENError, Parser};
-use crate::primitives::Clock;
+use crate::state::Clock;
 
 pub struct HalfmoveClockParser {
     pub clock: Clock,

@@ -1,6 +1,7 @@
 use crate::attack_table::AttackTable;
 use crate::position::DefaultPosition;
-use crate::primitives::{File, GameStateExt, Pieces, Rank, Sides, State};
+use crate::primitives::{File, Pieces, Rank, Sides};
+use crate::state::{GameStateExt, State};
 use std::fmt;
 
 impl<AT, StateT> fmt::Display for DefaultPosition<AT, StateT>

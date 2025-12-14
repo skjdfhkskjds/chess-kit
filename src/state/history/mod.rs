@@ -1,6 +1,6 @@
 mod iterator;
 
-use crate::primitives::State;
+use crate::state::State;
 
 const MAX_FULLMOVES: usize = u8::MAX as usize;
 

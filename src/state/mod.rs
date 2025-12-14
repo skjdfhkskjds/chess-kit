@@ -1,6 +1,8 @@
 mod display;
 mod state;
+mod history;
 
+pub use history::History;
 pub use state::DefaultState;
 
 use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};

@@ -1,4 +1,4 @@
-use crate::primitives::{History, State};
+use crate::state::{History, State};
 
 // HistoryIter is a double-ended iterator over the history
 pub struct HistoryIter<'a, S: State> {
