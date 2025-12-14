@@ -1,4 +1,4 @@
-use crate::primitives::{Castling, Pieces, Rank, Sides, Square, ZobristKey};
+use crate::primitives::{Castling, File, Pieces, Sides, Square, ZobristKey};
 
 // PIECE_RANDOMS is a constant array of polyglot-compatible random values used
 // to fetch the zobrist random value for a given piece on a given square per side
@@ -83,12 +83,12 @@ pub const CASTLING_RANDOMS: [ZobristKey; Castling::TOTAL] = {
 const EN_PASSANT_OFFSET: usize = 772; // [772, 779]: A-H
 
 // EN_PASSANT_RANDOMS is a constant array of polyglot-compatible random values used
-// to fetch the zobrist random value for a given en passant square by rank
-pub const EN_PASSANT_RANDOMS: [ZobristKey; Rank::TOTAL] = {
-    let mut randoms = [ZobristKey::default(); Rank::TOTAL];
+// to fetch the zobrist random value for a given en passant square by file
+pub const EN_PASSANT_RANDOMS: [ZobristKey; File::TOTAL] = {
+    let mut randoms = [ZobristKey::default(); File::TOTAL];
 
     let mut i = 0;
-    while i < Rank::TOTAL {
+    while i < File::TOTAL {
         randoms[i] = ZobristKey::new(POLYGLOT_RANDOMS[EN_PASSANT_OFFSET + i]);
         i += 1;
     }

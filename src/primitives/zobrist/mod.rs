@@ -4,8 +4,10 @@ mod table;
 pub use constants::{CASTLING_RANDOMS, EN_PASSANT_RANDOMS, PIECE_RANDOMS, SIDE_RANDOMS};
 
 use chess_kit_derive::BitOps;
+use std::fmt::{self, Display};
+use std::num::ParseIntError;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, BitOps)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, BitOps)]
 pub struct ZobristKey(u64);
 
 impl ZobristKey {
@@ -27,7 +29,19 @@ impl ZobristKey {
     }
 }
 
-// ZobristTable is a collection of random values used to generate/apply a zobrist
-// key transformations for a given board position.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+impl Display for ZobristKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:x}", self.0)
+    }
+}
+
+impl TryFrom<&str> for ZobristKey {
+    type Error = ParseIntError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(Self::new(u64::from_str_radix(value, 16)?))
+    }
+}
+
+// ZobristTable is the marker type for the table of zobrist random values
 pub struct ZobristTable {}

@@ -544,6 +544,11 @@ where
 
             // if there are no pawns that can attack the en passant square, then
             // no en passant capture is possible
+            // 
+            // TODO: according to the polyglot hashing spec, the key should be
+            //       set immediately following this check, however we currently
+            //       set it after the other checks, so there is a potential
+            //       mismatch in the zobrist key after a pawn double push
             if attacking_pawns.is_empty() {
                 check_en_passant = false;
                 break;

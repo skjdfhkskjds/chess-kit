@@ -1,10 +1,8 @@
 use crate::attack_table::AttackTable;
 use crate::position::fen::{FENError, FENParser, Parser};
 use crate::position::{Position, PositionFromFEN, PositionState};
+use crate::primitives::{Bitboard, Black, Pieces, Side, Sides, Square, White, ZobristTable};
 use crate::state::{GameStateExt, History, State};
-use crate::primitives::{Bitboard, Black, Pieces, Sides, Square, White, ZobristTable};
-use rand::prelude::*;
-use rand::rngs::StdRng;
 use std::marker::PhantomData;
 
 pub struct DefaultPosition<AT: AttackTable, StateT: State + GameStateExt> {
@@ -12,9 +10,6 @@ pub struct DefaultPosition<AT: AttackTable, StateT: State + GameStateExt> {
     pub sides: [Bitboard; Sides::TOTAL + 1], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
     pub pieces: [Pieces; Square::TOTAL],     // piece type on each square
-
-    // TODO: make the zobrist table a marker type as well
-    pub zobrist: ZobristTable, // zobrist random values for the position
 
     _attack_table: PhantomData<AT>,
 }
@@ -34,7 +29,6 @@ where
             sides: [Bitboard::empty(); Sides::TOTAL + 1],
             bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
             pieces: [Pieces::None; Square::TOTAL],
-            zobrist: ZobristTable::default(),
             _attack_table: PhantomData,
         }
     }
@@ -59,18 +53,19 @@ where
 {
     // init initializes the position
     fn init(&mut self) {
-        if self.history.is_empty() {
-            self.history.init(StateT::default());
-        }
-
-        // match rng {
-        //     Some(rng) => self.zobrist.init(rng),
-        //     None => self.zobrist.init(&mut StdRng::from_rng(&mut rand::rng())),
-        // }
+        self.history.init(StateT::default());
 
         self.init_sides();
         self.init_pieces();
-        self.init_state();
+
+        match self.turn() {
+            Sides::White => {
+                self.init_state::<White>();
+            }
+            Sides::Black => {
+                self.init_state::<Black>();
+            }
+        }
     }
 
     // init_sides initializes the `sides` bitboards by ORing the bitboards of
@@ -125,7 +120,24 @@ where
     //
     // @return: void
     // @side-effects: modifies the `state`
-    fn init_state(&mut self) {
+    fn init_state<SideT: Side>(&mut self) {
+        // in our position definition, we define the state's en passant square
+        // to be present if the previous move was a double pawn push AND the
+        // opponent has a pawn next to the destination square of the double pawn
+        // push
+        //
+        // TODO: move this hack elsewhere
+        if let Some(en_passant_square) = self.state().en_passant() {
+            let attacking_pawns = self.get_piece::<SideT>(Pieces::Pawn)
+                & AT::pawn_targets::<SideT::Other>(en_passant_square);
+
+            // if there are no pawns that can attack the en passant square, then
+            // no en passant capture is possible
+            if attacking_pawns.is_empty() {
+                self.state_mut().set_en_passant(None);
+            }
+        }
+
         // set the state key
         let key = ZobristTable::new_key(
             self.state().turn(),
@@ -136,18 +148,9 @@ where
         self.state_mut().set_key(key);
 
         // update the check info and checkers in the state
-        match self.turn() {
-            Sides::White => {
-                let checkers = self.is_checked_by::<White>();
-                self.state_mut().set_checkers(checkers);
-                self.update_check_info::<White>();
-            }
-            Sides::Black => {
-                let checkers = self.is_checked_by::<Black>();
-                self.state_mut().set_checkers(checkers);
-                self.update_check_info::<Black>();
-            }
-        }
+        let checkers = self.is_checked_by::<SideT>();
+        self.state_mut().set_checkers(checkers);
+        self.update_check_info::<SideT>();
     }
 }
 

@@ -115,7 +115,7 @@ impl ZobristTable {
     #[inline(always)]
     pub fn en_passant(en_passant: Option<Square>) -> ZobristKey {
         match en_passant {
-            Some(square) => EN_PASSANT_RANDOMS[square.rank().idx()],
+            Some(square) => EN_PASSANT_RANDOMS[square.file().idx()],
             None => ZobristKey::new(0),
         }
     }

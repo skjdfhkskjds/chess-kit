@@ -81,8 +81,8 @@ where
     pub(crate) fn set_en_passant(&mut self, square: Square) {
         let current_ep = self.state().en_passant();
         let key = ZobristTable::en_passant(current_ep) ^ ZobristTable::en_passant(Some(square));
-        self.state_mut().set_en_passant(Some(square));
         self.state_mut().update_key(key);
+        self.state_mut().set_en_passant(Some(square));
     }
 
     // clear_en_passant clears the en passant square in the state
