@@ -2,7 +2,9 @@ use crate::attack_table::AttackTable;
 use crate::position::{
     DefaultPosition, PositionAttacks, PositionMoves, PositionState, SideCastlingSquares,
 };
-use crate::primitives::{Bitboard, Black, Move, MoveType, Pieces, Side, Sides, Square, White};
+use crate::primitives::{
+    Bitboard, Black, Move, MoveType, Pieces, Side, Sides, Square, White, ZobristTable,
+};
 use crate::state::{GameStateExt, State};
 
 impl<AT, StateT> PositionMoves for DefaultPosition<AT, StateT>
@@ -224,7 +226,8 @@ where
     #[inline(always)]
     fn move_piece<SideT: SideCastlingSquares>(&mut self, piece: Pieces, from: Square, to: Square) {
         self.move_piece_no_incrementals::<SideT>(piece, from, to);
-        let key = self.zobrist.piece::<SideT>(piece, from) ^ self.zobrist.piece::<SideT>(piece, to);
+        let key =
+            ZobristTable::piece::<SideT>(piece, from) ^ ZobristTable::piece::<SideT>(piece, to);
         self.state_mut().update_key(key);
     }
 

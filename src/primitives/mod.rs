@@ -10,7 +10,7 @@ pub mod squares;
 pub mod zobrist;
 
 pub use bitboard::{Bitboard, BitboardVec};
-pub use castling::{CastleRights, Castling, SideCastling};
+pub use castling::{Castling, SideCastling};
 pub use direction::Direction;
 pub use files::File;
 pub use moves::{Move, MoveList, MoveType};

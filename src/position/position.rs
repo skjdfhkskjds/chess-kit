@@ -57,18 +57,16 @@ where
     AT: AttackTable,
     StateT: State + GameStateExt,
 {
-    // init initializes the position with the given rng
-    //
-    // @param: rng - an optional, mutable reference to the rng, useful for seeding
-    fn init(&mut self, rng: Option<&mut StdRng>) {
+    // init initializes the position
+    fn init(&mut self) {
         if self.history.is_empty() {
             self.history.init(StateT::default());
         }
 
-        match rng {
-            Some(rng) => self.zobrist.init(rng),
-            None => self.zobrist.init(&mut StdRng::from_rng(&mut rand::rng())),
-        }
+        // match rng {
+        //     Some(rng) => self.zobrist.init(rng),
+        //     None => self.zobrist.init(&mut StdRng::from_rng(&mut rand::rng())),
+        // }
 
         self.init_sides();
         self.init_pieces();
@@ -129,7 +127,7 @@ where
     // @side-effects: modifies the `state`
     fn init_state(&mut self) {
         // set the state key
-        let key = self.zobrist.new_key(
+        let key = ZobristTable::new_key(
             self.state().turn(),
             self.state().castling(),
             self.state().en_passant(),
@@ -181,7 +179,7 @@ where
         }
 
         // TODO: move the board initialization elsewhere
-        self.init(None);
+        self.init();
         Ok(())
     }
 }

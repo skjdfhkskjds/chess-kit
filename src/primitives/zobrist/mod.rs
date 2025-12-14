@@ -1,23 +1,33 @@
+mod constants;
 mod table;
 
-use chess_kit_derive::BitOps;
+pub use constants::{CASTLING_RANDOMS, EN_PASSANT_RANDOMS, PIECE_RANDOMS, SIDE_RANDOMS};
 
-use crate::primitives::{CastleRights, Pieces, Sides, Square};
+use chess_kit_derive::BitOps;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, BitOps)]
 pub struct ZobristKey(u64);
 
-type PieceRandoms = [[[ZobristKey; Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL];
-type CastlingRandoms = [ZobristKey; CastleRights::TOTAL];
-type SideRandoms = [ZobristKey; Sides::TOTAL];
-type EnPassantRandoms = [ZobristKey; Square::TOTAL + 1];
+impl ZobristKey {
+    // new creates a new zobrist key with the given u64 value
+    //
+    // @param: value - u64 value to create the zobrist key from
+    // @return: new zobrist key
+    #[inline(always)]
+    pub const fn new(value: u64) -> Self {
+        Self(value)
+    }
+
+    // default creates a new zobrist key with the default value
+    //
+    // @return: new zobrist key
+    #[inline(always)]
+    pub const fn default() -> Self {
+        Self(0)
+    }
+}
 
 // ZobristTable is a collection of random values used to generate/apply a zobrist
 // key transformations for a given board position.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ZobristTable {
-    pieces: PieceRandoms,      // values for each piece on each square for each side
-    castling: CastlingRandoms, // values for each castling right
-    sides: SideRandoms,        // values for each side
-    en_passant: EnPassantRandoms, // values for each en passant square
-}
+pub struct ZobristTable {}
