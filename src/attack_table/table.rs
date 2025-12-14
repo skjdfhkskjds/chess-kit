@@ -15,7 +15,7 @@ const PAWN_TABLE: [BitboardTable; Sides::TOTAL] = new_pawn_table();
 pub(crate) const EMPTY_BISHOP_TABLE: BitboardTable = new_empty_bishop_table();
 pub(crate) const EMPTY_ROOK_TABLE: BitboardTable = new_empty_rook_table();
 
-#[cfg_attr(true, allow(long_running_const_eval))]
+#[allow(long_running_const_eval)]
 static ROOK_MAGICS_TABLE: RookMagicsTable = RookMagicsTable::new();
 static BISHOP_MAGICS_TABLE: BishopMagicsTable = BishopMagicsTable::new();
 

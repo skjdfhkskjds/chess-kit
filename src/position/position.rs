@@ -53,8 +53,6 @@ where
 {
     // init initializes the position
     fn init(&mut self) {
-        self.history.init(StateT::default());
-
         self.init_sides();
         self.init_pieces();
 

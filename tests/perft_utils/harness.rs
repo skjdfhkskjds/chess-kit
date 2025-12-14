@@ -11,6 +11,7 @@ const TT_SIZE: usize = 0;
 #[cfg(not(feature = "no_tt"))]
 const TT_SIZE: usize = 32;
 
+#[allow(dead_code)]
 pub enum PerftHarnessMode {
     Default,
     Divide,
