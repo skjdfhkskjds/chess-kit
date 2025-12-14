@@ -1,7 +1,5 @@
-use crate::primitives::{
-    Bitboard, Castling, Clock, GameStateExt, Pieces, ReadOnlyState, Side, Sides, Square, State,
-    WriteOnlyState, ZobristKey,
-};
+use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
+use crate::state::{Clock, GameStateExt, ReadOnlyState, State, WriteOnlyState};
 
 // StateHeader is a header for a state that contains the parts of the state up
 // to (and excluding) the state key
@@ -315,7 +313,7 @@ impl GameStateExt for DefaultState {
 
     // check_squares returns the bitboard of squares that a given piece would
     // have to be on to deliver check to SideT::Other's king
-    // 
+    //
     // @impl: GameStateExt::check_squares
     #[inline(always)]
     fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
@@ -324,7 +322,7 @@ impl GameStateExt for DefaultState {
 
     // set_check_squares sets the bitboard of squares that a given piece would
     // have to be on to deliver check to SideT::Other's king
-    // 
+    //
     // @impl: GameStateExt::set_check_squares
     #[inline(always)]
     fn set_check_squares<SideT: Side>(&mut self, piece: Pieces, squares: Bitboard) {

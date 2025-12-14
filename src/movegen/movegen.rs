@@ -1,133 +1,94 @@
 use crate::attack_table::AttackTable;
-use crate::movegen::MoveType;
-use crate::primitives::{Bitboard, Move, MoveList, Pieces, Square};
+use crate::movegen::{MoveGenerator, MoveType};
+use crate::position::{PositionAttacks, PositionMoves, PositionState};
+use crate::primitives::{Black, MoveList, Sides, White, moves::MoveType::EnPassant};
 use std::marker::PhantomData;
 
-pub struct MoveGenerator<AT: AttackTable> {
+pub struct DefaultMoveGenerator<AT: AttackTable> {
     _attack_table: PhantomData<AT>,
 }
 
-impl<AT: AttackTable> MoveGenerator<AT> {
+impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
     // new creates a new move generator
     //
-    // @return: new move generator
+    // @impl: MoveGenerator::new
     #[inline(always)]
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             _attack_table: PhantomData,
         }
     }
-}
 
-impl<AT: AttackTable> MoveGenerator<AT> {
-    // push_moves pushes a set of moves of any non-pawn piece from the given
-    // from square to the given to squares
+    // generate_moves generates all the pseudo-legal moves of the given move type
+    // from the current position and pushes them to the move list
     //
-    // @param: from - square to push the moves from
-    // @param: to_squares - bitboard of squares to push the moves to
-    // @param: list - mutable reference to the move list
-    // @return: void
-    // @side-effects: modifies the `move list`
-    #[inline(always)]
-    pub(crate) fn push_moves(&self, from: Square, to_squares: Bitboard, list: &mut MoveList) {
-        for to in to_squares.iter() {
-            list.push(Move::new(from, to));
-        }
-    }
-
-    // push_pawn_moves pushes a set of moves of a pawn from the given from square
-    // to the given to squares
-    //
-    // note: we explicitly handle pawn moves here to handle branchless code for
-    //       other piece types where en-passant captures are not possible
-    //
-    // @param: to_squares - bitboard of squares to push the moves to
-    // @param: offset - offset to add to a given to square of a pawn to get the
-    //                  from square of a pawn push
-    // @param: list - mutable reference to the move list
-    // @return: void
-    // @side-effects: modifies the `move list`
-    #[inline(always)]
-    pub(crate) fn push_pawn_moves(&self, to_squares: Bitboard, offset: i8, list: &mut MoveList) {
-        for to in to_squares.iter() {
-            let from = Square::from_idx((to.idx() as i8 - offset) as usize);
-            list.push(Move::new(from, to));
-        }
-    }
-
-    // push_pawn_en_passant_captures pushes a set of moves of a pawn from the given
-    // from squares to the given en passant square
-    //
-    // @param: from_squares - bitboard of squares to push the moves from
-    // @param: en_passant_square - square to push the en passant captures to
-    // @param: list - mutable reference to the move list
-    // @return: void
-    // @side-effects: modifies the `move list`
-    #[inline(always)]
-    pub(crate) fn push_pawn_en_passant_captures(
+    // @impl: MoveGenerator::generate_moves
+    fn generate_moves<PositionT: PositionState + PositionAttacks>(
         &self,
-        from_squares: Bitboard,
-        en_passant_square: Square,
-        list: &mut MoveList,
-    ) {
-        for from in from_squares.iter() {
-            list.push(Move::new(from, en_passant_square).with_en_passant());
-        }
-    }
-
-    // push_pawn_promotions pushes a set of moves of a pawn that is promoting
-    // to the given to squares
-    //
-    // @param: to_squares - bitboard of squares to push the promoting pawns to
-    // @param: offset - offset to add to a given to square of a pawn to get the
-    //                  from square of a pawn promotion
-    // @param: is_capture - whether the pawn is capturing a piece when promoting
-    // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate promotions of
-    #[inline(always)]
-    pub(crate) fn push_pawn_promotions(
-        &self,
-        to_squares: Bitboard,
-        offset: i8,
-        is_capture: bool,
+        position: &PositionT,
         list: &mut MoveList,
         move_type: MoveType,
     ) {
-        for to in to_squares.iter() {
-            let from = Square::from_idx((to.idx() as i8 - offset) as usize);
-
-            if !matches!(move_type, MoveType::Quiet) {
-                list.push(Move::new(from, to).with_promotion(Pieces::Queen));
+        match position.turn() {
+            Sides::White => {
+                self.generate_moves_for_side::<White, PositionT>(position, list, move_type)
             }
-
-            if matches!(move_type, MoveType::Evasions | MoveType::NonEvasions)
-                || (matches!(move_type, MoveType::Capture) && is_capture)
-                || (matches!(move_type, MoveType::Quiet) && !is_capture)
-            {
-                list.push(Move::new(from, to).with_promotion(Pieces::Knight));
-                list.push(Move::new(from, to).with_promotion(Pieces::Bishop));
-                list.push(Move::new(from, to).with_promotion(Pieces::Rook));
+            Sides::Black => {
+                self.generate_moves_for_side::<Black, PositionT>(position, list, move_type)
             }
         }
     }
 
-    // push_castling_moves pushes a set of moves for castling from the given from
-    // square to the given to squares
+    // generate_legal_moves generates all the legal moves from the current position
+    // and pushes them to the move list
     //
-    // @param: from - square to push the moves from
-    // @param: to_squares - bitboard of squares to push the castling moves to
-    // @param: list - mutable reference to the move list
-    // @return: void
-    // @side-effects: modifies the `move list`
-    #[inline(always)]
-    pub(crate) fn push_castling_moves(
+    // @impl: MoveGenerator::generate_legal_moves
+    fn generate_legal_moves<PositionT: PositionState + PositionAttacks + PositionMoves>(
         &self,
-        from: Square,
-        to_squares: Bitboard,
+        position: &PositionT,
         list: &mut MoveList,
     ) {
-        for to in to_squares.iter() {
-            list.push(Move::new(from, to).with_castle());
+        // if the side to move is in check, just generate evasions during legal
+        // move generation
+        let move_type = if position.checkers().not_empty() {
+            MoveType::Evasions
+        } else {
+            MoveType::NonEvasions
+        };
+
+        match position.turn() {
+            Sides::White => {
+                let king_square = position.king_square::<White>();
+                let pinned =
+                    position.king_blocker_pieces::<White>() & position.occupancy::<White>();
+
+                // generate all the pseudo-legal moves
+                self.generate_moves_for_side::<White, PositionT>(position, list, move_type);
+
+                // filter the moves to only include legal moves
+                list.filter(|mv| {
+                    !(((pinned.has_square(mv.from()))
+                        || mv.from() == king_square
+                        || matches!(mv.type_of(), EnPassant))
+                        && !position.is_legal_move::<White>(mv))
+                })
+            }
+            Sides::Black => {
+                let king_square = position.king_square::<Black>();
+                let pinned =
+                    position.king_blocker_pieces::<Black>() & position.occupancy::<Black>();
+
+                // generate all the pseudo-legal moves
+                self.generate_moves_for_side::<Black, PositionT>(position, list, move_type);
+
+                // filter the moves to only include legal moves
+                list.filter(|mv| {
+                    !(((pinned.has_square(mv.from()))
+                        || mv.from() == king_square
+                        || matches!(mv.type_of(), EnPassant))
+                        && !position.is_legal_move::<Black>(mv))
+                })
+            }
         }
     }
 }

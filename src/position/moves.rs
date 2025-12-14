@@ -1,10 +1,11 @@
 use crate::attack_table::AttackTable;
-use crate::position::{Position, SideCastlingSquares};
-use crate::primitives::{
-    Bitboard, Black, GameStateExt, Move, MoveType, Pieces, Side, Sides, Square, State, White,
+use crate::position::{
+    DefaultPosition, PositionAttacks, PositionMoves, PositionState, SideCastlingSquares,
 };
+use crate::primitives::{Bitboard, Black, Move, MoveType, Pieces, Side, Sides, Square, White};
+use crate::state::{GameStateExt, State};
 
-impl<AT, StateT> Position<AT, StateT>
+impl<AT, StateT> PositionMoves for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
     StateT: State + GameStateExt,
@@ -17,7 +18,7 @@ where
     // @side-effects: modifies incremental game state
     // @side-effects: optionally revokes castling permissions
     // @side-effects: optionally sets the en passant square
-    pub fn make_move(&mut self, mv: Move) {
+    fn make_move(&mut self, mv: Move) {
         match self.turn() {
             Sides::White => self.make_move_for_side::<White>(mv),
             Sides::Black => self.make_move_for_side::<Black>(mv),
@@ -29,13 +30,170 @@ where
     // @return: void
     // @side-effects: modifies the `position`
     // @side-effects: reverts the `state` back to the previous state
-    pub fn unmake_move(&mut self, mv: Move) {
+    fn unmake_move(&mut self, mv: Move) {
         match self.turn() {
             Sides::White => self.unmake_move_for_side::<Black>(mv),
             Sides::Black => self.unmake_move_for_side::<White>(mv),
         }
     }
 
+    // is_legal_move checks if the given move played by SideT is legal
+    //
+    // note: this method does not check that the king is still in check after
+    //       the move is made, instead, we delegate this logic to the move
+    //       generator. as a result, this method only checks that a king not
+    //       currently in check would be left in check after the move is made
+    //
+    // @param: mv - move to check if is legal
+    // @return: true if the move is legal, false otherwise
+    #[inline(always)]
+    fn is_legal_move<SideT: Side>(&self, mv: Move) -> bool {
+        let from = mv.from();
+        let to = mv.to();
+
+        // if the move is an en passant capture, check whether or not the king
+        // is attacked by SideT::Other's sliders
+        //
+        // note: skip non-sliding attacks since an en passant capture is only
+        //       possible if there are no other pieces delivering check other
+        //       than the pawn to be captured
+        if matches!(mv.type_of(), MoveType::EnPassant) {
+            let en_passant_square = AT::pawn_pushes::<SideT::Other>(to);
+            let occupancy = (self.total_occupancy() ^ Bitboard::square(from) ^ en_passant_square)
+                | Bitboard::square(to);
+
+            return !self.is_attacked_by_sliders::<SideT>(self.king_square::<SideT>(), occupancy);
+        }
+
+        // if the moving piece is a king, check whether or not the destination
+        // square is attacked by SideT::Other
+        if matches!(self.piece_at(from), Pieces::King) {
+            let occupancy = self.total_occupancy() ^ Bitboard::square(from);
+            return !self.is_attacked::<SideT>(to, occupancy);
+        }
+
+        // otherwise, any non-king move is legal iff it is not pinned or it is
+        // moving along the line on which it is pinned
+        return !self.is_preventing_check::<SideT>(from)
+            || Bitboard::in_line(from, to, self.king_square::<SideT>());
+    }
+
+    // delivers_check checks if the given move played by SideT delivers a check
+    // to SideT::Other
+    //
+    // @param: mv - move to check if delivers a check
+    // @return: true if the move delivers a check, false otherwise
+    #[inline(always)]
+    fn delivers_check<SideT: SideCastlingSquares>(&self, mv: Move) -> bool {
+        let from = mv.from();
+        let to = mv.to();
+        let piece = self.piece_at(from);
+
+        // check if the move directly delivers a check to SideT::Other
+        //
+        // note: this is the moment where we leverage the precomputed check
+        //       squares to determine if the move directly gives a check
+        //
+        // see `Position::update_check_info` for more details on the precomputed
+        // check squares
+        if !matches!(piece, Pieces::King)
+            && self.state().check_squares::<SideT>(piece).has_square(to)
+        {
+            return true;
+        }
+
+        // check if the move possibly enables a discovered check to SideT::Other
+        //
+        // that is, if the piece moved from a square that was preventing a check
+        // to SideT::Other to a new square not on the same ray that it was on to
+        // block the check, then SideT::Other is now in check via the sniper that
+        // was previously blocked by the piece that moved
+        //
+        // note: a castle move where SideT's king was the blocker will result in
+        //       a discovered check, so we can return true immediately
+        if self.is_preventing_check::<SideT::Other>(from) {
+            return matches!(mv.type_of(), MoveType::Castle)
+                || !Bitboard::in_line(from, to, self.king_square::<SideT::Other>());
+        }
+
+        match mv.type_of() {
+            MoveType::Normal => false,
+            MoveType::Promotion => {
+                // if the move is a promotion, check if the promoted piece would
+                // deliver a check to SideT::Other
+                //
+                // note: exclude the current occupancy of the pawn to promote
+                let targets = match mv.promoted_to() {
+                    Pieces::Knight => AT::knight_targets(to),
+                    Pieces::Bishop => {
+                        AT::bishop_targets(to, self.total_occupancy() ^ Bitboard::square(from))
+                    }
+                    Pieces::Rook => {
+                        AT::rook_targets(to, self.total_occupancy() ^ Bitboard::square(from))
+                    }
+                    Pieces::Queen => {
+                        AT::queen_targets(to, self.total_occupancy() ^ Bitboard::square(from))
+                    }
+                    _ => unreachable!("promotion to non-promotable piece"),
+                };
+
+                // check if the opponent's king is being attacked by the promoted
+                // piece
+                targets.has_square(self.king_square::<SideT::Other>())
+            }
+            MoveType::EnPassant => {
+                let captured_square = AT::pawn_pushes::<SideT::Other>(to);
+
+                // invariant checks for the captured square
+                debug_assert!(
+                    captured_square.exactly_one(),
+                    "captured square should be exactly one"
+                );
+                debug_assert!(
+                    captured_square.must_first().file() == to.file(),
+                    "captured square and the square that the pawn just moved to should be on the same file"
+                );
+                debug_assert!(
+                    captured_square.must_first().distance(to) == 8,
+                    "captured square and the square that the pawn just moved to should be one rank apart"
+                );
+
+                let occupancy = (self.total_occupancy() ^ Bitboard::square(from) ^ captured_square)
+                    | Bitboard::square(to);
+
+                // check if the opponent's king is being attacked by a discovered
+                // check via SideT's sliding pieces
+                //
+                // note: we can ignore the possibility of check with knights or
+                //       pawns since an en passant capture is not possible if a
+                //       non-sliding piece is currently delivering check
+                self.is_attacked_by_sliders::<SideT::Other>(
+                    self.king_square::<SideT::Other>(),
+                    occupancy,
+                )
+            }
+            MoveType::Castle => {
+                let rook_square = if to == SideT::KINGSIDE_DESTINATION {
+                    SideT::KINGSIDE_ROOK_DESTINATION
+                } else {
+                    SideT::QUEENSIDE_ROOK_DESTINATION
+                };
+
+                // check if the opponent's king is being attacked by the rook
+                // after the castle
+                self.state()
+                    .check_squares::<SideT>(Pieces::Rook)
+                    .has_square(rook_square)
+            }
+        }
+    }
+}
+
+impl<AT, StateT> DefaultPosition<AT, StateT>
+where
+    AT: AttackTable,
+    StateT: State + GameStateExt,
+{
     // move_piece_no_incrementals moves SideT's piece from the given square to
     // the given square without updating the zobrist key or any incremental game
     // state
@@ -208,157 +366,6 @@ where
             .set_check_squares::<SideT>(Pieces::Queen, queen_targets);
         self.state_mut()
             .set_check_squares::<SideT>(Pieces::King, Bitboard::empty());
-    }
-
-    // is_legal_move checks if the given move played by SideT is legal
-    //
-    // note: this method does not check that the king is still in check after
-    //       the move is made, instead, we delegate this logic to the move
-    //       generator. as a result, this method only checks that a king not
-    //       currently in check would be left in check after the move is made
-    //
-    // @param: mv - move to check if is legal
-    // @return: true if the move is legal, false otherwise
-    #[inline(always)]
-    pub fn is_legal_move<SideT: Side>(&self, mv: Move) -> bool {
-        let from = mv.from();
-        let to = mv.to();
-
-        // if the move is an en passant capture, check whether or not the king
-        // is attacked by SideT::Other's sliders
-        //
-        // note: skip non-sliding attacks since an en passant capture is only
-        //       possible if there are no other pieces delivering check other
-        //       than the pawn to be captured
-        if matches!(mv.type_of(), MoveType::EnPassant) {
-            let en_passant_square = AT::pawn_pushes::<SideT::Other>(to);
-            let occupancy = (self.total_occupancy() ^ Bitboard::square(from) ^ en_passant_square)
-                | Bitboard::square(to);
-
-            return !self.is_attacked_by_sliders::<SideT>(self.king_square::<SideT>(), occupancy);
-        }
-
-        // if the moving piece is a king, check whether or not the destination
-        // square is attacked by SideT::Other
-        if matches!(self.piece_at(from), Pieces::King) {
-            let occupancy = self.total_occupancy() ^ Bitboard::square(from);
-            return !self.is_attacked::<SideT>(to, occupancy);
-        }
-
-        // otherwise, any non-king move is legal iff it is not pinned or it is
-        // moving along the line on which it is pinned
-        return !self.is_preventing_check::<SideT>(from)
-            || Bitboard::in_line(from, to, self.king_square::<SideT>());
-    }
-
-    // delivers_check checks if the given move played by SideT delivers a check
-    // to SideT::Other
-    //
-    // @param: mv - move to check if delivers a check
-    // @return: true if the move delivers a check, false otherwise
-    #[inline(always)]
-    pub fn delivers_check<SideT: SideCastlingSquares>(&self, mv: Move) -> bool {
-        let from = mv.from();
-        let to = mv.to();
-        let piece = self.piece_at(from);
-
-        // check if the move directly delivers a check to SideT::Other
-        //
-        // note: this is the moment where we leverage the precomputed check
-        //       squares to determine if the move directly gives a check
-        //
-        // see `Position::update_check_info` for more details on the precomputed
-        // check squares
-        if !matches!(piece, Pieces::King)
-            && self.state().check_squares::<SideT>(piece).has_square(to)
-        {
-            return true;
-        }
-
-        // check if the move possibly enables a discovered check to SideT::Other
-        //
-        // that is, if the piece moved from a square that was preventing a check
-        // to SideT::Other to a new square not on the same ray that it was on to
-        // block the check, then SideT::Other is now in check via the sniper that
-        // was previously blocked by the piece that moved
-        //
-        // note: a castle move where SideT's king was the blocker will result in
-        //       a discovered check, so we can return true immediately
-        if self.is_preventing_check::<SideT::Other>(from) {
-            return matches!(mv.type_of(), MoveType::Castle)
-                || !Bitboard::in_line(from, to, self.king_square::<SideT::Other>());
-        }
-
-        match mv.type_of() {
-            MoveType::Normal => false,
-            MoveType::Promotion => {
-                // if the move is a promotion, check if the promoted piece would
-                // deliver a check to SideT::Other
-                //
-                // note: exclude the current occupancy of the pawn to promote
-                let targets = match mv.promoted_to() {
-                    Pieces::Knight => AT::knight_targets(to),
-                    Pieces::Bishop => {
-                        AT::bishop_targets(to, self.total_occupancy() ^ Bitboard::square(from))
-                    }
-                    Pieces::Rook => {
-                        AT::rook_targets(to, self.total_occupancy() ^ Bitboard::square(from))
-                    }
-                    Pieces::Queen => {
-                        AT::queen_targets(to, self.total_occupancy() ^ Bitboard::square(from))
-                    }
-                    _ => unreachable!("promotion to non-promotable piece"),
-                };
-
-                // check if the opponent's king is being attacked by the promoted
-                // piece
-                targets.has_square(self.king_square::<SideT::Other>())
-            }
-            MoveType::EnPassant => {
-                let captured_square = AT::pawn_pushes::<SideT::Other>(to);
-
-                // invariant checks for the captured square
-                debug_assert!(
-                    captured_square.exactly_one(),
-                    "captured square should be exactly one"
-                );
-                debug_assert!(
-                    captured_square.must_first().file() == to.file(),
-                    "captured square and the square that the pawn just moved to should be on the same file"
-                );
-                debug_assert!(
-                    captured_square.must_first().distance(to) == 8,
-                    "captured square and the square that the pawn just moved to should be one rank apart"
-                );
-
-                let occupancy = (self.total_occupancy() ^ Bitboard::square(from) ^ captured_square)
-                    | Bitboard::square(to);
-
-                // check if the opponent's king is being attacked by a discovered
-                // check via SideT's sliding pieces
-                //
-                // note: we can ignore the possibility of check with knights or
-                //       pawns since an en passant capture is not possible if a
-                //       non-sliding piece is currently delivering check
-                self.is_attacked_by_sliders::<SideT::Other>(
-                    self.king_square::<SideT::Other>(),
-                    occupancy,
-                )
-            }
-            MoveType::Castle => {
-                let rook_square = if to == SideT::KINGSIDE_DESTINATION {
-                    SideT::KINGSIDE_ROOK_DESTINATION
-                } else {
-                    SideT::QUEENSIDE_ROOK_DESTINATION
-                };
-
-                // check if the opponent's king is being attacked by the rook
-                // after the castle
-                self.state()
-                    .check_squares::<SideT>(Pieces::Rook)
-                    .has_square(rook_square)
-            }
-        }
     }
 
     // make_move_for_side makes the given move from the current position as SideT

@@ -1,8 +1,9 @@
 use crate::attack_table::AttackTable;
-use crate::position::position::Position;
-use crate::primitives::{Castling, GameStateExt, State};
+use crate::position::position::DefaultPosition;
+use crate::primitives::Castling;
+use crate::state::{GameStateExt, State};
 
-impl<AT, StateT> Position<AT, StateT>
+impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
     StateT: State + GameStateExt,

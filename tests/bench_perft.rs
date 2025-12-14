@@ -1,5 +1,13 @@
 mod perft_utils;
+
 use perft_utils::{PerftHarness, PerftHarnessMode, PerftTest};
+
+use chess_kit::attack_table::DefaultAttackTable;
+use chess_kit::movegen::DefaultMoveGenerator;
+use chess_kit::perft::PerftData;
+use chess_kit::position::DefaultPosition;
+use chess_kit::state::DefaultState;
+use chess_kit::transposition::DefaultTranspositionTable;
 
 // bench_perft_tests benchmarks the perft tests
 #[test]
@@ -11,7 +19,11 @@ fn bench_perft_tests() {
         .collect::<Vec<PerftTest>>();
 
     // create a new perft harness
-    let mut harness = PerftHarness::new(PerftHarnessMode::Default, test_cases);
+    let mut harness = PerftHarness::<
+        DefaultMoveGenerator<DefaultAttackTable>,
+        DefaultPosition<DefaultAttackTable, DefaultState>,
+        DefaultTranspositionTable<PerftData>,
+    >::new(PerftHarnessMode::Default, test_cases);
 
     // run the test cases
     harness.run();
