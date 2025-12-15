@@ -1,7 +1,6 @@
 use crate::attack_table::AttackTable;
-use crate::position::{DefaultPosition, PositionState};
+use crate::position::{DefaultPosition, GameStateExt, PositionState, State};
 use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
-use crate::state::{GameStateExt, State};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where

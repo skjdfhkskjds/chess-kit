@@ -8,7 +8,9 @@ mod position;
 mod rules;
 mod sides;
 mod state;
+mod gamestate;
 
+pub use gamestate::*;
 pub use fen::{FENError, FENParser, Parser};
 pub use position::DefaultPosition;
 

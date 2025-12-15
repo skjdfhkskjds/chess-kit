@@ -1,5 +1,5 @@
-use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey, Copyable};
-use crate::state::{Clock, GameStateExt, ReadOnlyState, State, WriteOnlyState};
+use super::{Clock, GameStateExt, ReadOnlyState, State, WriteOnlyState};
+use crate::primitives::{Bitboard, Castling, Copyable, Pieces, Side, Sides, Square, ZobristKey};
 
 // StateHeader is a header for a state that contains the parts of the state up
 // to (and excluding) the state key

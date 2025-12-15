@@ -1,7 +1,8 @@
 use chess_kit::attack_table::DefaultAttackTable;
-use chess_kit::position::{DefaultPosition, Position, PositionFromFEN};
+use chess_kit::position::{
+    DefaultPosition, DefaultState, Position, PositionFromFEN, ReadOnlyState,
+};
 use chess_kit::primitives::ZobristKey;
-use chess_kit::state::{DefaultState, ReadOnlyState};
 
 #[test]
 fn test_zobrist_key() {

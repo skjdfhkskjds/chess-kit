@@ -1,8 +1,7 @@
 use crate::attack_table::AttackTable;
 use crate::position::fen::{FENError, FENParser, Parser};
-use crate::position::{Position, PositionFromFEN, PositionState};
+use crate::position::{GameStateExt, History, Position, PositionFromFEN, PositionState, State};
 use crate::primitives::{Bitboard, Black, Pieces, Side, Sides, Square, White, ZobristTable};
-use crate::state::{GameStateExt, History, State};
 use std::marker::PhantomData;
 
 pub struct DefaultPosition<AT: AttackTable, StateT: State + GameStateExt> {

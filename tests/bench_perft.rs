@@ -5,8 +5,7 @@ use perft_utils::{PerftHarness, PerftHarnessMode, PerftTest};
 use chess_kit::attack_table::DefaultAttackTable;
 use chess_kit::movegen::DefaultMoveGenerator;
 use chess_kit::perft::PerftData;
-use chess_kit::position::DefaultPosition;
-use chess_kit::state::DefaultState;
+use chess_kit::position::{DefaultPosition, DefaultState};
 use chess_kit::transposition::DefaultTranspositionTable;
 
 // bench_perft_tests benchmarks the perft tests
