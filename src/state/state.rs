@@ -1,4 +1,4 @@
-use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
+use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey, Copyable};
 use crate::state::{Clock, GameStateExt, ReadOnlyState, State, WriteOnlyState};
 
 // StateHeader is a header for a state that contains the parts of the state up
@@ -90,12 +90,14 @@ impl State for DefaultState {
         self.pinners = [Bitboard::empty(); Sides::TOTAL];
         self.check_squares = [Bitboard::empty(); Pieces::TOTAL];
     }
+}
 
-    // copy_header_from copies the header of another state into this state
+impl Copyable for DefaultState {
+    // copy_from copies the header of another state into this state
     //
-    // @impl: State::copy_header_from
+    // @impl: Copyable::copy_from
     #[inline(always)]
-    fn copy_header_from(&mut self, other: &Self) {
+    fn copy_from(&mut self, other: &Self) {
         self.header = other.header;
     }
 }

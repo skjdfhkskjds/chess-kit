@@ -13,7 +13,7 @@ where
     // @return: reference to the current state
     #[inline(always)]
     pub fn state(&self) -> &StateT {
-        self.history.current()
+        self.history.top()
     }
 
     // state_mut returns a mutable reference to the current state
@@ -21,7 +21,7 @@ where
     // @return: mutable reference to the current state
     #[inline(always)]
     pub fn state_mut(&mut self) -> &mut StateT {
-        self.history.current_mut()
+        self.history.top_mut()
     }
 }
 

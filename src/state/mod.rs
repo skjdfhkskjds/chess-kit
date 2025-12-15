@@ -1,20 +1,28 @@
 mod display;
 mod state;
-mod history;
 
-pub use history::History;
 pub use state::DefaultState;
 
-use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
+use crate::primitives::{
+    Bitboard, Castling, Copyable, Pieces, Side, Sides, Square, Stack, ZobristKey,
+};
 use std::fmt::Display;
 
 pub type Clock = u16;
+
+// History is a stack of states representing the state history of a position
+//
+// TODO: fix the generic bounds linting warning
+#[allow(type_alias_bounds)]
+pub type History<StateT: State> = Stack<StateT>;
 
 // State is a composed trait that combines all read/write operations on the
 // state
 //
 // @trait
-pub trait State: ReadOnlyState + WriteOnlyState + Default + Copy + Clone + Display {
+pub trait State:
+    ReadOnlyState + WriteOnlyState + Default + Copy + Clone + Display + Copyable
+{
     // new creates a new, empty state
     //
     // @return: new, empty state
@@ -24,16 +32,6 @@ pub trait State: ReadOnlyState + WriteOnlyState + Default + Copy + Clone + Displ
     //
     // @side-effects: modifies the `state`
     fn reset(&mut self);
-
-    // copy_header_from copies the header of another state into this state
-    // 
-    // note: we define the header as the parts of the state up to (and
-    //       including) the state key
-    // 
-    // @param: other - the state to copy the header from
-    // @return: void
-    // @side-effects: modifies the `state`
-    fn copy_header_from(&mut self, other: &Self);
 }
 
 // ReadOnlyState is a trait that defines all read operations on the state
@@ -223,14 +221,14 @@ pub trait GameStateExt {
 
     // check_squares returns the bitboard of squares that a given piece would
     // have to be on to deliver check to SideT::Other's king
-    // 
+    //
     // @param: piece - piece to check the squares for
     // @return: bitboard of squares that deliver check to SideT::Other
     fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard;
 
     // set_check_squares sets the bitboard of squares that a given piece would
     // have to be on to deliver check to SideT::Other's king
-    // 
+    //
     // @param: piece - piece to set the squares for
     // @param: squares - bitboard of squares that deliver check to SideT::Other
     // @return: void
