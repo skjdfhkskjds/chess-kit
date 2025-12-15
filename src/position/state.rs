@@ -1,11 +1,11 @@
 use crate::attack_table::AttackTable;
-use crate::position::{DefaultPosition, GameStateExt, PositionState, State};
+use crate::position::{DefaultPosition, PositionState, State};
 use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // state returns a reference to the current state
     //
@@ -27,7 +27,7 @@ where
 impl<AT, StateT> PositionState for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // total_occupancy gets the full occupancy bitboard of both sides
     //

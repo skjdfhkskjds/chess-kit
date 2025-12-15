@@ -1,11 +1,11 @@
 use crate::attack_table::AttackTable;
-use crate::position::{DefaultPosition, GameStateExt, PositionState, State};
+use crate::position::{DefaultPosition, PositionState, State};
 use crate::primitives::{Pieces, Side, Sides, Square, ZobristTable};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // remove_piece_no_incrementals removes SideT's piece from the given square
     // without updating the zobrist key or any incremental game state

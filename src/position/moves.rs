@@ -1,7 +1,6 @@
 use crate::attack_table::AttackTable;
 use crate::position::{
-    DefaultPosition, GameStateExt, PositionAttacks, PositionMoves, PositionState,
-    SideCastlingSquares, State,
+    DefaultPosition, PositionAttacks, PositionMoves, PositionState, SideCastlingSquares, State,
 };
 use crate::primitives::{
     Bitboard, Black, Move, MoveType, Pieces, Side, Sides, Square, White, ZobristTable,
@@ -10,7 +9,7 @@ use crate::primitives::{
 impl<AT, StateT> PositionMoves for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // make_move makes the given move from the current position
     //
@@ -194,7 +193,7 @@ where
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // move_piece_no_incrementals moves SideT's piece from the given square to
     // the given square without updating the zobrist key or any incremental game

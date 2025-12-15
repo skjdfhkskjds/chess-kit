@@ -1,4 +1,4 @@
-use super::{Clock, GameStateExt, ReadOnlyState, State, WriteOnlyState};
+use super::{Clock, ReadOnlyState, State, WriteOnlyState};
 use crate::primitives::{Bitboard, Castling, Copyable, Pieces, Side, Sides, Square, ZobristKey};
 
 // StateHeader is a header for a state that contains the parts of the state up
@@ -92,16 +92,6 @@ impl State for DefaultState {
     }
 }
 
-impl Copyable for DefaultState {
-    // copy_from copies the header of another state into this state
-    //
-    // @impl: Copyable::copy_from
-    #[inline(always)]
-    fn copy_from(&mut self, other: &Self) {
-        self.header = other.header;
-    }
-}
-
 impl ReadOnlyState for DefaultState {
     // turn returns the side to move
     //
@@ -157,6 +147,41 @@ impl ReadOnlyState for DefaultState {
     #[inline(always)]
     fn key(&self) -> ZobristKey {
         self.header.key
+    }
+
+    // checkers returns the bitboard of pieces that are checking the opponent's king
+    //
+    // @impl: ReadOnlyState::checkers
+    #[inline(always)]
+    fn checkers(&self) -> Bitboard {
+        self.checkers
+    }
+
+    // king_blocker_pieces returns the bitboard of the side's king's blocker
+    // pieces
+    //
+    // @impl: ReadOnlyState::king_blocker_pieces
+    #[inline(always)]
+    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
+        self.king_blockers[SideT::INDEX]
+    }
+
+    // pinning_pieces returns the bitboard of the pieces that are pinning the
+    // opponent's king
+    //
+    // @impl: ReadOnlyState::pinning_pieces
+    #[inline(always)]
+    fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
+        self.pinners[SideT::INDEX]
+    }
+
+    // check_squares returns the bitboard of squares that a given piece would
+    // have to be on to deliver check to SideT::Other's king
+    //
+    // @impl: ReadOnlyState::check_squares
+    #[inline(always)]
+    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
+        self.check_squares[piece.idx()]
     }
 }
 
@@ -258,77 +283,50 @@ impl WriteOnlyState for DefaultState {
     fn update_key(&mut self, key: ZobristKey) {
         self.header.key ^= key;
     }
-}
-
-impl GameStateExt for DefaultState {
-    // checkers returns the bitboard of pieces that are checking the opponent's king
-    //
-    // @impl: GameStateExt::checkers
-    #[inline(always)]
-    fn checkers(&self) -> Bitboard {
-        self.checkers
-    }
 
     // set_checkers sets the bitboard of pieces that are checking the opponent's king
     //
-    // @impl: GameStateExt::set_checkers
+    // @impl: WriteOnlyState::set_checkers
     #[inline(always)]
     fn set_checkers(&mut self, checkers: Bitboard) {
         self.checkers = checkers;
     }
 
-    // king_blocker_pieces returns the bitboard of the side's king's blocker
-    // pieces
-    //
-    // @impl: GameStateExt::king_blocker_pieces
-    #[inline(always)]
-    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
-        self.king_blockers[SideT::INDEX]
-    }
-
     // set_king_blocker_pieces sets the bitboard of the side's king's blocker
     // pieces
     //
-    // @impl: GameStateExt::set_king_blocker_pieces
+    // @impl: WriteOnlyState::set_king_blocker_pieces
     #[inline(always)]
     fn set_king_blocker_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
         self.king_blockers[SideT::INDEX] = pieces;
     }
 
-    // pinning_pieces returns the bitboard of the pieces that are pinning the
-    // opponent's king
-    //
-    // @impl: GameStateExt::pinning_pieces
-    #[inline(always)]
-    fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
-        self.pinners[SideT::INDEX]
-    }
-
     // set_pinning_pieces sets the bitboard of the pieces that are pinning the
     // opponent's king
     //
-    // @impl: GameStateExt::set_pinning_pieces
+    // @impl: WriteOnlyState::set_pinning_pieces
     #[inline(always)]
     fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
         self.pinners[SideT::INDEX] = pieces;
     }
 
-    // check_squares returns the bitboard of squares that a given piece would
-    // have to be on to deliver check to SideT::Other's king
-    //
-    // @impl: GameStateExt::check_squares
-    #[inline(always)]
-    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
-        self.check_squares[piece.idx()]
-    }
-
     // set_check_squares sets the bitboard of squares that a given piece would
     // have to be on to deliver check to SideT::Other's king
     //
-    // @impl: GameStateExt::set_check_squares
+    // @impl: WriteOnlyState::set_check_squares
     #[inline(always)]
     fn set_check_squares<SideT: Side>(&mut self, piece: Pieces, squares: Bitboard) {
         self.check_squares[piece.idx()] = squares;
+    }
+}
+
+impl Copyable for DefaultState {
+    // copy_from copies the header of another state into this state
+    //
+    // @impl: Copyable::copy_from
+    #[inline(always)]
+    fn copy_from(&mut self, other: &Self) {
+        self.header = other.header;
     }
 }
 
