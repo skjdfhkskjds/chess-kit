@@ -3,10 +3,10 @@ mod perft_utils;
 use perft_utils::{PerftHarness, PerftHarnessMode, PerftTest};
 
 use chess_kit::attack_table::DefaultAttackTable;
+use chess_kit::eval::{DefaultAccumulator, PSQTEvalState};
 use chess_kit::movegen::DefaultMoveGenerator;
 use chess_kit::perft::PerftData;
-use chess_kit::position::DefaultPosition;
-use chess_kit::state::DefaultState;
+use chess_kit::position::{DefaultPosition, DefaultState};
 use chess_kit::transposition::DefaultTranspositionTable;
 
 // run_perft_tests runs the perft tests
@@ -22,6 +22,8 @@ fn run_perft_tests() {
     let mut harness = PerftHarness::<
         DefaultMoveGenerator<DefaultAttackTable>,
         DefaultPosition<DefaultAttackTable, DefaultState>,
+        DefaultAccumulator<PSQTEvalState>,
+        PSQTEvalState,
         DefaultTranspositionTable<PerftData>,
     >::new(PerftHarnessMode::Default, test_cases);
 

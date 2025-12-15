@@ -1,5 +1,6 @@
+use super::{Clock, State, StateReader, StateWriter};
 use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
-use crate::state::{Clock, GameStateExt, ReadOnlyState, State, WriteOnlyState};
+use chess_kit_collections::Copyable;
 
 // StateHeader is a header for a state that contains the parts of the state up
 // to (and excluding) the state key
@@ -8,13 +9,13 @@ use crate::state::{Clock, GameStateExt, ReadOnlyState, State, WriteOnlyState};
 //       the current state in the history
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StateHeader {
-    pub(crate) turn: Sides,                // side to move
-    pub(crate) captured_piece: Pieces,     // piece that was captured to arrive at this state
-    pub(crate) castling: Castling,         // castling rights
-    pub(crate) en_passant: Option<Square>, // active en passant square, if any
-    pub(crate) halfmoves: Clock,           // halfmove clock
-    pub(crate) fullmoves: Clock,           // fullmove clock
-    pub(crate) key: ZobristKey,            // key for the current state
+    pub(super) turn: Sides,                // side to move
+    pub(super) captured_piece: Pieces,     // piece that was captured to arrive at this state
+    pub(super) castling: Castling,         // castling rights
+    pub(super) en_passant: Option<Square>, // active en passant square, if any
+    pub(super) halfmoves: Clock,           // halfmove clock
+    pub(super) fullmoves: Clock,           // fullmove clock
+    pub(super) key: ZobristKey,            // key for the current state
 }
 
 impl StateHeader {
@@ -53,15 +54,15 @@ impl StateHeader {
 // DefaultState is the default implementation of the State trait
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DefaultState {
-    pub(crate) header: StateHeader, // header of the state
+    pub(super) header: StateHeader, // header of the state
 
     // ==============================
-    //     Game State Extensions
+    //           NOT COPIED
     // ==============================
-    pub(crate) checkers: Bitboard, // bitboard of pieces that are checking the opponent's king
-    pub(crate) king_blockers: [Bitboard; Sides::TOTAL], // bitboard of the side's king's blockers
-    pub(crate) pinners: [Bitboard; Sides::TOTAL], // bitboard of the pieces that are pinning the opponent's king
-    pub(crate) check_squares: [Bitboard; Pieces::TOTAL], // bitboard of squares that each piece would deliver check
+    checkers: Bitboard, // bitboard of pieces that are checking the opponent's king
+    king_blockers: [Bitboard; Sides::TOTAL], // bitboard of the side's king's blockers
+    pinners: [Bitboard; Sides::TOTAL], // bitboard of the pieces that are pinning the opponent's king
+    check_squares: [Bitboard; Pieces::TOTAL], // bitboard of squares that each piece would deliver check
 }
 
 impl State for DefaultState {
@@ -90,20 +91,12 @@ impl State for DefaultState {
         self.pinners = [Bitboard::empty(); Sides::TOTAL];
         self.check_squares = [Bitboard::empty(); Pieces::TOTAL];
     }
-
-    // copy_header_from copies the header of another state into this state
-    //
-    // @impl: State::copy_header_from
-    #[inline(always)]
-    fn copy_header_from(&mut self, other: &Self) {
-        self.header = other.header;
-    }
 }
 
-impl ReadOnlyState for DefaultState {
+impl StateReader for DefaultState {
     // turn returns the side to move
     //
-    // @impl: ReadOnlyState::turn
+    // @impl: StateReader::turn
     #[inline(always)]
     fn turn(&self) -> Sides {
         self.header.turn
@@ -111,7 +104,7 @@ impl ReadOnlyState for DefaultState {
 
     // castling returns the current castling rights
     //
-    // @impl: ReadOnlyState::castling
+    // @impl: StateReader::castling
     #[inline(always)]
     fn castling(&self) -> Castling {
         self.header.castling
@@ -119,7 +112,7 @@ impl ReadOnlyState for DefaultState {
 
     // en_passant returns the current en passant square, if any
     //
-    // @impl: ReadOnlyState::en_passant
+    // @impl: StateReader::en_passant
     #[inline(always)]
     fn en_passant(&self) -> Option<Square> {
         self.header.en_passant
@@ -127,7 +120,7 @@ impl ReadOnlyState for DefaultState {
 
     // captured_piece returns the piece that was captured to arrive at this state
     //
-    // @impl: ReadOnlyState::captured_piece
+    // @impl: StateReader::captured_piece
     #[inline(always)]
     fn captured_piece(&self) -> Pieces {
         self.header.captured_piece
@@ -135,7 +128,7 @@ impl ReadOnlyState for DefaultState {
 
     // halfmoves returns the value of the current halfmove clock
     //
-    // @impl: ReadOnlyState::halfmoves
+    // @impl: StateReader::halfmoves
     #[inline(always)]
     fn halfmoves(&self) -> Clock {
         self.header.halfmoves
@@ -143,7 +136,7 @@ impl ReadOnlyState for DefaultState {
 
     // fullmoves returns the value of the current fullmove clock
     //
-    // @impl: ReadOnlyState::fullmoves
+    // @impl: StateReader::fullmoves
     #[inline(always)]
     fn fullmoves(&self) -> Clock {
         self.header.fullmoves
@@ -151,17 +144,52 @@ impl ReadOnlyState for DefaultState {
 
     // key returns a key representing a unique identifier of the state
     //
-    // @impl: ReadOnlyState::key
+    // @impl: StateReader::key
     #[inline(always)]
     fn key(&self) -> ZobristKey {
         self.header.key
     }
+
+    // checkers returns the bitboard of pieces that are checking the opponent's king
+    //
+    // @impl: StateReader::checkers
+    #[inline(always)]
+    fn checkers(&self) -> Bitboard {
+        self.checkers
+    }
+
+    // king_blocker_pieces returns the bitboard of the side's king's blocker
+    // pieces
+    //
+    // @impl: StateReader::king_blocker_pieces
+    #[inline(always)]
+    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
+        self.king_blockers[SideT::INDEX]
+    }
+
+    // pinning_pieces returns the bitboard of the pieces that are pinning the
+    // opponent's king
+    //
+    // @impl: StateReader::pinning_pieces
+    #[inline(always)]
+    fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
+        self.pinners[SideT::INDEX]
+    }
+
+    // check_squares returns the bitboard of squares that a given piece would
+    // have to be on to deliver check to SideT::Other's king
+    //
+    // @impl: StateReader::check_squares
+    #[inline(always)]
+    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
+        self.check_squares[piece.idx()]
+    }
 }
 
-impl WriteOnlyState for DefaultState {
+impl StateWriter for DefaultState {
     // set_turn sets the side to move
     //
-    // @impl: WriteOnlyState::set_turn
+    // @impl: StateWriter::set_turn
     #[inline(always)]
     fn set_turn(&mut self, turn: Sides) {
         self.header.turn = turn;
@@ -169,7 +197,7 @@ impl WriteOnlyState for DefaultState {
 
     // set_castling sets the castling rights
     //
-    // @impl: WriteOnlyState::set_castling
+    // @impl: StateWriter::set_castling
     #[inline(always)]
     fn set_castling(&mut self, castling: Castling) {
         self.header.castling = castling;
@@ -177,7 +205,7 @@ impl WriteOnlyState for DefaultState {
 
     // set_en_passant sets the en passant square, if any
     //
-    // @impl: WriteOnlyState::set_en_passant
+    // @impl: StateWriter::set_en_passant
     #[inline(always)]
     fn set_en_passant(&mut self, en_passant: Option<Square>) {
         self.header.en_passant = en_passant;
@@ -185,7 +213,7 @@ impl WriteOnlyState for DefaultState {
 
     // set_captured_piece sets the piece that was captured to arrive at this state
     //
-    // @impl: WriteOnlyState::set_captured_piece
+    // @impl: StateWriter::set_captured_piece
     #[inline(always)]
     fn set_captured_piece(&mut self, piece: Pieces) {
         self.header.captured_piece = piece;
@@ -193,7 +221,7 @@ impl WriteOnlyState for DefaultState {
 
     // set_halfmoves sets the value of the current halfmove clock
     //
-    // @impl: WriteOnlyState::set_halfmoves
+    // @impl: StateWriter::set_halfmoves
     #[inline(always)]
     fn set_halfmoves(&mut self, halfmoves: Clock) {
         self.header.halfmoves = halfmoves;
@@ -201,7 +229,7 @@ impl WriteOnlyState for DefaultState {
 
     // inc_halfmoves increments the value of the current halfmove clock by one
     //
-    // @impl: WriteOnlyState::inc_halfmoves
+    // @impl: StateWriter::inc_halfmoves
     #[inline(always)]
     fn inc_halfmoves(&mut self) {
         self.header.halfmoves += 1;
@@ -209,7 +237,7 @@ impl WriteOnlyState for DefaultState {
 
     // dec_halfmoves decrements the value of the current halfmove clock by one
     //
-    // @impl: WriteOnlyState::dec_halfmoves
+    // @impl: StateWriter::dec_halfmoves
     #[inline(always)]
     fn dec_halfmoves(&mut self) {
         self.header.halfmoves -= 1;
@@ -217,7 +245,7 @@ impl WriteOnlyState for DefaultState {
 
     // set_fullmoves sets the value of the current fullmove clock
     //
-    // @impl: WriteOnlyState::set_fullmoves
+    // @impl: StateWriter::set_fullmoves
     #[inline(always)]
     fn set_fullmoves(&mut self, fullmoves: Clock) {
         self.header.fullmoves = fullmoves;
@@ -225,7 +253,7 @@ impl WriteOnlyState for DefaultState {
 
     // inc_fullmoves increments the value of the current fullmove clock by one
     //
-    // @impl: WriteOnlyState::inc_fullmoves
+    // @impl: StateWriter::inc_fullmoves
     #[inline(always)]
     fn inc_fullmoves(&mut self) {
         self.header.fullmoves += 1;
@@ -233,7 +261,7 @@ impl WriteOnlyState for DefaultState {
 
     // dec_fullmoves decrements the value of the current fullmove clock by one
     //
-    // @impl: WriteOnlyState::dec_fullmoves
+    // @impl: StateWriter::dec_fullmoves
     #[inline(always)]
     fn dec_fullmoves(&mut self) {
         self.header.fullmoves -= 1;
@@ -241,7 +269,7 @@ impl WriteOnlyState for DefaultState {
 
     // set_key sets the key for the current state
     //
-    // @impl: WriteOnlyState::set_key
+    // @impl: StateWriter::set_key
     #[inline(always)]
     fn set_key(&mut self, key: ZobristKey) {
         self.header.key = key;
@@ -251,82 +279,55 @@ impl WriteOnlyState for DefaultState {
     //
     // note: XOR's the current key with the given key, not a `set`
     //
-    // @impl: WriteOnlyState::update_key
+    // @impl: StateWriter::update_key
     #[inline(always)]
     fn update_key(&mut self, key: ZobristKey) {
         self.header.key ^= key;
     }
-}
-
-impl GameStateExt for DefaultState {
-    // checkers returns the bitboard of pieces that are checking the opponent's king
-    //
-    // @impl: GameStateExt::checkers
-    #[inline(always)]
-    fn checkers(&self) -> Bitboard {
-        self.checkers
-    }
 
     // set_checkers sets the bitboard of pieces that are checking the opponent's king
     //
-    // @impl: GameStateExt::set_checkers
+    // @impl: StateWriter::set_checkers
     #[inline(always)]
     fn set_checkers(&mut self, checkers: Bitboard) {
         self.checkers = checkers;
     }
 
-    // king_blocker_pieces returns the bitboard of the side's king's blocker
-    // pieces
-    //
-    // @impl: GameStateExt::king_blocker_pieces
-    #[inline(always)]
-    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
-        self.king_blockers[SideT::INDEX]
-    }
-
     // set_king_blocker_pieces sets the bitboard of the side's king's blocker
     // pieces
     //
-    // @impl: GameStateExt::set_king_blocker_pieces
+    // @impl: StateWriter::set_king_blocker_pieces
     #[inline(always)]
     fn set_king_blocker_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
         self.king_blockers[SideT::INDEX] = pieces;
     }
 
-    // pinning_pieces returns the bitboard of the pieces that are pinning the
-    // opponent's king
-    //
-    // @impl: GameStateExt::pinning_pieces
-    #[inline(always)]
-    fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
-        self.pinners[SideT::INDEX]
-    }
-
     // set_pinning_pieces sets the bitboard of the pieces that are pinning the
     // opponent's king
     //
-    // @impl: GameStateExt::set_pinning_pieces
+    // @impl: StateWriter::set_pinning_pieces
     #[inline(always)]
     fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
         self.pinners[SideT::INDEX] = pieces;
     }
 
-    // check_squares returns the bitboard of squares that a given piece would
-    // have to be on to deliver check to SideT::Other's king
-    //
-    // @impl: GameStateExt::check_squares
-    #[inline(always)]
-    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
-        self.check_squares[piece.idx()]
-    }
-
     // set_check_squares sets the bitboard of squares that a given piece would
     // have to be on to deliver check to SideT::Other's king
     //
-    // @impl: GameStateExt::set_check_squares
+    // @impl: StateWriter::set_check_squares
     #[inline(always)]
     fn set_check_squares<SideT: Side>(&mut self, piece: Pieces, squares: Bitboard) {
         self.check_squares[piece.idx()] = squares;
+    }
+}
+
+impl Copyable for DefaultState {
+    // copy_from copies the header of another state into this state
+    //
+    // @impl: Copyable::copy_from
+    #[inline(always)]
+    fn copy_from(&mut self, other: &Self) {
+        self.header = other.header;
     }
 }
 

@@ -1,11 +1,10 @@
 use crate::attack_table::AttackTable;
 use crate::position::fen::{FENError, FENParser, Parser};
-use crate::position::{Position, PositionFromFEN, PositionState};
+use crate::position::{History, Position, PositionFromFEN, PositionState, State};
 use crate::primitives::{Bitboard, Black, Pieces, Side, Sides, Square, White, ZobristTable};
-use crate::state::{GameStateExt, History, State};
 use std::marker::PhantomData;
 
-pub struct DefaultPosition<AT: AttackTable, StateT: State + GameStateExt> {
+pub struct DefaultPosition<AT: AttackTable, StateT: State> {
     pub history: History<StateT>,            // history of the position state
     pub sides: [Bitboard; Sides::TOTAL + 1], // occupancy bitboard per side
     pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
@@ -17,7 +16,7 @@ pub struct DefaultPosition<AT: AttackTable, StateT: State + GameStateExt> {
 impl<AT, StateT> Position for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // new creates a new position with all bitboards and pieces initialized to 0
     // and the zobrist random values set to 0
@@ -49,7 +48,7 @@ where
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // init initializes the position
     fn init(&mut self) {
@@ -91,10 +90,10 @@ where
         let black = self.bitboards[Sides::Black.idx()];
 
         // set the piece type on each square
-        for square in 0..Square::TOTAL {
+        for square in Square::ALL {
             let mut on_square: Pieces = Pieces::None;
 
-            let mask = 1u64 << square; // bitmask for the square
+            let mask = Bitboard::square(square);
             for (piece, (w, b)) in white.iter().zip(black.iter()).enumerate() {
                 if (w & mask).not_empty() {
                     on_square = Pieces::from_idx(piece);
@@ -106,7 +105,7 @@ where
                 }
             }
 
-            self.pieces[square] = on_square;
+            self.pieces[square.idx()] = on_square;
         }
     }
 
@@ -133,8 +132,7 @@ where
         }
 
         // set the state key
-        let key = ZobristTable::new_key(
-            self.state().turn(),
+        let key = ZobristTable::new_key::<SideT>(
             self.state().castling(),
             self.state().en_passant(),
             self.bitboards,
@@ -151,7 +149,7 @@ where
 impl<AT, StateT> PositionFromFEN for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // load_fen loads a new position from the given FEN string
     //

@@ -1,19 +1,18 @@
 use crate::attack_table::AttackTable;
-use crate::position::{DefaultPosition, PositionState};
+use crate::position::{DefaultPosition, PositionState, State};
 use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
-use crate::state::{GameStateExt, State};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // state returns a reference to the current state
     //
     // @return: reference to the current state
     #[inline(always)]
     pub fn state(&self) -> &StateT {
-        self.history.current()
+        self.history.top()
     }
 
     // state_mut returns a mutable reference to the current state
@@ -21,14 +20,14 @@ where
     // @return: mutable reference to the current state
     #[inline(always)]
     pub fn state_mut(&mut self) -> &mut StateT {
-        self.history.current_mut()
+        self.history.top_mut()
     }
 }
 
 impl<AT, StateT> PositionState for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // total_occupancy gets the full occupancy bitboard of both sides
     //

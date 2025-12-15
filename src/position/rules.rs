@@ -1,12 +1,11 @@
 use crate::attack_table::AttackTable;
-use crate::position::position::DefaultPosition;
+use crate::position::{DefaultPosition, State};
 use crate::primitives::{Black, Pieces, Sides, White};
-use crate::state::{GameStateExt, State};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // is_draw checks if the position is a draw
     //

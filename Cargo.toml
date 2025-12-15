@@ -6,10 +6,9 @@ edition = "2024"
 [profile.release]
 lto = true
 
-
 [features]
 no_tt = []
 
-
 [dependencies]
 chess-kit-derive = { path = "crates/chess-kit-derive" }
+chess-kit-collections = { path = "crates/chess-kit-collections" }

@@ -1,20 +1,24 @@
 mod display;
 mod state;
-mod history;
 
-pub use history::History;
 pub use state::DefaultState;
 
 use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
+use chess_kit_collections::{Copyable, Stack};
 use std::fmt::Display;
 
 pub type Clock = u16;
 
-// State is a composed trait that combines all read/write operations on the
-// state
+// History is a stack of states representing the state history of a position
+//
+// TODO: fix the generic bounds linting warning
+#[allow(type_alias_bounds)]
+pub type History<StateT: State> = Stack<StateT>;
+
+// State is a composed trait that combines all supported operations on the state
 //
 // @trait
-pub trait State: ReadOnlyState + WriteOnlyState + Default + Copy + Clone + Display {
+pub trait State: StateReader + StateWriter + Copyable + Display {
     // new creates a new, empty state
     //
     // @return: new, empty state
@@ -24,22 +28,12 @@ pub trait State: ReadOnlyState + WriteOnlyState + Default + Copy + Clone + Displ
     //
     // @side-effects: modifies the `state`
     fn reset(&mut self);
-
-    // copy_header_from copies the header of another state into this state
-    // 
-    // note: we define the header as the parts of the state up to (and
-    //       including) the state key
-    // 
-    // @param: other - the state to copy the header from
-    // @return: void
-    // @side-effects: modifies the `state`
-    fn copy_header_from(&mut self, other: &Self);
 }
 
-// ReadOnlyState is a trait that defines all read operations on the state
+// StateReader is a trait that defines all read operations on the state
 //
 // @trait
-pub trait ReadOnlyState {
+pub trait StateReader {
     // turn returns the side to move
     //
     // @return: the side to move
@@ -74,12 +68,39 @@ pub trait ReadOnlyState {
     //
     // @return: the key of the state
     fn key(&self) -> ZobristKey;
+
+    // checkers returns the bitboard of pieces that are checking the opponent's king
+    //
+    // @return: bitboard of pieces that are checking the opponent's king
+    fn checkers(&self) -> Bitboard;
+
+    // king_blocker_pieces returns the bitboard of the side's king's blocker
+    // pieces
+    //
+    // note: a blocker piece is not necessarily on the same side as the king it
+    //       is blocking
+    //
+    // @return: bitboard of the side's king's blocker pieces
+    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard;
+
+    // pinning_pieces returns the bitboard of SideT's pieces that are pinning
+    // SideT::Other's pieces to their king
+    //
+    // @return: bitboard of pieces that are pinning SideT::Other's pieces
+    fn pinning_pieces<SideT: Side>(&self) -> Bitboard;
+
+    // check_squares returns the bitboard of squares that a given piece would
+    // have to be on to deliver check to SideT::Other's king
+    //
+    // @param: piece - piece to check the squares for
+    // @return: bitboard of squares that deliver check to SideT::Other
+    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard;
 }
 
-// WriteOnlyState is a trait that defines all write operations on the state
+// StateWriter is a trait that defines all write operations on the state
 //
 // @trait
-pub trait WriteOnlyState {
+pub trait StateWriter {
     // set_turn sets the turn-to-move of the state
     //
     // @param: turn - the turn to set
@@ -168,17 +189,6 @@ pub trait WriteOnlyState {
     // @return: void
     // @side-effects: modifies the `state`
     fn update_key(&mut self, key: ZobristKey);
-}
-
-// GameStateExt is an optional extension trait for a State implementation that
-// provides additional game state information
-//
-// @trait
-pub trait GameStateExt {
-    // checkers returns the bitboard of pieces that are checking the opponent's king
-    //
-    // @return: bitboard of pieces that are checking the opponent's king
-    fn checkers(&self) -> Bitboard;
 
     // set_checkers sets the bitboard of pieces that are checking the opponent's king
     //
@@ -186,15 +196,6 @@ pub trait GameStateExt {
     // @return: void
     // @side-effects: modifies the `state`
     fn set_checkers(&mut self, checkers: Bitboard);
-
-    // king_blocker_pieces returns the bitboard of the side's king's blocker
-    // pieces
-    //
-    // note: a blocker piece is not necessarily on the same side as the king it
-    //       is blocking
-    //
-    // @return: bitboard of the side's king's blocker pieces
-    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard;
 
     // set_king_blocker_pieces sets the bitboard of the side's king's blocker
     // pieces
@@ -207,12 +208,6 @@ pub trait GameStateExt {
     // @side-effects: modifies the `state`
     fn set_king_blocker_pieces<SideT: Side>(&mut self, pieces: Bitboard);
 
-    // pinning_pieces returns the bitboard of SideT's pieces that are pinning
-    // SideT::Other's pieces to their king
-    //
-    // @return: bitboard of pieces that are pinning SideT::Other's pieces
-    fn pinning_pieces<SideT: Side>(&self) -> Bitboard;
-
     // set_pinning_pieces sets the bitboard of SideT's pieces that are pinning
     // SideT::Other's pieces to their king
     //
@@ -221,16 +216,9 @@ pub trait GameStateExt {
     // @side-effects: modifies the `state`
     fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard);
 
-    // check_squares returns the bitboard of squares that a given piece would
-    // have to be on to deliver check to SideT::Other's king
-    // 
-    // @param: piece - piece to check the squares for
-    // @return: bitboard of squares that deliver check to SideT::Other
-    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard;
-
     // set_check_squares sets the bitboard of squares that a given piece would
     // have to be on to deliver check to SideT::Other's king
-    // 
+    //
     // @param: piece - piece to set the squares for
     // @param: squares - bitboard of squares that deliver check to SideT::Other
     // @return: void

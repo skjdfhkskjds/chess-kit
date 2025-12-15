@@ -1,12 +1,11 @@
 use crate::attack_table::AttackTable;
-use crate::position::position::DefaultPosition;
+use crate::position::{DefaultPosition, State};
 use crate::primitives::{Side, ZobristTable};
-use crate::state::{GameStateExt, State};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // swap_sides swaps the turn to move from SideT to SideT::Other
     //

@@ -1,12 +1,11 @@
 use crate::attack_table::AttackTable;
-use crate::position::{DefaultPosition, PositionAttacks, PositionState};
+use crate::position::{DefaultPosition, PositionAttacks, PositionState, State};
 use crate::primitives::{Bitboard, Pieces, Side, Square};
-use crate::state::{GameStateExt, State};
 
 impl<AT, StateT> PositionAttacks for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // is_attacked_by returns a bitboard containing the squares occupied by
     // SideT::Other's pieces that are attacking the given SideT at the given
@@ -114,7 +113,7 @@ where
 impl<AT, StateT> DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     // is_attacked_by_sliders returns true if the given square is attacked by
     // SideT::Other's sliding pieces

@@ -1,13 +1,12 @@
 use crate::attack_table::AttackTable;
-use crate::position::DefaultPosition;
+use crate::position::{DefaultPosition, State};
 use crate::primitives::{File, Pieces, Rank, Sides};
-use crate::state::{GameStateExt, State};
 use std::fmt;
 
 impl<AT, StateT> fmt::Display for DefaultPosition<AT, StateT>
 where
     AT: AttackTable,
-    StateT: State + GameStateExt,
+    StateT: State,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut board = [['.'; File::TOTAL]; Rank::TOTAL];
