@@ -90,10 +90,10 @@ where
         let black = self.bitboards[Sides::Black.idx()];
 
         // set the piece type on each square
-        for square in 0..Square::TOTAL {
+        for square in Square::ALL {
             let mut on_square: Pieces = Pieces::None;
 
-            let mask = 1u64 << square; // bitmask for the square
+            let mask = Bitboard::square(square);
             for (piece, (w, b)) in white.iter().zip(black.iter()).enumerate() {
                 if (w & mask).not_empty() {
                     on_square = Pieces::from_idx(piece);
@@ -105,7 +105,7 @@ where
                 }
             }
 
-            self.pieces[square] = on_square;
+            self.pieces[square.idx()] = on_square;
         }
     }
 
@@ -132,8 +132,7 @@ where
         }
 
         // set the state key
-        let key = ZobristTable::new_key(
-            self.state().turn(),
+        let key = ZobristTable::new_key::<SideT>(
             self.state().castling(),
             self.state().en_passant(),
             self.bitboards,
