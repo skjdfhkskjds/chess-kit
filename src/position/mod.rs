@@ -2,18 +2,19 @@ mod attacks;
 mod castling;
 mod display;
 mod fen;
+mod gamestate;
 mod moves;
 mod pieces;
 mod position;
 mod rules;
 mod sides;
 mod state;
-mod gamestate;
 
-pub use gamestate::*;
 pub use fen::{FENError, FENParser, Parser};
+pub use gamestate::*;
 pub use position::DefaultPosition;
 
+use crate::eval::EvalState;
 use crate::primitives::{
     Bitboard, Black, Castling, Move, Pieces, Side, SideCastling, Sides, Square, White, ZobristKey,
 };
@@ -184,13 +185,16 @@ pub trait PositionAttacks {
 //
 // @trait
 pub trait PositionMoves {
-    // make_move makes the given move from the current position
+    // make_move makes the given move from the current position and updates the
+    // evaluation state with the incremental changes to the position
     //
     // @param: mv - move to make
+    // @param: eval_state - mutable reference to the evaluation state to update
     // @return: void
     // @side-effect: modifies the position and internal state
+    // @side-effect: modifies the evaluation state
     // @requires: the given move must be legal for the current position
-    fn make_move(&mut self, mv: Move);
+    fn make_move<EvalStateT: EvalState>(&mut self, mv: Move, eval_state: &mut EvalStateT);
 
     // unmake_move undoes the given move from the current position
     //

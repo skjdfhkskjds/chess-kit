@@ -1,8 +1,10 @@
 use crate::perft_utils::PerftTest;
+use chess_kit::eval::{Accumulator, EvalState};
 use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
 use chess_kit::position::Position;
 use chess_kit::transposition::TranspositionTable;
+use std::marker::PhantomData;
 use std::time::Instant;
 
 #[cfg(feature = "no_tt")]
@@ -18,24 +20,31 @@ pub enum PerftHarnessMode {
 }
 
 // PerftHarness is a test harness for running perft tests
-pub struct PerftHarness<MoveGeneratorT, PositionT, TranspositionTableT>
+pub struct PerftHarness<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
 where
     MoveGeneratorT: MoveGenerator,
     PositionT: Position,
+    AccumulatorT: Accumulator<EvalStateT>,
+    EvalStateT: EvalState,
     TranspositionTableT: TranspositionTable<PerftData>,
 {
     mode: PerftHarnessMode,         // the mode to run the harness in
     test_cases: Vec<PerftTest>,     // the test cases to run
     move_generator: MoveGeneratorT, // global move generator, shared across tests
+    accumulator: AccumulatorT,      // global accumulator, shared across tests
     tt: TranspositionTableT,        // global transposition table, shared across tests
     position: PositionT,            // global position, shared across tests
+
+    _eval_state: PhantomData<EvalStateT>,
 }
 
-impl<MoveGeneratorT, PositionT, TranspositionTableT>
-    PerftHarness<MoveGeneratorT, PositionT, TranspositionTableT>
+impl<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
+    PerftHarness<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
 where
     MoveGeneratorT: MoveGenerator,
     PositionT: Position,
+    AccumulatorT: Accumulator<EvalStateT>,
+    EvalStateT: EvalState,
     TranspositionTableT: TranspositionTable<PerftData>,
 {
     // new creates a new perft harness
@@ -49,8 +58,10 @@ where
             mode,
             test_cases,
             move_generator: MoveGeneratorT::new(),
+            accumulator: AccumulatorT::new(),
             tt,
             position: PositionT::new(),
+            _eval_state: PhantomData,
         }
     }
 
@@ -76,12 +87,14 @@ where
                 &mut self.position,
                 &self.move_generator,
                 &mut self.tt,
+                &mut self.accumulator,
                 test.data.depth(),
             ),
             PerftHarnessMode::Divide => perft_divide_print(
                 &mut self.position,
                 &self.move_generator,
                 &mut self.tt,
+                &mut self.accumulator,
                 test.data.depth(),
             ),
         };

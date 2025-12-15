@@ -1,5 +1,6 @@
+use super::{DefaultPosition, PositionState, State};
 use crate::attack_table::AttackTable;
-use crate::position::{DefaultPosition, PositionState, State};
+use crate::eval::EvalState;
 use crate::primitives::{Pieces, Side, Sides, Square, ZobristTable};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
@@ -30,15 +31,23 @@ where
     //
     // @param: piece - piece to remove
     // @param: square - square to remove the piece from
+    // @param: eval - mutable reference to the evaluation state to update
     // @return: void
     // @side-effects: modifies the `position`
+    // @side-effects: modifies the evaluation state
     #[inline(always)]
-    pub(crate) fn remove_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
+    pub(crate) fn remove_piece<SideT: Side, EvalStateT: EvalState>(
+        &mut self,
+        piece: Pieces,
+        square: Square,
+        eval: &mut EvalStateT,
+    ) {
         self.remove_piece_no_incrementals::<SideT>(piece, square);
         let delta = ZobristTable::piece::<SideT>(piece, square);
         self.state_mut().update_key(delta);
 
-        // TODO: make updates to game state for things like phase, turn, piece square valuation
+        // handle the incremental evaluation callback
+        eval.on_remove_piece::<SideT>(piece, square);
     }
 
     // set_piece_no_incrementals sets SideT's piece on the given square without
@@ -60,15 +69,23 @@ where
     //
     // @param: piece - piece to put on the board
     // @param: square - square to put the piece on
+    // @param: eval - mutable reference to the evaluation state to update
     // @return: void
     // @side-effects: modifies the `position`
+    // @side-effects: modifies the evaluation state
     #[inline(always)]
-    pub(crate) fn set_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
+    pub(crate) fn set_piece<SideT: Side, EvalStateT: EvalState>(
+        &mut self,
+        piece: Pieces,
+        square: Square,
+        eval: &mut EvalStateT,
+    ) {
         self.set_piece_no_incrementals::<SideT>(piece, square);
         let delta = ZobristTable::piece::<SideT>(piece, square);
         self.state_mut().update_key(delta);
 
-        // TODO: make updates to game state for things like phase, turn, piece square valuation
+        // handle the incremental evaluation callback
+        eval.on_set_piece::<SideT>(piece, square);
     }
 
     // set_en_passant sets the en passant square in the state

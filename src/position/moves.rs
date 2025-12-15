@@ -1,7 +1,8 @@
-use crate::attack_table::AttackTable;
-use crate::position::{
+use super::{
     DefaultPosition, PositionAttacks, PositionMoves, PositionState, SideCastlingSquares, State,
 };
+use crate::attack_table::AttackTable;
+use crate::eval::EvalState;
 use crate::primitives::{
     Bitboard, Black, Move, MoveType, Pieces, Side, Sides, Square, White, ZobristTable,
 };
@@ -13,24 +14,17 @@ where
 {
     // make_move makes the given move from the current position
     //
-    // @param: mv - move to make
-    // @return: void
-    // @side-effects: modifies the `position`
-    // @side-effects: modifies incremental game state
-    // @side-effects: optionally revokes castling permissions
-    // @side-effects: optionally sets the en passant square
-    fn make_move(&mut self, mv: Move) {
+    // @impl: PositionMoves::make_move
+    fn make_move<EvalStateT: EvalState>(&mut self, mv: Move, eval: &mut EvalStateT) {
         match self.turn() {
-            Sides::White => self.make_move_for_side::<White>(mv),
-            Sides::Black => self.make_move_for_side::<Black>(mv),
+            Sides::White => self.make_move_for_side::<White, EvalStateT>(mv, eval),
+            Sides::Black => self.make_move_for_side::<Black, EvalStateT>(mv, eval),
         }
     }
 
     // unmake_move unmakes the last move on the board
     //
-    // @return: void
-    // @side-effects: modifies the `position`
-    // @side-effects: reverts the `state` back to the previous state
+    // @impl: PositionMoves::unmake_move
     fn unmake_move(&mut self, mv: Move) {
         match self.turn() {
             Sides::White => self.unmake_move_for_side::<Black>(mv),
@@ -223,25 +217,44 @@ where
     // @return: void
     // @side-effects: modifies the `position`
     #[inline(always)]
-    fn move_piece<SideT: SideCastlingSquares>(&mut self, piece: Pieces, from: Square, to: Square) {
+    fn move_piece<SideT: SideCastlingSquares, EvalStateT: EvalState>(
+        &mut self,
+        piece: Pieces,
+        from: Square,
+        to: Square,
+        eval: &mut EvalStateT,
+    ) {
         self.move_piece_no_incrementals::<SideT>(piece, from, to);
+
+        // update the zobrist key
         let key =
             ZobristTable::piece::<SideT>(piece, from) ^ ZobristTable::piece::<SideT>(piece, to);
         self.state_mut().update_key(key);
+
+        // fire the incremental evaluation callbacks
+        eval.on_remove_piece::<SideT>(piece, from);
+        eval.on_set_piece::<SideT>(piece, to);
     }
 
     // capture_piece captures SideT's piece at the given square
     //
     // @param: piece - piece to capture
     // @param: square - square that the captured piece is on
+    // @param: eval - mutable reference to the evaluation state to update
     // @return: void
     // @side-effects: modifies the `position`
+    // @side-effects: modifies the evaluation state
     // @side-effects: resets the halfmove clock
     // @side-effects: updates castling permissions (if applicable)
     #[inline(always)]
-    fn capture_piece<SideT: SideCastlingSquares>(&mut self, piece: Pieces, square: Square) {
+    fn capture_piece<SideT: SideCastlingSquares, EvalStateT: EvalState>(
+        &mut self,
+        piece: Pieces,
+        square: Square,
+        eval: &mut EvalStateT,
+    ) {
         // remove the piece from the board
-        self.remove_piece::<SideT>(piece, square);
+        self.remove_piece::<SideT, EvalStateT>(piece, square, eval);
 
         // reset the halfmove clock since a capture has occurred
         self.state_mut().set_halfmoves(0);
@@ -373,14 +386,17 @@ where
     // make_move_for_side makes the given move from the current position as SideT
     //
     // @param: mv - move to make
+    // @param: eval - mutable reference to the evaluation state to update
     // @return: void
     // @side-effects: modifies the `position`
     // @side-effects: modifies incremental game state
+    // @side-effects: modifies the evaluation state
     #[inline(always)]
-    fn make_move_for_side<SideT>(&mut self, mv: Move)
+    fn make_move_for_side<SideT, EvalStateT>(&mut self, mv: Move, eval: &mut EvalStateT)
     where
         SideT: SideCastlingSquares,
         SideT::Other: SideCastlingSquares,
+        EvalStateT: EvalState,
     {
         // TODO: move the delivers check logic outside of the make move logic
         let delivers_check = self.delivers_check::<SideT>(mv);
@@ -405,7 +421,7 @@ where
         // handle a piece capture
         let captured = self.piece_at(to);
         if !matches!(captured, Pieces::None) {
-            self.capture_piece::<SideT::Other>(captured, to);
+            self.capture_piece::<SideT::Other, EvalStateT>(captured, to, eval);
         }
         // set the captured piece for the state
         self.state_mut().set_captured_piece(captured);
@@ -413,23 +429,25 @@ where
         // move the piece
         match piece {
             Pieces::King => {
-                self.move_piece::<SideT>(Pieces::King, from, to);
+                self.move_piece::<SideT, EvalStateT>(Pieces::King, from, to, eval);
 
                 // if the move is a castle, move the appropriate rook as well
                 if matches!(mv.type_of(), MoveType::Castle) {
                     if to == SideT::KINGSIDE_DESTINATION {
                         // kingside castle
-                        self.move_piece::<SideT>(
+                        self.move_piece::<SideT, EvalStateT>(
                             Pieces::Rook,
                             SideT::KINGSIDE_ROOK,
                             SideT::KINGSIDE_ROOK_DESTINATION,
+                            eval,
                         );
                     } else {
                         // queenside castle
-                        self.move_piece::<SideT>(
+                        self.move_piece::<SideT, EvalStateT>(
                             Pieces::Rook,
                             SideT::QUEENSIDE_ROOK,
                             SideT::QUEENSIDE_ROOK_DESTINATION,
+                            eval,
                         );
                     }
 
@@ -442,7 +460,7 @@ where
                 }
             }
             Pieces::Rook => {
-                self.move_piece::<SideT>(Pieces::Rook, from, to);
+                self.move_piece::<SideT, EvalStateT>(Pieces::Rook, from, to, eval);
 
                 // if the moving piece is a rook and that side can still castle,
                 // revoke the appropriate castling permissions if the rook is
@@ -459,17 +477,17 @@ where
                 match mv.type_of() {
                     MoveType::Promotion => {
                         // remove the pawn from the board and set the promoted piece
-                        self.remove_piece::<SideT>(Pieces::Pawn, from);
-                        self.set_piece::<SideT>(mv.promoted_to(), to);
+                        self.remove_piece::<SideT, EvalStateT>(Pieces::Pawn, from, eval);
+                        self.set_piece::<SideT, EvalStateT>(mv.promoted_to(), to, eval);
                     }
                     MoveType::EnPassant => {
-                        self.move_piece::<SideT>(Pieces::Pawn, from, to);
+                        self.move_piece::<SideT, EvalStateT>(Pieces::Pawn, from, to, eval);
 
                         // if the move is an en passant capture, remove the opponent's pawn
-                        self.remove_piece::<SideT::Other>(Pieces::Pawn, to ^ 8);
+                        self.remove_piece::<SideT::Other, EvalStateT>(Pieces::Pawn, to ^ 8, eval);
                     }
                     _ => {
-                        self.move_piece::<SideT>(Pieces::Pawn, from, to);
+                        self.move_piece::<SideT, EvalStateT>(Pieces::Pawn, from, to, eval);
 
                         // if the move is a double step, then an en passant capture may
                         // be possible, and we should check for it later
@@ -481,7 +499,7 @@ where
                 self.state_mut().set_halfmoves(0);
             }
             _ => {
-                self.move_piece::<SideT>(piece, from, to);
+                self.move_piece::<SideT, EvalStateT>(piece, from, to, eval);
             }
         }
 
