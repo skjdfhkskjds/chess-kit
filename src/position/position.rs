@@ -57,12 +57,8 @@ where
         self.init_pieces();
 
         match self.turn() {
-            Sides::White => {
-                self.init_state::<White>();
-            }
-            Sides::Black => {
-                self.init_state::<Black>();
-            }
+            Sides::White => self.init_state::<White>(),
+            Sides::Black => self.init_state::<Black>(),
         }
     }
 
