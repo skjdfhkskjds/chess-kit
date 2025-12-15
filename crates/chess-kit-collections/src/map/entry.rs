@@ -1,7 +1,8 @@
-use crate::transposition::NodeData;
-
 #[derive(Clone, Copy)]
-pub struct Entry<T: NodeData> {
+pub struct Entry<T>
+where
+    T: Copy + Default,
+{
     dirty: bool,
     key: u32,
     data: T,
@@ -9,10 +10,10 @@ pub struct Entry<T: NodeData> {
 
 impl<T> Entry<T>
 where
-    T: NodeData,
+    T: Copy + Default,
 {
     // new creates a new bucket with the given key and data
-    // 
+    //
     // @param: key - key to set the value to
     // @param: data - data to set the value to
     // @return: new bucket
@@ -21,12 +22,12 @@ where
         Self {
             dirty: false,
             key: 0,
-            data: T::empty(),
+            data: T::default(),
         }
     }
 
     // is_dirty checks if the bucket is dirty
-    // 
+    //
     // @return: true if the bucket is dirty, false otherwise
     #[inline(always)]
     pub(crate) const fn is_dirty(&self) -> bool {
@@ -34,7 +35,7 @@ where
     }
 
     // key returns the key of the bucket
-    // 
+    //
     // @return: key of the bucket
     #[inline(always)]
     pub(crate) const fn key(&self) -> u32 {
@@ -42,7 +43,7 @@ where
     }
 
     // data returns a reference to the data in the bucket
-    // 
+    //
     // @return: reference to the data in the bucket
     #[inline(always)]
     pub(crate) const fn data(&self) -> &T {
@@ -50,7 +51,7 @@ where
     }
 
     // set sets the value of the bucket to the given key and data
-    // 
+    //
     // @param: key - key to set the value to
     // @param: data - data to set the value to
     // @return: void
@@ -63,20 +64,20 @@ where
     }
 
     // clear clears the bucket to a clean state
-    // 
+    //
     // @return: void
     // @side-effects: modifies the bucket
     #[inline(always)]
     pub(crate) fn clear(&mut self) {
         self.key = 0;
-        self.data = T::empty();
+        self.data = T::default();
         self.dirty = false;
     }
 }
 
 impl<T> Default for Entry<T>
 where
-    T: NodeData,
+    T: Copy + Default,
 {
     #[inline(always)]
     fn default() -> Self {

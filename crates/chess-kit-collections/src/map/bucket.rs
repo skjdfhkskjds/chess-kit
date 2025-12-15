@@ -1,33 +1,30 @@
-use crate::transposition::{NodeData, entry::Entry};
+use super::{Entry, Value};
 
-// TODO: make this configurable
-pub const ENTRIES_PER_BUCKET: usize = 3;
+// DEFAULT_SIZE is the default number of entries per bucket
+pub const DEFAULT_SIZE: usize = 3;
 
 #[derive(Clone)]
-pub struct Bucket<T: NodeData> {
-    entries: [Entry<T>; ENTRIES_PER_BUCKET],
+pub struct Bucket<T: Value, const SIZE: usize = DEFAULT_SIZE> {
+    entries: [Entry<T>; SIZE],
 }
 
-impl<T> Bucket<T>
-where
-    T: NodeData + Copy,
-{
+impl<T: Value, const SIZE: usize> Bucket<T, SIZE> {
     // new creates a new bucket with all entries initialized to empty
-    // 
+    //
     // @return: new bucket
     #[inline(always)]
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            entries: [Entry::new(); ENTRIES_PER_BUCKET],
+            entries: [Entry::new(); SIZE],
         }
     }
 
     // get fetches the first entry with the given key
-    // 
+    //
     // @param: key - key to fetch the data for
     // @return: data if the key is found, None otherwise
     #[inline(always)]
-    pub(crate) fn get(&self, key: u32) -> Option<&T> {
+    pub fn get(&self, key: u32) -> Option<&T> {
         for entry in self.entries.iter() {
             if entry.key() == key {
                 return Some(entry.data());
@@ -36,68 +33,65 @@ where
         None
     }
 
-    // set sets the value of the entry with the lowest depth to the given key
+    // set sets the value of the entry with the lowest priority to the given key
     // data pair
-    // 
+    //
     // @param: key - key to set the value to
     // @param: data - data to set the value to
     // @return: true if an entry was set for the first time, false otherwise
     #[inline(always)]
-    pub(crate) fn set(&mut self, key: u32, data: T) -> bool {
-        // find the index of the entry with the lowest depth
-        let mut min_depth = i8::MAX;
-        let mut min_depth_idx = 0;
-        for i in 0..ENTRIES_PER_BUCKET {
-            let depth = self.entries[i].data().depth();
-            if depth < min_depth {
-                min_depth = depth;
-                min_depth_idx = i;
+    pub fn set(&mut self, key: u32, data: T) -> bool {
+        // find the index of the entry with the lowest priority
+        let mut min_priority = i8::MAX;
+        let mut min_priority_idx = 0;
+        for i in 0..SIZE {
+            let priority = self.entries[i].data().priority();
+            if priority < min_priority {
+                min_priority = priority;
+                min_priority_idx = i;
             }
         }
 
         // check if the entry was dirty before this operation
-        let was_dirty = self.entries[min_depth_idx].is_dirty();
+        let was_dirty = self.entries[min_priority_idx].is_dirty();
 
         // set the value of the entry
-        // 
-        // Note: we always replace the old value
-        self.entries[min_depth_idx].set(key, data);
+        //
+        // note: we always replace the old value
+        self.entries[min_priority_idx].set(key, data);
 
         !was_dirty
     }
 
     // clear clears the bucket to a clean state
-    // 
+    //
     // @return: void
     // @side-effects: clears each entry in the bucket
     #[inline(always)]
-    pub(crate) fn clear(&mut self) {
+    pub fn clear(&mut self) {
         for entry in self.entries.iter_mut() {
             entry.clear();
         }
     }
 
     // size_of_mem returns the size of the memory occupied by the bucket
-    // 
+    //
     // @return: size of the memory occupied by the bucket
     #[inline(always)]
-    pub(crate) const fn size_of_mem() -> usize {
-        std::mem::size_of::<Entry<T>>() * ENTRIES_PER_BUCKET
+    pub const fn size_of_mem() -> usize {
+        std::mem::size_of::<Entry<T>>() * DEFAULT_SIZE
     }
 
     // capacity returns the maximum number of entries in the bucket
-    // 
+    //
     // @return: maximum number of entries in the bucket
     #[inline(always)]
-    pub(crate) const fn capacity() -> usize {
-        ENTRIES_PER_BUCKET
+    pub const fn capacity() -> usize {
+        DEFAULT_SIZE
     }
 }
 
-impl<T> Default for Bucket<T>
-where
-    T: NodeData + Copy,
-{
+impl<T: Value, const SIZE: usize> Default for Bucket<T, SIZE> {
     #[inline(always)]
     fn default() -> Self {
         Self::new()

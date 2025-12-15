@@ -1,23 +1,22 @@
 pub mod transposition_table;
-pub(crate) mod entry;
-pub(crate) mod bucket;
 
 pub use transposition_table::DefaultTranspositionTable;
 
 use crate::primitives::ZobristKey;
+use chess_kit_collections::Value;
 
 // `NodeData` is a trait that defines the data accessors for a node in the
 // transposition table
 //
 // @trait
-pub trait NodeData: Copy + Clone {
+pub trait NodeData: Value {
     // empty creates a new instance of a node with no data
-    // 
+    //
     // @return: new instance of a node with no data
     fn empty() -> Self;
 
     // depth returns the depth of the node
-    // 
+    //
     // @return: depth of the node
     fn depth(&self) -> i8;
 }
@@ -26,7 +25,7 @@ pub trait NodeData: Copy + Clone {
 // table
 //
 // @trait
-pub trait TranspositionTable<T: NodeData> {
+pub trait TranspositionTable<NodeT: NodeData> {
     // new creates a new transposition table with the requested memory size
     //
     // @param: memory_size - the size of the transposition table in MBs
@@ -39,14 +38,14 @@ pub trait TranspositionTable<T: NodeData> {
     // @param: data - the data to insert
     // @return: void
     // @side-effects: modifies the transposition table
-    fn insert(&mut self, key: ZobristKey, data: T);
+    fn insert(&mut self, key: ZobristKey, data: NodeT);
 
     // probe probes the transposition table for an entry with the given key
-    // 
+    //
     // @param: key - the key of the position to probe for
     // @return: the data if the position is found, None otherwise
-    fn probe(&self, key: ZobristKey) -> Option<&T>;
-    
+    fn probe(&self, key: ZobristKey) -> Option<&NodeT>;
+
     // is_enabled checks if the transposition table is enabled
     //
     // @return: true if the transposition table is enabled, false otherwise
