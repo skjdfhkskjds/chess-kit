@@ -3,9 +3,8 @@ mod state;
 
 pub use state::DefaultState;
 
-use crate::primitives::{
-    Bitboard, Castling, Copyable, Pieces, Side, Sides, Square, Stack, ZobristKey,
-};
+use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
+use chess_kit_collections::{Copyable, Stack};
 use std::fmt::Display;
 
 pub type Clock = u16;

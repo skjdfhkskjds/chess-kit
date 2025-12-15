@@ -20,8 +20,8 @@ const DEFAULT_CAPACITY: usize = u8::MAX as usize;
 // note: we do a custom definition of stack so that we can use the `push_next`
 //       pattern to do lightweight derivation of new items from existing ones
 pub struct Stack<T: Copyable, const CAP: usize = DEFAULT_CAPACITY> {
-    pub(crate) current: usize,  // index of the current state
-    pub(crate) items: [T; CAP], // stack of previous states
+    pub(super) current: usize,  // index of the current state
+    pub(super) items: [T; CAP], // stack of previous states
 }
 
 impl<T: Copyable, const CAP: usize> Stack<T, CAP> {

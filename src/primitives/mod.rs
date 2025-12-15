@@ -8,7 +8,6 @@ pub mod ranks;
 pub mod sides;
 pub mod squares;
 pub mod zobrist;
-pub mod stack;
 
 pub use bitboard::{Bitboard, BitboardVec};
 pub use castling::{Castling, SideCastling};
@@ -20,4 +19,3 @@ pub use ranks::Rank;
 pub use sides::{Black, Side, Sides, White};
 pub use squares::Square;
 pub use zobrist::{ZobristKey, ZobristTable};
-pub use stack::{Stack, Copyable};

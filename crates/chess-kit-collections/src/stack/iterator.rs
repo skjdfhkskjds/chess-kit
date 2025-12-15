@@ -1,5 +1,4 @@
-use crate::primitives::Stack;
-use crate::primitives::stack::Copyable;
+use super::{Stack, Copyable};
 
 // StackIter is a double-ended iterator over the stack
 pub struct StackIter<'a, T: Copyable, const CAP: usize> {

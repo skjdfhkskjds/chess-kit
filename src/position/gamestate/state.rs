@@ -1,5 +1,6 @@
 use super::{Clock, State, StateReader, StateWriter};
-use crate::primitives::{Bitboard, Castling, Copyable, Pieces, Side, Sides, Square, ZobristKey};
+use crate::primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
+use chess_kit_collections::Copyable;
 
 // StateHeader is a header for a state that contains the parts of the state up
 // to (and excluding) the state key
