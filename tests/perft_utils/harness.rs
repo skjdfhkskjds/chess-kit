@@ -69,8 +69,11 @@ where
     //
     // @param: test - the test case to run
     fn run_test(&mut self, test: &PerftTest) {
-        // setup the board from the FEN string
+        // clear old state
         self.position.reset();
+        self.accumulator.reset();
+
+        // setup the board from the FEN string
         let result = self.position.load_fen(test.fen);
         if result.is_err() {
             println!(
@@ -79,6 +82,7 @@ where
             );
             return;
         }
+        self.accumulator.init(&self.position);
 
         // run the test case per depth
         let now = Instant::now();

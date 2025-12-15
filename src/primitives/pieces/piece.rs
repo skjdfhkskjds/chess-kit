@@ -14,4 +14,14 @@ pub enum Pieces {
 
 impl Pieces {
     pub const TOTAL: usize = 7;
+
+    // ALL is a constant array of all pieces except for Pieces::None
+    pub const ALL: [Pieces; Self::TOTAL - 1] = [
+        Self::Pawn,
+        Self::Knight,
+        Self::Bishop,
+        Self::Rook,
+        Self::Queen,
+        Self::King,
+    ];
 }

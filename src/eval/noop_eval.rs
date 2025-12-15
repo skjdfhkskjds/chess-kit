@@ -1,4 +1,4 @@
-use crate::eval::EvalState;
+use crate::eval::{EvalState, Score};
 use crate::position::Position;
 use crate::primitives::{Pieces, Side, Square};
 use chess_kit_collections::Copyable;
@@ -21,7 +21,7 @@ impl EvalState for NoOpEvalState {
     fn init<PositionT: Position>(&mut self, _: &PositionT) {}
 
     #[inline(always)]
-    fn score(&self) -> i32 {
+    fn score(&mut self) -> Score {
         0
     }
 

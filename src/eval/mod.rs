@@ -1,13 +1,17 @@
 mod accumulator;
 mod noop_eval;
+mod psqt;
 
 pub use accumulator::DefaultAccumulator;
 pub use noop_eval::NoOpEvalState;
+pub use psqt::PSQTEvalState;
 
 use chess_kit_collections::Copyable;
 
 use crate::position::Position;
 use crate::primitives::{Pieces, Side, Square};
+
+pub type Score = i32;
 
 pub trait EvalState: Copyable {
     // new creates a new, empty eval state
@@ -25,7 +29,7 @@ pub trait EvalState: Copyable {
     // score returns the evaluation score of this state
     //
     // @return: evaluation score of this state
-    fn score(&self) -> i32;
+    fn score(&mut self) -> Score;
 
     // on_set_piece is the incremental update callback that fires when a piece
     // is set on the board for the given side
