@@ -1,6 +1,6 @@
 use chess_kit::attack_table::DefaultAttackTable;
 use chess_kit::position::{
-    DefaultPosition, DefaultState, Position, PositionFromFEN, ReadOnlyState,
+    DefaultPosition, DefaultState, Position, PositionFromFEN, StateReader,
 };
 use chess_kit::primitives::ZobristKey;
 

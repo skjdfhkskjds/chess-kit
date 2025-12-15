@@ -16,13 +16,10 @@ pub type Clock = u16;
 #[allow(type_alias_bounds)]
 pub type History<StateT: State> = Stack<StateT>;
 
-// State is a composed trait that combines all read/write operations on the
-// state
+// State is a composed trait that combines all supported operations on the state
 //
 // @trait
-pub trait State:
-    ReadOnlyState + WriteOnlyState + Default + Copy + Clone + Display + Copyable
-{
+pub trait State: StateReader + StateWriter + Copyable + Display {
     // new creates a new, empty state
     //
     // @return: new, empty state
@@ -34,10 +31,10 @@ pub trait State:
     fn reset(&mut self);
 }
 
-// ReadOnlyState is a trait that defines all read operations on the state
+// StateReader is a trait that defines all read operations on the state
 //
 // @trait
-pub trait ReadOnlyState {
+pub trait StateReader {
     // turn returns the side to move
     //
     // @return: the side to move
@@ -101,10 +98,10 @@ pub trait ReadOnlyState {
     fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard;
 }
 
-// WriteOnlyState is a trait that defines all write operations on the state
+// StateWriter is a trait that defines all write operations on the state
 //
 // @trait
-pub trait WriteOnlyState {
+pub trait StateWriter {
     // set_turn sets the turn-to-move of the state
     //
     // @param: turn - the turn to set
