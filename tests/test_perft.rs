@@ -3,7 +3,7 @@ mod perft_utils;
 use perft_utils::{PerftHarness, PerftHarnessMode, PerftTest};
 
 use chess_kit::attack_table::DefaultAttackTable;
-use chess_kit::eval::{DefaultAccumulator, PSQTEvalState};
+use chess_kit::position::{DefaultAccumulator, PSQTEvalState};
 use chess_kit::movegen::DefaultMoveGenerator;
 use chess_kit::perft::PerftData;
 use chess_kit::position::{DefaultPosition, DefaultState};

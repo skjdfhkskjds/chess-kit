@@ -1,5 +1,5 @@
 use crate::perft_utils::PerftTest;
-use chess_kit::eval::{Accumulator, EvalState};
+use chess_kit::position::{Accumulator, EvalState};
 use chess_kit::movegen::MoveGenerator;
 use chess_kit::perft::{PerftData, perft, perft_divide_print};
 use chess_kit::position::Position;

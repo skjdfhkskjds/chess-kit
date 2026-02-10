@@ -1,3 +1,15 @@
+[workspace]
+members = [
+    "crates/macros",
+    "crates/collections",
+    "crates/primitives",
+    "crates/attack_table",
+    "crates/position",
+    "crates/movegen",
+    "crates/transposition",
+    "crates/perft",
+]
+
 [package]
 name = "chess-kit"
 version = "0.1.0"
@@ -10,5 +22,11 @@ lto = true
 no_tt = []
 
 [dependencies]
-chess-kit-derive = { path = "crates/chess-kit-derive" }
-chess-kit-collections = { path = "crates/chess-kit-collections" }
+chess-kit-derive = { path = "crates/macros" }
+chess-kit-collections = { path = "crates/collections" }
+chess-kit-primitives = { path = "crates/primitives" }
+chess-kit-attack-table = { path = "crates/attack_table" }
+chess-kit-position = { path = "crates/position" }
+chess-kit-movegen = { path = "crates/movegen" }
+chess-kit-transposition = { path = "crates/transposition" }
+chess-kit-perft = { path = "crates/perft" }

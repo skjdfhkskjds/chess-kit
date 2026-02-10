@@ -1,0 +1,12 @@
+[package]
+name = "chess-kit-movegen"
+version = "0.1.0"
+edition = "2024"
+
+[profile.release]
+lto = true
+
+[dependencies]
+chess-kit-attack-table = { path = "../attack_table" }
+chess-kit-position = { path = "../position" }
+chess-kit-primitives = { path = "../primitives" }

@@ -1,0 +1,14 @@
+[package]
+name = "chess-kit-perft"
+version = "0.1.0"
+edition = "2024"
+
+[profile.release]
+lto = true
+
+[dependencies]
+chess-kit-collections = { path = "../collections" }
+chess-kit-movegen = { path = "../movegen" }
+chess-kit-position = { path = "../position" }
+chess-kit-primitives = { path = "../primitives" }
+chess-kit-transposition = { path = "../transposition" }

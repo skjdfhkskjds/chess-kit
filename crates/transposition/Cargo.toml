@@ -1,0 +1,11 @@
+[package]
+name = "chess-kit-transposition"
+version = "0.1.0"
+edition = "2024"
+
+[profile.release]
+lto = true
+
+[dependencies]
+chess-kit-collections = { path = "../collections" }
+chess-kit-primitives = { path = "../primitives" }
