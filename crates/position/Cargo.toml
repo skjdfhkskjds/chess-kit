@@ -3,9 +3,6 @@ name = "chess-kit-position"
 version = "0.1.0"
 edition = "2024"
 
-[profile.release]
-lto = true
-
 [dependencies]
 chess-kit-attack-table = { path = "../attack_table" }
 chess-kit-collections = { path = "../collections" }
