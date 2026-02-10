@@ -47,6 +47,23 @@ pub fn expand_indexable_enum(input: &DeriveInput) -> Result<TokenStream> {
                 }
             }
         }
+
+
+        impl<T, const N: usize> ::std::ops::Index<#name> for [T; N] {
+            type Output = T;
+
+            #[inline(always)]
+            fn index(&self, index: #name) -> &Self::Output {
+                &self[index as usize]
+            }
+        }
+
+        impl<T, const N: usize> ::std::ops::IndexMut<#name> for [T; N] {
+            #[inline(always)]
+            fn index_mut(&mut self, index: #name) -> &mut Self::Output {
+                &mut self[index as usize]
+            }
+        }
     };
 
     Ok(output)

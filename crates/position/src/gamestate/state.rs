@@ -182,7 +182,7 @@ impl StateReader for DefaultState {
     // @impl: StateReader::check_squares
     #[inline(always)]
     fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
-        self.check_squares[piece.idx()]
+        self.check_squares[piece]
     }
 }
 
@@ -317,7 +317,7 @@ impl StateWriter for DefaultState {
     // @impl: StateWriter::set_check_squares
     #[inline(always)]
     fn set_check_squares<SideT: Side>(&mut self, piece: Pieces, squares: Bitboard) {
-        self.check_squares[piece.idx()] = squares;
+        self.check_squares[piece] = squares;
     }
 }
 

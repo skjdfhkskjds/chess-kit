@@ -26,7 +26,7 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::king_targets
     #[inline(always)]
     fn king_targets(sq: Square) -> Bitboard {
-        KING_TABLE[sq.idx()]
+        KING_TABLE[sq]
     }
 
     // knight_targets returns the squares that the knight targets from the
@@ -35,7 +35,7 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::knight_targets
     #[inline(always)]
     fn knight_targets(sq: Square) -> Bitboard {
-        KNIGHT_TABLE[sq.idx()]
+        KNIGHT_TABLE[sq]
     }
 
     // pawn_pushes returns the squares that the pawn pushes to from the given
@@ -56,7 +56,7 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::pawn_targets
     #[inline(always)]
     fn pawn_targets<SideT: Side>(sq: Square) -> Bitboard {
-        PAWN_TABLE[SideT::INDEX][sq.idx()]
+        PAWN_TABLE[SideT::INDEX][sq]
     }
 
     // all_pawn_targets returns the squares that the all the pawns on the given
@@ -85,7 +85,7 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::empty_rook_targets
     #[inline(always)]
     fn empty_rook_targets(square: Square) -> Bitboard {
-        EMPTY_ROOK_TABLE[square.idx()]
+        EMPTY_ROOK_TABLE[square]
     }
 
     // rook_targets returns the attacks for the given square and bitboard.
@@ -94,10 +94,10 @@ impl AttackTable for DefaultAttackTable {
     #[inline(always)]
     fn rook_targets(square: Square, bitboard: Bitboard) -> Bitboard {
         debug_assert!(
-            ROOK_MAGICS_TABLE.magics[square.idx()].idx(bitboard) < ROOK_MAGICS_TABLE.table.len(),
+            ROOK_MAGICS_TABLE.magics[square].idx(bitboard) < ROOK_MAGICS_TABLE.table.len(),
             "Invalid index for square {square}. Error in Magics. occupancy:\n{bitboard}"
         );
-        ROOK_MAGICS_TABLE.table[ROOK_MAGICS_TABLE.magics[square.idx()].idx(bitboard)]
+        ROOK_MAGICS_TABLE.table[ROOK_MAGICS_TABLE.magics[square].idx(bitboard)]
     }
 
     // empty_bishop_targets returns the squares that the bishop targets from the given
@@ -106,7 +106,7 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::empty_bishop_targets
     #[inline(always)]
     fn empty_bishop_targets(square: Square) -> Bitboard {
-        EMPTY_BISHOP_TABLE[square.idx()]
+        EMPTY_BISHOP_TABLE[square]
     }
 
     // bishop_targets returns the attacks for the given square and bitboard.
@@ -114,7 +114,7 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::bishop_targets
     #[inline(always)]
     fn bishop_targets(square: Square, bitboard: Bitboard) -> Bitboard {
-        BISHOP_MAGICS_TABLE.table[BISHOP_MAGICS_TABLE.magics[square.idx()].idx(bitboard)]
+        BISHOP_MAGICS_TABLE.table[BISHOP_MAGICS_TABLE.magics[square].idx(bitboard)]
     }
 
     // queen_targets returns the attacks for the given square and bitboard.

@@ -59,7 +59,7 @@ where
     // @impl: PositionState::piece_at
     #[inline(always)]
     fn piece_at(&self, square: Square) -> Pieces {
-        self.pieces[square.idx()]
+        self.pieces[square]
     }
 
     // turn gets the side to move
@@ -90,7 +90,7 @@ where
     // @impl: PositionState::get_piece
     #[inline(always)]
     fn get_piece<SideT: Side>(&self, piece: Pieces) -> Bitboard {
-        self.bitboards[SideT::INDEX][piece.idx()]
+        self.bitboards[SideT::INDEX][piece]
     }
 
     // en_passant gets the current en passant square, if it exists

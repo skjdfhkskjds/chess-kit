@@ -31,12 +31,12 @@ impl PSQTEvalState {
     #[inline(always)]
     pub(super) fn update_score(&mut self) {
         // calculate the middlegame score for both sides
-        let mid_score = (self.scores[Sides::White.idx()].middlegame()
-            + self.scores[Sides::Black.idx()].middlegame()) as f32;
+        let mid_score = (self.scores[Sides::White].middlegame()
+            + self.scores[Sides::Black].middlegame()) as f32;
 
         // calculate the endgame score for both sides
-        let end_score = (self.scores[Sides::White.idx()].endgame()
-            + self.scores[Sides::Black.idx()].endgame()) as f32;
+        let end_score = (self.scores[Sides::White].endgame()
+            + self.scores[Sides::Black].endgame()) as f32;
 
         // interpolate the score between the middlegame and endgame scores based
         // on the weighted phase value

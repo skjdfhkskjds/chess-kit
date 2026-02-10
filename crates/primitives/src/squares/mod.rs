@@ -1,5 +1,4 @@
 use chess_kit_derive::{EnumBitOps, IndexableEnum};
-
 mod display;
 mod square;
 

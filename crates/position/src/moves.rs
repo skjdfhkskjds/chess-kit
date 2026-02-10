@@ -202,11 +202,11 @@ where
     fn move_piece_no_incrementals<SideT: Side>(&mut self, piece: Pieces, from: Square, to: Square) {
         let from_to = Bitboard::square(from) | Bitboard::square(to);
 
-        self.bitboards[SideT::INDEX][piece.idx()] ^= from_to;
+        self.bitboards[SideT::INDEX][piece] ^= from_to;
         self.sides[SideT::INDEX] ^= from_to;
         self.sides[Sides::TOTAL] ^= from_to;
-        self.pieces[from.idx()] = Pieces::None;
-        self.pieces[to.idx()] = piece;
+        self.pieces[from] = Pieces::None;
+        self.pieces[to] = piece;
     }
 
     // move_piece moves SideT's piece from the given square to the given square

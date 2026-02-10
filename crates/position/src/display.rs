@@ -27,9 +27,7 @@ where
                 };
 
                 for square in bitboard.iter() {
-                    let file_idx = square.file().idx();
-                    let rank_idx = square.rank().idx();
-                    board[rank_idx][file_idx] = piece_char;
+                    board[square.file()][square.rank()] = piece_char;
                 }
             }
         }

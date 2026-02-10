@@ -21,10 +21,10 @@ where
         piece: Pieces,
         square: Square,
     ) {
-        self.bitboards[SideT::INDEX][piece.idx()].remove_at(square);
+        self.bitboards[SideT::INDEX][piece].remove_at(square);
         self.sides[SideT::INDEX].remove_at(square);
         self.sides[Sides::TOTAL].remove_at(square);
-        self.pieces[square.idx()] = Pieces::None;
+        self.pieces[square] = Pieces::None;
     }
 
     // remove_piece removes SideT's piece from the given square
@@ -59,10 +59,10 @@ where
     // @side-effects: modifies the `position`
     #[inline(always)]
     pub(crate) fn set_piece_no_incrementals<SideT: Side>(&mut self, piece: Pieces, square: Square) {
-        self.bitboards[SideT::INDEX][piece.idx()].set_at(square);
+        self.bitboards[SideT::INDEX][piece].set_at(square);
         self.sides[SideT::INDEX].set_at(square);
         self.sides[Sides::TOTAL].set_at(square);
-        self.pieces[square.idx()] = piece;
+        self.pieces[square] = piece;
     }
 
     // set_piece puts SideT's piece on the given square

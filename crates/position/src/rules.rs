@@ -31,27 +31,27 @@ where
     // @return: true if the position is a draw by the rule, false otherwise
     pub fn is_draw_by_insufficient_material(&self) -> bool {
         // Get the piece bitboards for white and black.
-        let w = self.bitboards[Sides::White.idx()];
-        let b = self.bitboards[Sides::Black.idx()];
+        let w = self.bitboards[Sides::White];
+        let b = self.bitboards[Sides::Black];
 
         // check if either side has sufficient solo material to deliver
         // checkmate
         //
         // that is, if either side has a queen, rook, or a pawn.
-        let sufficient_solo_material = w[Pieces::Queen.idx()].not_empty()
-            || w[Pieces::Rook.idx()].not_empty()
-            || w[Pieces::Pawn.idx()].not_empty()
-            || b[Pieces::Queen.idx()].not_empty()
-            || b[Pieces::Rook.idx()].not_empty()
-            || b[Pieces::Pawn.idx()].not_empty();
+        let sufficient_solo_material = w[Pieces::Queen].not_empty()
+            || w[Pieces::Rook].not_empty()
+            || w[Pieces::Pawn].not_empty()
+            || b[Pieces::Queen].not_empty()
+            || b[Pieces::Rook].not_empty()
+            || b[Pieces::Pawn].not_empty();
         if sufficient_solo_material {
             return false;
         }
 
-        let white_bishops = w[Pieces::Bishop.idx()].count_ones();
-        let black_bishops = b[Pieces::Bishop.idx()].count_ones();
-        let white_knights = w[Pieces::Knight.idx()].count_ones();
-        let black_knights = b[Pieces::Knight.idx()].count_ones();
+        let white_bishops = w[Pieces::Bishop].count_ones();
+        let black_bishops = b[Pieces::Bishop].count_ones();
+        let white_knights = w[Pieces::Knight].count_ones();
+        let black_knights = b[Pieces::Knight].count_ones();
         let piece_count = white_bishops + black_bishops + white_knights + black_knights;
 
         // check the number of pieces on the board
@@ -69,8 +69,8 @@ where
                 }
 
                 // check if both bishops are on the same colour
-                let wb_sq = w[Pieces::Bishop.idx()].must_first();
-                let bb_sq = b[Pieces::Bishop.idx()].must_first();
+                let wb_sq = w[Pieces::Bishop].must_first();
+                let bb_sq = b[Pieces::Bishop].must_first();
                 wb_sq.is_white() == bb_sq.is_white()
             }
             _ => false,
@@ -107,19 +107,19 @@ where
     //
     // @return: true if either side can force checkmate, false otherwise
     pub fn can_force_checkmate(&self) -> bool {
-        let w = self.bitboards[Sides::White.idx()];
-        let b = self.bitboards[Sides::Black.idx()];
+        let w = self.bitboards[Sides::White];
+        let b = self.bitboards[Sides::Black];
 
         // check if either side has sufficient solo material to deliver
         // checkmate
         //
         // that is, if either side has a queen, rook, or a pawn.
-        let sufficient_solo_material = w[Pieces::Queen.idx()].not_empty()
-            || w[Pieces::Rook.idx()].not_empty()
-            || w[Pieces::Pawn.idx()].not_empty()
-            || b[Pieces::Queen.idx()].not_empty()
-            || b[Pieces::Rook.idx()].not_empty()
-            || b[Pieces::Pawn.idx()].not_empty();
+        let sufficient_solo_material = w[Pieces::Queen].not_empty()
+            || w[Pieces::Rook].not_empty()
+            || w[Pieces::Pawn].not_empty()
+            || b[Pieces::Queen].not_empty()
+            || b[Pieces::Rook].not_empty()
+            || b[Pieces::Pawn].not_empty();
 
         // if either side has sufficient solo material or a bishop pair,
         // then that side can force checkmate
@@ -130,13 +130,13 @@ where
             return true;
         }
 
-        let white_knights = w[Pieces::Knight.idx()].count_ones();
-        let black_knights = b[Pieces::Knight.idx()].count_ones();
+        let white_knights = w[Pieces::Knight].count_ones();
+        let black_knights = b[Pieces::Knight].count_ones();
 
         // if either side has a knight-bishop pair, OR they have at least 3
         // knights, then that side can force checkmate
-        (w[Pieces::Bishop.idx()].not_empty() && white_knights > 0)
-            || (b[Pieces::Bishop.idx()].not_empty() && black_knights > 0)
+        (w[Pieces::Bishop].not_empty() && white_knights > 0)
+            || (b[Pieces::Bishop].not_empty() && black_knights > 0)
             || white_knights >= 3
             || black_knights >= 3
     }

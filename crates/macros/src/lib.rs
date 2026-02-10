@@ -54,7 +54,9 @@ pub fn derive_enum_bitops(input: TokenStream) -> TokenStream {
 }
 
 /// Implements `idx`, `from_idx`, and `from_idx_safe` for fieldless enums whose
-/// implicit discriminants form a contiguous range starting at zero.
+/// implicit discriminants form a contiguous range starting at zero in a const
+/// context. For cases where indexing is possible in non-const contexts, it also
+/// implements `Index` and `IndexMut`.
 ///
 /// ```
 /// use chess_kit_derive::IndexableEnum;
@@ -68,6 +70,8 @@ pub fn derive_enum_bitops(input: TokenStream) -> TokenStream {
 /// let idx = File::C.idx();
 /// assert_eq!(idx, 2);
 /// assert_eq!(File::from_idx_safe(idx + 1), Some(File::D));
+/// assert_eq!(File::A[idx], File::A);
+/// assert_eq!(File::A[idx + 1], File::B);
 /// ```
 #[proc_macro_derive(IndexableEnum)]
 pub fn derive_indexable_enum(input: TokenStream) -> TokenStream {

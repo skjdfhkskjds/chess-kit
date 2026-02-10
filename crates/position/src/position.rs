@@ -68,12 +68,12 @@ where
     // @side-effects: modifies the `sides` bitboards
     // @requires: `bitboards` is initialized
     fn init_sides(&mut self) {
-        let white = self.bitboards[Sides::White.idx()];
-        let black = self.bitboards[Sides::Black.idx()];
+        let white = self.bitboards[Sides::White];
+        let black = self.bitboards[Sides::Black];
 
         for (w, b) in white.iter().zip(black.iter()) {
-            self.sides[Sides::White.idx()] |= *w;
-            self.sides[Sides::Black.idx()] |= *b;
+            self.sides[Sides::White] |= *w;
+            self.sides[Sides::Black] |= *b;
         }
 
         self.sides[Sides::TOTAL] = self.occupancy::<White>() | self.occupancy::<Black>();
@@ -86,8 +86,8 @@ where
     // @requires: `bitboards` is initialized
     // @side-effects: modifies the `pieces` array
     fn init_pieces(&mut self) {
-        let white = self.bitboards[Sides::White.idx()];
-        let black = self.bitboards[Sides::Black.idx()];
+        let white = self.bitboards[Sides::White];
+        let black = self.bitboards[Sides::Black];
 
         // set the piece type on each square
         for square in Square::ALL {
@@ -105,7 +105,7 @@ where
                 }
             }
 
-            self.pieces[square.idx()] = on_square;
+            self.pieces[square] = on_square;
         }
     }
 

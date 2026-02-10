@@ -73,8 +73,8 @@ impl EvalState for PSQTEvalState {
     // @impl: EvalState::on_set_piece
     #[inline(always)]
     fn on_set_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
-        self.phase += PHASE_VALUES[piece.idx()];
-        self.scores[SideT::INDEX] += PIECE_TABLES[SideT::INDEX][piece.idx()][square.idx()];
+        self.phase += PHASE_VALUES[piece];
+        self.scores[SideT::INDEX] += PIECE_TABLES[SideT::INDEX][piece][square];
     }
 
     // on_remove_piece is the incremental update callback that fires when a piece
@@ -83,8 +83,8 @@ impl EvalState for PSQTEvalState {
     // @impl: EvalState::on_remove_piece
     #[inline(always)]
     fn on_remove_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
-        self.phase -= PHASE_VALUES[piece.idx()];
-        self.scores[SideT::INDEX] -= PIECE_TABLES[SideT::INDEX][piece.idx()][square.idx()];
+        self.phase -= PHASE_VALUES[piece];
+        self.scores[SideT::INDEX] -= PIECE_TABLES[SideT::INDEX][piece][square];
     }
 }
 

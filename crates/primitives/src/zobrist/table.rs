@@ -47,7 +47,7 @@ impl ZobristTable {
     // @return: random value for the given side, piece, and square
     #[inline(always)]
     pub fn piece<SideT: Side>(piece: Pieces, square: Square) -> ZobristKey {
-        PIECE_RANDOMS[SideT::INDEX][piece.idx()][square.idx()]
+        PIECE_RANDOMS[SideT::INDEX][piece][square]
     }
 
     // castling returns the random value for the given castling rights
@@ -76,7 +76,7 @@ impl ZobristTable {
     #[inline(always)]
     pub fn en_passant(en_passant: Option<Square>) -> ZobristKey {
         match en_passant {
-            Some(square) => EN_PASSANT_RANDOMS[square.file().idx()],
+            Some(square) => EN_PASSANT_RANDOMS[square.file()],
             None => ZobristKey::new(0),
         }
     }

@@ -33,7 +33,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     #[inline(always)]
     pub(crate) fn push_pawn_moves(&self, to_squares: Bitboard, offset: i8, list: &mut MoveList) {
         for to in to_squares.iter() {
-            let from = Square::from_idx((to.idx() as i8 - offset) as usize);
+            let from = Square::from_idx((to as i8 - offset) as usize);
             list.push(Move::new(from, to));
         }
     }
@@ -77,7 +77,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         move_type: MoveType,
     ) {
         for to in to_squares.iter() {
-            let from = Square::from_idx((to.idx() as i8 - offset) as usize);
+            let from = Square::from_idx((to as i8 - offset) as usize);
 
             if !matches!(move_type, MoveType::Quiet) {
                 list.push(Move::new(from, to).with_promotion(Pieces::Queen));
