@@ -140,5 +140,5 @@ const fn fast_attack_ray(occupancy: u64, square: u64, line_mask: u64) -> u64 {
     reverse = reverse.wrapping_sub(square.reverse_bits()); // o'-2s'
     forward ^= reverse.reverse_bits();
 
-    return forward & line_mask; // mask the line again
+    forward & line_mask // mask the line again
 }

@@ -1,6 +1,9 @@
 use chess_kit_derive::IndexableEnum;
 use std::fmt;
 
+/// `File` is an enum that represents a file on the chess board
+///
+/// @type
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, IndexableEnum)]
 #[repr(u8)]
 pub enum File {

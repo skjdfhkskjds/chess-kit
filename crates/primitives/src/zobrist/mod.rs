@@ -2,6 +2,7 @@ mod constants;
 mod table;
 
 pub use constants::{CASTLING_RANDOMS, EN_PASSANT_RANDOMS, PIECE_RANDOMS, SIDE_RANDOMS};
+pub use table::ZobristTable;
 
 use chess_kit_derive::BitOps;
 use std::fmt::{self, Display};
@@ -45,8 +46,3 @@ impl TryFrom<&str> for ZobristKey {
         Ok(Self::new(u64::from_str_radix(value, 16)?))
     }
 }
-
-/// `ZobristTable` is the marker type for the table of zobrist random values
-///
-/// @type
-pub struct ZobristTable {}

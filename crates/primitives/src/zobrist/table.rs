@@ -1,7 +1,10 @@
 use crate::zobrist::{CASTLING_RANDOMS, EN_PASSANT_RANDOMS, PIECE_RANDOMS, SIDE_RANDOMS};
-use crate::{
-    Bitboard, Black, Castling, Pieces, Side, Sides, Square, White, ZobristKey, ZobristTable,
-};
+use crate::{Bitboard, Black, Castling, Pieces, Side, Sides, Square, White, ZobristKey};
+
+/// `ZobristTable` is the marker type for the table of zobrist random values
+///
+/// @type
+pub struct ZobristTable {}
 
 impl ZobristTable {
     /// new_key generates a new zobrist key for the given position

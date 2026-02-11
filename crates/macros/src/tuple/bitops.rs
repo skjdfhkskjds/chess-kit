@@ -658,10 +658,10 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
 }
 
 fn is_primitive_type(ty: &Type, name: &str) -> bool {
-    if let Type::Path(TypePath { path, .. }) = ty {
-        if let Some(ident) = path.get_ident() {
-            return ident == name;
-        }
+    if let Type::Path(TypePath { path, .. }) = ty
+        && let Some(ident) = path.get_ident()
+    {
+        return ident == name;
     }
     false
 }

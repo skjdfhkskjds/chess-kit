@@ -31,19 +31,18 @@ pub fn require_fieldless_enum<'a>(
 
 pub fn parse_repr_primitive(input: &DeriveInput, macro_name: &str) -> Result<Type> {
     for attr in &input.attrs {
-        if attr.path().is_ident("repr") {
-            if let Meta::List(meta_list) = attr.meta.clone() {
-                let nested =
-                    meta_list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
+        if attr.path().is_ident("repr")
+            && let Meta::List(meta_list) = attr.meta.clone()
+        {
+            let nested =
+                meta_list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
 
-                for meta in nested {
-                    if let Meta::Path(path) = meta {
-                        if let Some(ident) = path.get_ident() {
-                            if is_allowed_repr_ident(ident) {
-                                return Ok(Type::Path(TypePath { qself: None, path }));
-                            }
-                        }
-                    }
+            for meta in nested {
+                if let Meta::Path(path) = meta
+                    && let Some(ident) = path.get_ident()
+                    && is_allowed_repr_ident(ident)
+                {
+                    return Ok(Type::Path(TypePath { qself: None, path }));
                 }
             }
         }
@@ -56,10 +55,10 @@ pub fn parse_repr_primitive(input: &DeriveInput, macro_name: &str) -> Result<Typ
 }
 
 pub fn is_primitive_type(ty: &Type, name: &str) -> bool {
-    if let Type::Path(TypePath { path, .. }) = ty {
-        if let Some(ident) = path.get_ident() {
-            return ident == name;
-        }
+    if let Type::Path(TypePath { path, .. }) = ty
+        && let Some(ident) = path.get_ident()
+    {
+        return ident == name;
     }
     false
 }

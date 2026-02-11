@@ -136,3 +136,10 @@ impl MoveList {
         self.len = write;
     }
 }
+
+impl Default for MoveList {
+    #[inline(always)]
+    fn default() -> Self {
+        Self::new()
+    }
+}

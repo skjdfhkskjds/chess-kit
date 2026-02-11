@@ -69,8 +69,8 @@ where
 
         // otherwise, any non-king move is legal iff it is not pinned or it is
         // moving along the line on which it is pinned
-        return !self.is_preventing_check::<SideT>(from)
-            || Bitboard::in_line(from, to, self.king_square::<SideT>());
+        !self.is_preventing_check::<SideT>(from)
+            || Bitboard::in_line(from, to, self.king_square::<SideT>())
     }
 
     /// delivers_check checks if the given move played by SideT delivers a check
@@ -535,9 +535,8 @@ where
         // if the moving piece is a pawn, and the move is a double step, then an
         // en passant capture may be possible
         //
-        // TODO: use a smarter approach to filter further whether or not an en
-        //       passant capture is possible
         // note: the while loop is a hack to conditionally break out
+        #[allow(clippy::never_loop)]
         while check_en_passant {
             let en_passant_square = AT::pawn_pushes::<SideT::Other>(to).must_first();
 

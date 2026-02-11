@@ -63,7 +63,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
             size: 0,
             capacity,
             max_buckets: buckets,
-            memory_size: memory_size,
+            memory_size,
             buckets: vec![Bucket::<V>::new(); buckets],
             _key: PhantomData,
             _hasher: PhantomData,

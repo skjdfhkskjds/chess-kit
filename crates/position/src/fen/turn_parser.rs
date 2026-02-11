@@ -17,6 +17,6 @@ impl Parser for TurnParser {
             _ => return Err(FENError::InvalidTurn),
         };
 
-        return Ok(Self { turn });
+        Ok(Self { turn })
     }
 }

@@ -9,7 +9,7 @@ pub mod sides;
 pub mod squares;
 pub mod zobrist;
 
-pub use bitboard::{Bitboard, BitboardVec};
+pub use bitboard::Bitboard;
 pub use castling::{Castling, SideCastling};
 pub use direction::Direction;
 pub use files::File;

@@ -5,7 +5,7 @@ use crate::{Castling, File, Pieces, Sides, Square, ZobristKey};
 ///
 /// note: this table is simply a formatted version of the values in the
 ///       POLYGLOT_RANDOMS array for arithmetic-free access
-pub const PIECE_RANDOMS: [[[ZobristKey; Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL] = {
+pub static PIECE_RANDOMS: [[[ZobristKey; Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL] = {
     let mut randoms = [[[ZobristKey::default(); Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL];
 
     let mut raw_piece_idx = 0;

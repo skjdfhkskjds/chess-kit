@@ -115,7 +115,7 @@ pub const BITBOARD_ANTI_DIAGONALS: [Bitboard; Square::TOTAL] = {
 /// @note: we define the between bitboard as the bitboard that contains the bits
 ///        for the squares that are on the line between the two given squares,
 ///        excluding the start square and including the end square
-pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
+pub static BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
     let mut between = [[Bitboard::empty(); Square::TOTAL]; Square::TOTAL];
     let mut i = 0;
 
@@ -200,7 +200,7 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
 /// BITBOARD_LINES is a constant array of bitboards, where each bitboard is has
 /// the bits for that line from edge to edge intersecting the given squares set
 /// to 1
-pub const BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
+pub static BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
     let mut lines = [[Bitboard::empty(); Square::TOTAL]; Square::TOTAL];
 
     // for each ordered pair of squares [i, j], if they are on the same line
