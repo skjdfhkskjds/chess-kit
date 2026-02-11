@@ -1,3 +1,2 @@
-pub mod bitops;
 pub mod arithmetic;
-
+pub mod bitops;

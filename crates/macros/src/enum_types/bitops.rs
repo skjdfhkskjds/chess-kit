@@ -1,7 +1,7 @@
 use super::utils::{is_primitive_type, parse_repr_primitive, require_fieldless_enum};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{spanned::Spanned, DeriveInput, Error, Result};
+use syn::{DeriveInput, Error, Result, spanned::Spanned};
 
 pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
     if !input.generics.params.is_empty() {
@@ -553,4 +553,3 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
 
     Ok(output)
 }
-

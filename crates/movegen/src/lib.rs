@@ -58,7 +58,7 @@ pub trait MoveGenerator {
     );
 }
 
-/// PawnOffsets is a per-side table of pawn movement offsets
+// PawnOffsets is a per-side table of pawn movement offsets
 chess_kit_primitives::define_sides! {
     PawnOffsets: i8 {
         PUSH => (8, -8),
@@ -67,7 +67,7 @@ chess_kit_primitives::define_sides! {
     }
 }
 
-/// PawnRanks is a per-side table of pawn ranks
+// PawnRanks is a per-side table of pawn ranks
 chess_kit_primitives::define_sides! {
     PawnRanks: Rank {
         SINGLE_STEP => (Rank::R3, Rank::R6),

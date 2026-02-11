@@ -1,4 +1,4 @@
-pub mod piece;
 mod display;
+pub mod piece;
 
 pub use piece::*;

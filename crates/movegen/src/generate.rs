@@ -23,23 +23,23 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         list: &mut MoveList,
         move_type: MoveType,
     ) {
-        /// get the set of possible destination squares for our next move based
-        /// on the move type and the number of pieces delivering check to the
-        /// king
-        ///
-        /// additionally, if the king is in double-check, the only moves that are
-        /// legal would be king moves that physically evade the square currently
-        /// being attacked, so we can skip all other pieces and only consider the
-        /// king
+        // get the set of possible destination squares for our next move based
+        // on the move type and the number of pieces delivering check to the
+        // king
+        //
+        // additionally, if the king is in double-check, the only moves that are
+        // legal would be king moves that physically evade the square currently
+        // being attacked, so we can skip all other pieces and only consider the
+        // king
         let mut destinations = Bitboard::empty();
         if move_type != MoveType::Evasions || !position.checkers().more_than_one() {
             destinations = match move_type {
                 MoveType::Evasions => {
-                    /// if the move type is evasions, then there must be exactly
-                    /// one piece delivering check
+                    // if the move type is evasions, then there must be exactly
+                    // one piece delivering check
                     //
-                    /// in this case, the only moves we should consider are ones
-                    /// that would either block the check or capture that piece
+                    // in this case, the only moves we should consider are ones
+                    // that would either block the check or capture that piece
                     debug_assert!(
                         position.checkers().exactly_one(),
                         "checkers should be exactly one"

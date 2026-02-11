@@ -1,7 +1,6 @@
 use syn::{
-    punctuated::Punctuated,
-    spanned::Spanned,
     Data, DataEnum, DeriveInput, Error, Fields, Meta, Result, Token, Type, TypePath,
+    punctuated::Punctuated, spanned::Spanned,
 };
 
 pub fn require_fieldless_enum<'a>(
@@ -34,17 +33,14 @@ pub fn parse_repr_primitive(input: &DeriveInput, macro_name: &str) -> Result<Typ
     for attr in &input.attrs {
         if attr.path().is_ident("repr") {
             if let Meta::List(meta_list) = attr.meta.clone() {
-                let nested = meta_list
-                    .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
+                let nested =
+                    meta_list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
 
                 for meta in nested {
                     if let Meta::Path(path) = meta {
                         if let Some(ident) = path.get_ident() {
                             if is_allowed_repr_ident(ident) {
-                                return Ok(Type::Path(TypePath {
-                                    qself: None,
-                                    path,
-                                }));
+                                return Ok(Type::Path(TypePath { qself: None, path }));
                             }
                         }
                     }
@@ -74,4 +70,3 @@ fn is_allowed_repr_ident(ident: &syn::Ident) -> bool {
         "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
     )
 }
-
