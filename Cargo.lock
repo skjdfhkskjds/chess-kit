@@ -9,6 +9,7 @@ dependencies = [
  "chess-kit-attack-table",
  "chess-kit-collections",
  "chess-kit-derive",
+ "chess-kit-eval",
  "chess-kit-movegen",
  "chess-kit-perft",
  "chess-kit-position",
@@ -37,6 +38,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "chess-kit-eval"
+version = "0.1.0"
+dependencies = [
+ "chess-kit-collections",
+ "chess-kit-primitives",
+]
+
+[[package]]
 name = "chess-kit-movegen"
 version = "0.1.0"
 dependencies = [
@@ -50,6 +59,7 @@ name = "chess-kit-perft"
 version = "0.1.0"
 dependencies = [
  "chess-kit-collections",
+ "chess-kit-eval",
  "chess-kit-movegen",
  "chess-kit-position",
  "chess-kit-primitives",
@@ -62,6 +72,7 @@ version = "0.1.0"
 dependencies = [
  "chess-kit-attack-table",
  "chess-kit-collections",
+ "chess-kit-eval",
  "chess-kit-primitives",
 ]
 

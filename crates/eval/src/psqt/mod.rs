@@ -5,10 +5,9 @@ mod scores;
 use constants::{PHASE_VALUES, PIECE_TABLES};
 use piece_values::PieceValue;
 
-use crate::eval::{EvalState, Score};
-use crate::Position;
-use chess_kit_primitives::{Black, Pieces, Side, Sides, Square, White};
+use crate::{EvalState, Score};
 use chess_kit_collections::Copyable;
+use chess_kit_primitives::{Pieces, Side, Sides, Square};
 
 pub type GamePhase = i16;
 pub type PSQTable = [PieceValue; Square::TOTAL];
@@ -32,26 +31,6 @@ impl EvalState for PSQTEvalState {
             phase: 0,
             scores: [PieceValue::default(); Sides::TOTAL],
             score: 0,
-        }
-    }
-
-    // init initializes the eval state for based on the given position
-    //
-    // @impl: EvalState::init
-    #[inline(always)]
-    fn init<PositionT: Position>(&mut self, position: &PositionT) {
-        for piece in Pieces::ALL {
-            // initialize the phase and scores for the white side's pieces
-            let white = position.get_piece::<White>(piece);
-            for sq in white.iter() {
-                self.on_set_piece::<White>(piece, sq);
-            }
-
-            // initialize the phase and scores for the black side's pieces
-            let black = position.get_piece::<Black>(piece);
-            for sq in black.iter() {
-                self.on_set_piece::<Black>(piece, sq);
-            }
         }
     }
 

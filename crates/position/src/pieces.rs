@@ -1,6 +1,6 @@
 use super::{DefaultPosition, PositionState, State};
 use chess_kit_attack_table::AttackTable;
-use crate::eval::EvalState;
+use chess_kit_eval::EvalState;
 use chess_kit_primitives::{Pieces, Side, Sides, Square, ZobristTable};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>

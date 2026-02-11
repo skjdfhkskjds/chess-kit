@@ -2,7 +2,7 @@ use super::{
     DefaultPosition, PositionAttacks, PositionMoves, PositionState, SideCastlingSquares, State,
 };
 use chess_kit_attack_table::AttackTable;
-use crate::eval::EvalState;
+use chess_kit_eval::EvalState;
 use chess_kit_primitives::{
     Bitboard, Black, Move, MoveType, Pieces, Side, Sides, Square, White, ZobristTable,
 };

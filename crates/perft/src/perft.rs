@@ -1,4 +1,4 @@
-use chess_kit_position::{Accumulator, EvalState};
+use chess_kit_eval::{Accumulator, EvalState};
 use chess_kit_movegen::MoveGenerator;
 use crate::perft_data::{Depth, NodeCount, PerftData};
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionState};

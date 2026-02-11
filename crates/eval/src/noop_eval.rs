@@ -1,7 +1,6 @@
-use crate::eval::{EvalState, Score};
-use crate::Position;
-use chess_kit_primitives::{Pieces, Side, Square};
+use crate::{EvalState, Score};
 use chess_kit_collections::Copyable;
+use chess_kit_primitives::{Pieces, Side, Square};
 
 // NoOpEvalState is a no-op implementation of the EvalState trait that does not
 // perform any evaluation
@@ -16,9 +15,6 @@ impl EvalState for NoOpEvalState {
     fn new() -> Self {
         Self
     }
-
-    #[inline(always)]
-    fn init<PositionT: Position>(&mut self, _: &PositionT) {}
 
     #[inline(always)]
     fn score(&mut self) -> Score {

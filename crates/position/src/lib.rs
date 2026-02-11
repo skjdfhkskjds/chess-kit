@@ -1,7 +1,6 @@
 mod attacks;
 mod castling;
 mod display;
-mod eval;
 mod fen;
 mod gamestate;
 mod moves;
@@ -11,11 +10,11 @@ mod rules;
 mod sides;
 mod state;
 
-pub use eval::{Accumulator, DefaultAccumulator, EvalState, NoOpEvalState, PSQTEvalState, Score};
 pub use fen::{FENError, FENParser, Parser};
 pub use gamestate::*;
 pub use position::DefaultPosition;
 
+use chess_kit_eval::EvalState;
 use chess_kit_primitives::{
     Bitboard, Black, Castling, Move, Pieces, Side, SideCastling, Sides, Square, White, ZobristKey,
 };
@@ -49,9 +48,9 @@ pub trait PositionFromFEN {
     // load_fen loads and initializes a new position from the given FEN string
     //
     // @param: fen - FEN string to create the position from
-    // @return: void, or an error if the FEN string is invalid
+    // @return: the loaded eval state, or an error if the FEN string is invalid
     // @side-effect: initializes the position and internal state
-    fn load_fen(&mut self, fen: &str) -> Result<(), FENError>;
+    fn load_fen<EvalStateT: EvalState>(&mut self, fen: &str) -> Result<EvalStateT, FENError>;
 }
 
 // PositionState is a trait that defines all state-related readonly queries on a

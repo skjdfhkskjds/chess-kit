@@ -1,6 +1,6 @@
 use super::PSQTEvalState;
 use super::constants::{MIDDLEGAME_PHASE_MAX, MIDDLEGAME_PHASE_MIN};
-use crate::eval::Score;
+use crate::Score;
 use chess_kit_primitives::Sides;
 
 impl PSQTEvalState {

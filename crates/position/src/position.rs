@@ -1,6 +1,6 @@
-use chess_kit_attack_table::AttackTable;
 use crate::fen::{FENError, FENParser, Parser};
-use crate::{History, Position, PositionFromFEN, PositionState, State};
+use crate::{EvalState, History, Position, PositionFromFEN, PositionState, State};
+use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Bitboard, Black, Pieces, Side, Sides, Square, White, ZobristTable};
 use std::marker::PhantomData;
 
@@ -51,9 +51,9 @@ where
     StateT: State,
 {
     // init initializes the position
-    fn init(&mut self) {
+    fn init<EvalStateT: EvalState>(&mut self, eval_state: &mut EvalStateT) {
         self.init_sides();
-        self.init_pieces();
+        self.init_pieces(eval_state);
 
         match self.turn() {
             Sides::White => self.init_state::<White>(),
@@ -85,7 +85,7 @@ where
     // @return: void
     // @requires: `bitboards` is initialized
     // @side-effects: modifies the `pieces` array
-    fn init_pieces(&mut self) {
+    fn init_pieces<EvalStateT: EvalState>(&mut self, eval_state: &mut EvalStateT) {
         let white = self.bitboards[Sides::White];
         let black = self.bitboards[Sides::Black];
 
@@ -97,10 +97,12 @@ where
             for (piece, (w, b)) in white.iter().zip(black.iter()).enumerate() {
                 if (w & mask).not_empty() {
                     on_square = Pieces::from_idx(piece);
+                    eval_state.on_set_piece::<White>(on_square, square);
                     break; // enforce exclusivity
                 }
                 if (b & mask).not_empty() {
                     on_square = Pieces::from_idx(piece);
+                    eval_state.on_set_piece::<Black>(on_square, square);
                     break; // enforce exclusivity
                 }
             }
@@ -154,7 +156,10 @@ where
     // load_fen loads a new position from the given FEN string
     //
     // @impl: PositionFromFEN::load_fen
-    fn load_fen(&mut self, fen: &str) -> Result<(), FENError> {
+    fn load_fen<EvalStateT: EvalState>(
+        &mut self,
+        fen: &str,
+    ) -> Result<EvalStateT, FENError> {
         let fen_parser = FENParser::parse(fen);
         if fen_parser.is_err() {
             return Err(fen_parser.err().unwrap());
@@ -174,7 +179,8 @@ where
         }
 
         // TODO: move the board initialization elsewhere
-        self.init();
-        Ok(())
+        let mut eval_state = EvalStateT::new();
+        self.init(&mut eval_state);
+        Ok(eval_state)
     }
 }

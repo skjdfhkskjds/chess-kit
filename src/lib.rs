@@ -4,3 +4,4 @@ pub use chess_kit_movegen as movegen;
 pub use chess_kit_perft as perft;
 pub use chess_kit_primitives as primitives;
 pub use chess_kit_transposition as transposition;
+pub use chess_kit_eval as eval;

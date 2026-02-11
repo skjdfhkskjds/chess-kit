@@ -1,14 +1,12 @@
-mod accumulator;
-mod noop_eval;
-mod psqt;
+pub mod accumulator;
+pub mod noop_eval;
+pub mod psqt;
 
 pub use accumulator::DefaultAccumulator;
 pub use noop_eval::NoOpEvalState;
 pub use psqt::PSQTEvalState;
 
 use chess_kit_collections::Copyable;
-
-use crate::Position;
 use chess_kit_primitives::{Pieces, Side, Square};
 
 pub type Score = i32;
@@ -18,13 +16,6 @@ pub trait EvalState: Copyable {
     //
     // @return: new, empty eval state
     fn new() -> Self;
-
-    // init initializes the eval state for based on the given position
-    //
-    // @param: position - position to initialize the eval state with
-    // @return: void
-    // @side-effects: modifies the eval state
-    fn init<PositionT: Position>(&mut self, position: &PositionT);
 
     // score returns the evaluation score of this state
     //
@@ -57,13 +48,6 @@ pub trait Accumulator<EvalStateT: EvalState> {
     //
     // @return: new, uninitialized accumulator
     fn new() -> Self;
-
-    // init initializes the accumulator based on the given position
-    //
-    // @param: position - position to initialize the accumulator with
-    // @return: void
-    // @side-effects: modifies the accumulator
-    fn init<PositionT: Position>(&mut self, position: &PositionT);
 
     // reset resets the accumulator to a new initial state
     //

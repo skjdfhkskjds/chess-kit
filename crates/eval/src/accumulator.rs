@@ -1,7 +1,6 @@
 use chess_kit_collections::Stack;
 
-use crate::eval::{Accumulator, EvalState};
-use crate::Position;
+use crate::{Accumulator, EvalState};
 
 // DefaultAccumulator is the default implementation of the Accumulator trait
 pub struct DefaultAccumulator<EvalStateT: EvalState> {
@@ -17,19 +16,6 @@ impl<EvalStateT: EvalState> Accumulator<EvalStateT> for DefaultAccumulator<EvalS
         Self {
             stack: Stack::new(),
         }
-    }
-
-    // init initializes the accumulator based on the given position
-    //
-    // @param: position - position to initialize the accumulator with
-    // @return: void
-    // @side-effects: modifies the accumulator
-    #[inline(always)]
-    fn init<PositionT: Position>(&mut self, position: &PositionT) {
-        self.stack.clear();
-        let mut state = EvalStateT::new();
-        state.init(position);
-        self.stack.push(state);
     }
 
     // reset resets the accumulator to a new initial state

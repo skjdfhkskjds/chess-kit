@@ -1,7 +1,6 @@
 use chess_kit::attack_table::DefaultAttackTable;
-use chess_kit::position::{
-    DefaultPosition, DefaultState, Position, PositionFromFEN, StateReader,
-};
+use chess_kit::eval::NoOpEvalState;
+use chess_kit::position::{DefaultPosition, DefaultState, Position, PositionFromFEN, StateReader};
 use chess_kit::primitives::ZobristKey;
 
 #[test]
@@ -13,7 +12,7 @@ fn test_zobrist_key() {
             .unwrap_or_else(|_| panic!("Invalid Zobrist key {}", parts[1]));
 
         let mut position = DefaultPosition::<DefaultAttackTable, DefaultState>::new();
-        if let Err(e) = position.load_fen(fen) {
+        if let Err(e) = position.load_fen::<NoOpEvalState>(fen) {
             panic!("Error loading FEN: {}", e);
         }
 

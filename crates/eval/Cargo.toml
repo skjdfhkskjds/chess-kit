@@ -1,10 +1,8 @@
 [package]
-name = "chess-kit-position"
+name = "chess-kit-eval"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-chess-kit-attack-table = { path = "../attack_table" }
 chess-kit-collections = { path = "../collections" }
 chess-kit-primitives = { path = "../primitives" }
-chess-kit-eval = { path = "../eval" }

@@ -9,3 +9,4 @@ chess-kit-movegen = { path = "../movegen" }
 chess-kit-position = { path = "../position" }
 chess-kit-primitives = { path = "../primitives" }
 chess-kit-transposition = { path = "../transposition" }
+chess-kit-eval = { path = "../eval" }
