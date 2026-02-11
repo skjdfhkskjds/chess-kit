@@ -1,18 +1,18 @@
+use crate::perft_data::{Depth, NodeCount, PerftData};
 use chess_kit_eval::{Accumulator, EvalState};
 use chess_kit_movegen::MoveGenerator;
-use crate::perft_data::{Depth, NodeCount, PerftData};
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionState};
 use chess_kit_primitives::{Move, MoveList};
 use chess_kit_transposition::TranspositionTable;
 
-// perft calculates the number of leaf nodes at the given depth from the current
-// position
-//
-// @param: position - mutable reference to the position
-// @param: move_generator - immutable reference to the move generator
-// @param: tt - mutable reference to the transposition table
-// @param: depth - depth to calculate the perft for
-// @return: number of leaf nodes at the given depth
+/// `perft` calculates the number of leaf nodes at the given depth from the current
+/// position
+///
+/// @param: position - mutable reference to the position
+/// @param: move_generator - immutable reference to the move generator
+/// @param: tt - mutable reference to the transposition table
+/// @param: depth - depth to calculate the perft for
+/// @return: number of leaf nodes at the given depth
 pub fn perft<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>(
     position: &mut PositionT,
     move_generator: &MoveGeneratorT,
@@ -74,14 +74,14 @@ where
     nodes
 }
 
-// perft_divide separates the perft calculation into a vector of branches of
-// moves from the current position
-//
-// @param: position - mutable reference to the position
-// @param: move_generator - immutable reference to the move generator
-// @param: tt - mutable reference to the transposition table
-// @param: depth - depth to calculate the perft for
-// @return: vector of branches of moves from the current position
+/// `perft_divide` separates the perft calculation into a vector of branches of
+/// moves from the current position
+///
+/// @param: position - mutable reference to the position
+/// @param: move_generator - immutable reference to the move generator
+/// @param: tt - mutable reference to the transposition table
+/// @param: depth - depth to calculate the perft for
+/// @return: vector of branches of moves from the current position
 fn perft_divide<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>(
     position: &mut PositionT,
     move_generator: &MoveGeneratorT,
@@ -127,13 +127,13 @@ where
     branches
 }
 
-// perft_divide_print executes `perft_divide` and prints the result
-//
-// @param: position - mutable reference to the position
-// @param: move_generator - immutable reference to the move generator
-// @param: tt - mutable reference to the transposition table
-// @param: depth - depth to calculate the perft for
-// @return: number of leaf nodes at the given depth
+/// `perft_divide_print` executes `perft_divide` and prints the result
+///
+/// @param: position - mutable reference to the position
+/// @param: move_generator - immutable reference to the move generator
+/// @param: tt - mutable reference to the transposition table
+/// @param: depth - depth to calculate the perft for
+/// @return: number of leaf nodes at the given depth
 pub fn perft_divide_print<
     MoveGeneratorT,
     PositionT,

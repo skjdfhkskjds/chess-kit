@@ -1,5 +1,5 @@
 use quote::quote;
-use syn::{spanned::Spanned, Data, DeriveInput, Fields, Result, Type, TypePath};
+use syn::{Data, DeriveInput, Fields, Result, Type, TypePath, spanned::Spanned};
 
 pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
     let struct_ident = &input.ident;

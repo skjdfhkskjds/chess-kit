@@ -12,9 +12,9 @@ where
     AT: AttackTable,
     StateT: State,
 {
-    // make_move makes the given move from the current position
-    //
-    // @impl: PositionMoves::make_move
+    /// make_move makes the given move from the current position
+    ///
+    /// @impl: PositionMoves::make_move
     fn make_move<EvalStateT: EvalState>(&mut self, mv: Move, eval: &mut EvalStateT) {
         match self.turn() {
             Sides::White => self.make_move_for_side::<White, EvalStateT>(mv, eval),
@@ -22,9 +22,9 @@ where
         }
     }
 
-    // unmake_move unmakes the last move on the board
-    //
-    // @impl: PositionMoves::unmake_move
+    /// unmake_move unmakes the last move on the board
+    ///
+    /// @impl: PositionMoves::unmake_move
     fn unmake_move(&mut self, mv: Move) {
         match self.turn() {
             Sides::White => self.unmake_move_for_side::<Black>(mv),
@@ -32,15 +32,15 @@ where
         }
     }
 
-    // is_legal_move checks if the given move played by SideT is legal
-    //
-    // note: this method does not check that the king is still in check after
-    //       the move is made, instead, we delegate this logic to the move
-    //       generator. as a result, this method only checks that a king not
-    //       currently in check would be left in check after the move is made
-    //
-    // @param: mv - move to check if is legal
-    // @return: true if the move is legal, false otherwise
+    /// is_legal_move checks if the given move played by SideT is legal
+    ///
+    /// note: this method does not check that the king is still in check after
+    ///       the move is made, instead, we delegate this logic to the move
+    ///       generator. as a result, this method only checks that a king not
+    ///       currently in check would be left in check after the move is made
+    ///
+    /// @param: mv - move to check if is legal
+    /// @return: true if the move is legal, false otherwise
     #[inline(always)]
     fn is_legal_move<SideT: Side>(&self, mv: Move) -> bool {
         let from = mv.from();
@@ -73,11 +73,11 @@ where
             || Bitboard::in_line(from, to, self.king_square::<SideT>());
     }
 
-    // delivers_check checks if the given move played by SideT delivers a check
-    // to SideT::Other
-    //
-    // @param: mv - move to check if delivers a check
-    // @return: true if the move delivers a check, false otherwise
+    /// delivers_check checks if the given move played by SideT delivers a check
+    /// to SideT::Other
+    ///
+    /// @param: mv - move to check if delivers a check
+    /// @return: true if the move delivers a check, false otherwise
     #[inline(always)]
     fn delivers_check<SideT: Side>(&self, mv: Move) -> bool {
         let from = mv.from();
@@ -189,15 +189,15 @@ where
     AT: AttackTable,
     StateT: State,
 {
-    // move_piece_no_incrementals moves SideT's piece from the given square to
-    // the given square without updating the zobrist key or any incremental game
-    // state
-    //
-    // @param: piece - piece to move
-    // @param: from - square to move the piece from
-    // @param: to - square to move the piece to
-    // @return: void
-    // @side-effects: modifies the `position`
+    /// move_piece_no_incrementals moves SideT's piece from the given square to
+    /// the given square without updating the zobrist key or any incremental game
+    /// state
+    ///
+    /// @param: piece - piece to move
+    /// @param: from - square to move the piece from
+    /// @param: to - square to move the piece to
+    /// @return: void
+    /// @side-effects: modifies the `position`
     #[inline(always)]
     fn move_piece_no_incrementals<SideT: Side>(&mut self, piece: Pieces, from: Square, to: Square) {
         let from_to = Bitboard::square(from) | Bitboard::square(to);
@@ -209,13 +209,13 @@ where
         self.pieces[to] = piece;
     }
 
-    // move_piece moves SideT's piece from the given square to the given square
-    //
-    // @param: piece - piece to move
-    // @param: from - square to move the piece from
-    // @param: to - square to move the piece to
-    // @return: void
-    // @side-effects: modifies the `position`
+    /// move_piece moves SideT's piece from the given square to the given square
+    ///
+    /// @param: piece - piece to move
+    /// @param: from - square to move the piece from
+    /// @param: to - square to move the piece to
+    /// @return: void
+    /// @side-effects: modifies the `position`
     #[inline(always)]
     fn move_piece<SideT: Side, EvalStateT: EvalState>(
         &mut self,
@@ -236,16 +236,16 @@ where
         eval.on_set_piece::<SideT>(piece, to);
     }
 
-    // capture_piece captures SideT's piece at the given square
-    //
-    // @param: piece - piece to capture
-    // @param: square - square that the captured piece is on
-    // @param: eval - mutable reference to the evaluation state to update
-    // @return: void
-    // @side-effects: modifies the `position`
-    // @side-effects: modifies the evaluation state
-    // @side-effects: resets the halfmove clock
-    // @side-effects: updates castling permissions (if applicable)
+    /// capture_piece captures SideT's piece at the given square
+    ///
+    /// @param: piece - piece to capture
+    /// @param: square - square that the captured piece is on
+    /// @param: eval - mutable reference to the evaluation state to update
+    /// @return: void
+    /// @side-effects: modifies the `position`
+    /// @side-effects: modifies the evaluation state
+    /// @side-effects: resets the halfmove clock
+    /// @side-effects: updates castling permissions (if applicable)
     #[inline(always)]
     fn capture_piece<SideT: Side, EvalStateT: EvalState>(
         &mut self,
@@ -271,17 +271,17 @@ where
         }
     }
 
-    // is_preventing_check returns true if the given square is preventing a
-    // check from SideT::Other to SideT
-    //
-    // that is, if, theoretically, the piece on the given square were to move,
-    // it would result in SideT being in check
-    //
-    // note: the piece on the given square is not necessarily on the same side
-    //       as the king it is blocking the check from
-    //
-    // @param: square - square to check
-    // @return: true if the given square is preventing a check to SideT
+    /// is_preventing_check returns true if the given square is preventing a
+    /// check from SideT::Other to SideT
+    ///
+    /// that is, if, theoretically, the piece on the given square were to move,
+    /// it would result in SideT being in check
+    ///
+    /// note: the piece on the given square is not necessarily on the same side
+    ///       as the king it is blocking the check from
+    ///
+    /// @param: square - square to check
+    /// @return: true if the given square is preventing a check to SideT
     #[inline(always)]
     fn is_preventing_check<SideT: Side>(&self, square: Square) -> bool {
         self.state()
@@ -289,11 +289,11 @@ where
             .has_square(square)
     }
 
-    // update_blockers updates the blockers for SideT and pinners for
-    // SideT::Other at the king square of SideT
-    //
-    // @return: void
-    // @side-effects: modifies the `state`
+    /// update_blockers updates the blockers for SideT and pinners for
+    /// SideT::Other at the king square of SideT
+    ///
+    /// @return: void
+    /// @side-effects: modifies the `state`
     #[inline(always)]
     fn update_blockers<SideT: Side>(&mut self) {
         let king_square = self.king_square::<SideT>();
@@ -335,11 +335,11 @@ where
         self.state_mut().set_pinning_pieces::<SideT::Other>(pinners);
     }
 
-    // update_check_info updates the check information for SideT to deliver
-    // check to SideT::Other
-    //
-    // @return: void
-    // @side-effects: modifies the `state`
+    /// update_check_info updates the check information for SideT to deliver
+    /// check to SideT::Other
+    ///
+    /// @return: void
+    /// @side-effects: modifies the `state`
     #[inline(always)]
     pub(crate) fn update_check_info<SideT: Side>(&mut self) {
         // update the blockers and pinners for each side
@@ -383,14 +383,14 @@ where
             .set_check_squares::<SideT>(Pieces::King, Bitboard::empty());
     }
 
-    // make_move_for_side makes the given move from the current position as SideT
-    //
-    // @param: mv - move to make
-    // @param: eval - mutable reference to the evaluation state to update
-    // @return: void
-    // @side-effects: modifies the `position`
-    // @side-effects: modifies incremental game state
-    // @side-effects: modifies the evaluation state
+    /// make_move_for_side makes the given move from the current position as SideT
+    ///
+    /// @param: mv - move to make
+    /// @param: eval - mutable reference to the evaluation state to update
+    /// @return: void
+    /// @side-effects: modifies the `position`
+    /// @side-effects: modifies incremental game state
+    /// @side-effects: modifies the evaluation state
     #[inline(always)]
     fn make_move_for_side<SideT, EvalStateT>(&mut self, mv: Move, eval: &mut EvalStateT)
     where
@@ -640,14 +640,14 @@ where
         self.update_check_info::<SideT::Other>();
     }
 
-    // unmake_move_for_side unmakes the last move from the current position as
-    // SideT
-    //
-    // note: since unmake pops from the history, we don't need to recompute
-    //       any incremental game state since those are retrieved directly
-    //
-    // @return: void
-    // @side-effects: modifies the `position`
+    /// unmake_move_for_side unmakes the last move from the current position as
+    /// SideT
+    ///
+    /// note: since unmake pops from the history, we don't need to recompute
+    ///       any incremental game state since those are retrieved directly
+    ///
+    /// @return: void
+    /// @side-effects: modifies the `position`
     #[inline(always)]
     fn unmake_move_for_side<SideT: Side>(&mut self, mv: Move) {
         // extract key move data

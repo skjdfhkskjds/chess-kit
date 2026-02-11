@@ -1,9 +1,27 @@
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, DeriveInput};
+use syn::{DeriveInput, parse_macro_input};
 
-mod tuple;
 mod enum_types;
+mod tuple;
 
+/// Derives the bitwise operator suite for tuple structs with a single field.
+///
+/// The struct must have a single field that is a primitive type.
+///
+/// ```
+/// use chess_kit_derive::BitOps;
+///
+/// #[derive(BitOps, Copy, Clone, PartialEq, Eq)]
+/// struct BitOps(u8);
+///
+/// let bitops = BitOps(0b1010);
+/// assert_eq!(bitops.bitand(BitOps(0b1100)), BitOps(0b1000));
+/// assert_eq!(bitops.bitor(BitOps(0b1100)), BitOps(0b1110));
+/// assert_eq!(bitops.bitxor(BitOps(0b1100)), BitOps(0b0110));
+/// assert_eq!(bitops.bitnot(), BitOps(0b0101));
+/// assert_eq!(bitops.bitshift_left(2), BitOps(0b101000));
+/// assert_eq!(bitops.bitshift_right(2), BitOps(0b101));
+/// ```
 #[proc_macro_derive(BitOps)]
 pub fn derive_bitops(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -13,6 +31,21 @@ pub fn derive_bitops(input: TokenStream) -> TokenStream {
     }
 }
 
+/// Derives the arithmetic operator suite for tuple structs with a single field.
+///
+/// The struct must have a single field that is a primitive type.
+///
+/// ```
+/// use chess_kit_derive::Arithmetic;
+///
+/// #[derive(Arithmetic, Copy, Clone, PartialEq, Eq, Debug)]
+/// struct Arithmetic(i32);
+///
+/// let arithmetic = Arithmetic(10);
+/// assert_eq!(arithmetic + Arithmetic(20), Arithmetic(30));
+/// assert_eq!(arithmetic - Arithmetic(5), Arithmetic(5));
+/// assert_eq!(arithmetic * Arithmetic(2), Arithmetic(20));
+/// ```
 #[proc_macro_derive(Arithmetic)]
 pub fn derive_arithmetic(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

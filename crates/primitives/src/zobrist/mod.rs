@@ -7,22 +7,25 @@ use chess_kit_derive::BitOps;
 use std::fmt::{self, Display};
 use std::num::ParseIntError;
 
+/// `ZobristKey` is type-safe representation of a zobrist key
+///
+/// @type
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, BitOps)]
 pub struct ZobristKey(u64);
 
 impl ZobristKey {
-    // new creates a new zobrist key with the given u64 value
-    //
-    // @param: value - u64 value to create the zobrist key from
-    // @return: new zobrist key
+    /// new creates a new zobrist key with the given u64 value
+    ///
+    /// @param: value - u64 value to create the zobrist key from
+    /// @return: new zobrist key
     #[inline(always)]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
-    // default creates a new zobrist key with the default value
-    //
-    // @return: new zobrist key
+    /// default creates a new zobrist key with the default value
+    ///
+    /// @return: new zobrist key
     #[inline(always)]
     pub const fn default() -> Self {
         Self(0)
@@ -43,5 +46,7 @@ impl TryFrom<&str> for ZobristKey {
     }
 }
 
-// ZobristTable is the marker type for the table of zobrist random values
+/// `ZobristTable` is the marker type for the table of zobrist random values
+///
+/// @type
 pub struct ZobristTable {}

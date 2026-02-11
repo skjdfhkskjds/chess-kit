@@ -1,5 +1,8 @@
 use std::fmt::{self, Display};
 
+/// `FENError` is an enum that represents the errors that can occur when parsing a FEN string
+///
+/// @type
 #[derive(Debug)]
 pub enum FENError {
     InvalidFormat,        // the FEN string must be composed of 6 segments

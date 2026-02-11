@@ -2,6 +2,10 @@ use chess_kit_derive::{EnumBitOps, IndexableEnum};
 mod display;
 mod square;
 
+/// `Square` is an enum that represents a square on the chess board. It is intended to provide
+/// a type-safe way to represent (and index on) a square on the board.
+///
+/// @type
 #[repr(u8)]
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Hash, EnumBitOps, IndexableEnum)]
 #[rustfmt::skip]
@@ -19,6 +23,7 @@ pub enum Square {
 impl Square {
     pub const TOTAL: usize = 64;
 
+    /// ALL is a constant array of all squares on the board
     #[rustfmt::skip]
     pub const ALL: [Square; Self::TOTAL] = [
         Self::A1, Self::B1, Self::C1, Self::D1, Self::E1, Self::F1, Self::G1, Self::H1,
@@ -31,10 +36,10 @@ impl Square {
         Self::A8, Self::B8, Self::C8, Self::D8, Self::E8, Self::F8, Self::G8, Self::H8,
     ];
 
-    // INVERTED is a constant array of squares in the rank-opposite order of ALL
-    //
-    // note: this is sometimes useful in scenarios where we need to find board
-    //       squares relative to a particular side's perspective
+    /// INVERTED is a constant array of squares in the rank-opposite order of ALL
+    ///
+    /// note: this is sometimes useful in scenarios where we need to find board
+    ///       squares relative to a particular side's perspective
     #[rustfmt::skip]
     pub const INVERTED: [Square; Self::TOTAL] = [
         Self::A8, Self::B8, Self::C8, Self::D8, Self::E8, Self::F8, Self::G8, Self::H8,

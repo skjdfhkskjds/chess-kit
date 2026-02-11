@@ -12,11 +12,11 @@ impl<T> Entry<T>
 where
     T: Copy + Default,
 {
-    // new creates a new bucket with the given key and data
-    //
-    // @param: key - key to set the value to
-    // @param: data - data to set the value to
-    // @return: new bucket
+    /// new creates a new bucket with the given key and data
+    ///
+    /// @param: key - key to set the value to
+    /// @param: data - data to set the value to
+    /// @return: new bucket
     #[inline(always)]
     pub(crate) fn new() -> Self {
         Self {
@@ -26,36 +26,36 @@ where
         }
     }
 
-    // is_dirty checks if the bucket is dirty
-    //
-    // @return: true if the bucket is dirty, false otherwise
+    /// is_dirty checks if the bucket is dirty
+    ///
+    /// @return: true if the bucket is dirty, false otherwise
     #[inline(always)]
     pub(crate) const fn is_dirty(&self) -> bool {
         self.dirty
     }
 
-    // key returns the key of the bucket
-    //
-    // @return: key of the bucket
+    /// key returns the key of the bucket
+    ///
+    /// @return: key of the bucket
     #[inline(always)]
     pub(crate) const fn key(&self) -> u32 {
         self.key
     }
 
-    // data returns a reference to the data in the bucket
-    //
-    // @return: reference to the data in the bucket
+    /// data returns a reference to the data in the bucket
+    ///
+    /// @return: reference to the data in the bucket
     #[inline(always)]
     pub(crate) const fn data(&self) -> &T {
         &self.data
     }
 
-    // set sets the value of the bucket to the given key and data
-    //
-    // @param: key - key to set the value to
-    // @param: data - data to set the value to
-    // @return: void
-    // @side-effects: modifies the bucket
+    /// set sets the value of the bucket to the given key and data
+    ///
+    /// @param: key - key to set the value to
+    /// @param: data - data to set the value to
+    /// @return: void
+    /// @side-effects: modifies the bucket
     #[inline(always)]
     pub(crate) fn set(&mut self, key: u32, data: T) {
         self.key = key;
@@ -63,10 +63,10 @@ where
         self.dirty = true;
     }
 
-    // clear clears the bucket to a clean state
-    //
-    // @return: void
-    // @side-effects: modifies the bucket
+    /// clear clears the bucket to a clean state
+    ///
+    /// @return: void
+    /// @side-effects: modifies the bucket
     #[inline(always)]
     pub(crate) fn clear(&mut self) {
         self.key = 0;

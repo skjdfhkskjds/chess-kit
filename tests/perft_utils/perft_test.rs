@@ -2,7 +2,9 @@ use chess_kit::perft::{Depth, NodeCount, PerftData};
 use std::convert::TryFrom;
 use std::fmt::{self, Display};
 
-// PerftTest is an object representing a single Perft test-case
+/// `PerftTest` is an object representing a single Perft test-case
+///
+/// @type
 #[derive(Debug, Default, Clone)]
 pub struct PerftTest {
     pub(crate) fen: &'static str, // the FEN string for the test case

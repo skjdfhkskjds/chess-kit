@@ -6,9 +6,9 @@ pub(crate) const NOT_H_FILE: Bitboard = Bitboard::new(!Bitboard::file(File::H).c
 pub(crate) const NOT_R8_RANK: Bitboard = Bitboard::new(!Bitboard::rank(Rank::R8).const_unwrap());
 pub(crate) const NOT_R1_RANK: Bitboard = Bitboard::new(!Bitboard::rank(Rank::R1).const_unwrap());
 
-// new_king_table creates a new king move table
-//
-// @return: new king move table
+/// new_king_table creates a new king move table
+///
+/// @return: new king move table
 #[rustfmt::skip]
 pub(crate) const fn new_king_table() -> BitboardTable {
     let mut king_table: BitboardTable = [Bitboard::empty(); Square::TOTAL];
@@ -38,9 +38,9 @@ pub(crate) const fn new_king_table() -> BitboardTable {
     king_table
 }
 
-// new_knight_table creates a new knight move table
-//
-// @return: new knight move table
+/// new_knight_table creates a new knight move table
+///
+/// @return: new knight move table
 #[rustfmt::skip]
 pub(crate) const fn new_knight_table() -> BitboardTable {
     let mut knight_table: BitboardTable = [Bitboard::empty(); Square::TOTAL];
@@ -75,9 +75,9 @@ pub(crate) const fn new_knight_table() -> BitboardTable {
     knight_table
 }
 
-// new_pawn_table creates a new pawn move table for each side
-//
-// @return: new pawn move table for each side
+/// new_pawn_table creates a new pawn move table for each side
+///
+/// @return: new pawn move table for each side
 #[rustfmt::skip]
 pub(crate) const fn new_pawn_table() -> [BitboardTable; Sides::TOTAL] {
     let mut pawn_table: [BitboardTable; Sides::TOTAL] = [[Bitboard::empty(); Square::TOTAL]; Sides::TOTAL];

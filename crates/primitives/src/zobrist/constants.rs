@@ -1,10 +1,10 @@
 use crate::{Castling, File, Pieces, Sides, Square, ZobristKey};
 
-// PIECE_RANDOMS is a constant array of polyglot-compatible random values used
-// to fetch the zobrist random value for a given piece on a given square per side
-//
-// note: this table is simply a formatted version of the values in the
-//       POLYGLOT_RANDOMS array for arithmetic-free access
+/// PIECE_RANDOMS is a constant array of polyglot-compatible random values used
+/// to fetch the zobrist random value for a given piece on a given square per side
+///
+/// note: this table is simply a formatted version of the values in the
+///       POLYGLOT_RANDOMS array for arithmetic-free access
 pub const PIECE_RANDOMS: [[[ZobristKey; Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL] = {
     let mut randoms = [[[ZobristKey::default(); Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL];
 
@@ -39,14 +39,15 @@ pub const PIECE_RANDOMS: [[[ZobristKey; Square::TOTAL]; Pieces::TOTAL]; Sides::T
     randoms
 };
 
-const CASTLING_OFFSET: usize = 768; // [768, 771]: WK, WQ, BK, BQ
+/// CASTLING_OFFSET: [768, 771]: WK, WQ, BK, BQ
+const CASTLING_OFFSET: usize = 768;
 
-// CASTLING_RANDOMS is a constant array of polyglot-compatible random values used
-// to fetch the zobrist random value for a given set of castling rights
-//
-// note: this table extends the definition of the POLYGLOT_RANDOMS array by
-//       providing precomputed random values for each permutation of castling
-//       rights in addition to the individual castling rights
+/// CASTLING_RANDOMS is a constant array of polyglot-compatible random values used
+/// to fetch the zobrist random value for a given set of castling rights
+///
+/// note: this table extends the definition of the POLYGLOT_RANDOMS array by
+///       providing precomputed random values for each permutation of castling
+///       rights in addition to the individual castling rights
 pub const CASTLING_RANDOMS: [ZobristKey; Castling::TOTAL] = {
     let mut randoms = [ZobristKey::default(); Castling::TOTAL];
 
@@ -80,10 +81,11 @@ pub const CASTLING_RANDOMS: [ZobristKey; Castling::TOTAL] = {
     randoms
 };
 
-const EN_PASSANT_OFFSET: usize = 772; // [772, 779]: A-H
+/// EN_PASSANT_OFFSET: [772, 779]: A-H
+const EN_PASSANT_OFFSET: usize = 772;
 
-// EN_PASSANT_RANDOMS is a constant array of polyglot-compatible random values used
-// to fetch the zobrist random value for a given en passant square by file
+/// EN_PASSANT_RANDOMS is a constant array of polyglot-compatible random values used
+/// to fetch the zobrist random value for a given en passant square by file
 pub const EN_PASSANT_RANDOMS: [ZobristKey; File::TOTAL] = {
     let mut randoms = [ZobristKey::default(); File::TOTAL];
 
@@ -96,24 +98,25 @@ pub const EN_PASSANT_RANDOMS: [ZobristKey; File::TOTAL] = {
     randoms
 };
 
-const SIDE_OFFSET: usize = 780; // [780]: only for White, Black is 0
+/// SIDE_OFFSET: [780]: only for White, Black is 0
+const SIDE_OFFSET: usize = 780;
 
-// SIDE_RANDOMS is a constant array of polyglot-compatible random values used
-// to fetch the zobrist random value for a given side
-//
-// note: this table extends the definition of the POLYGLOT_RANDOMS array by
-//       providing a zobrist random for black set to 0 for branchless access
+/// SIDE_RANDOMS is a constant array of polyglot-compatible random values used
+/// to fetch the zobrist random value for a given side
+///
+/// note: this table extends the definition of the POLYGLOT_RANDOMS array by
+///       providing a zobrist random for black set to 0 for branchless access
 pub const SIDE_RANDOMS: [ZobristKey; Sides::TOTAL] = [
     ZobristKey::new(POLYGLOT_RANDOMS[SIDE_OFFSET]),
     ZobristKey::new(0),
 ];
 
-// POLYGLOT_RANDOMS is a constant array of random values used to generate the
-// polyglot-compatible zobrist key for a given position
-//
-// note: piece indices are calculated with the following offsets:
-//   White: [Pawn: 1, Knight: 3, Bishop: 5, Rook: 7, Queen: 9, King: 11]
-//   Black: [Pawn: 0, Knight: 2, Bishop: 4, Rook: 6, Queen: 8, King: 10]
+/// POLYGLOT_RANDOMS is a constant array of random values used to generate the
+/// polyglot-compatible zobrist key for a given position
+///
+/// note: piece indices are calculated with the following offsets:
+///   White: [Pawn: 1, Knight: 3, Bishop: 5, Rook: 7, Queen: 9, King: 11]
+///   Black: [Pawn: 0, Knight: 2, Bishop: 4, Rook: 6, Queen: 8, King: 10]
 #[rustfmt::skip]
 const POLYGLOT_RANDOMS: &[u64] = &[
     0x9D39247E33776D41, 0x2AF7398005AAA5C7, 0x44DB015024623547, 0x9C15F73E62A76AE2,

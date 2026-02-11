@@ -1,17 +1,20 @@
-use chess_kit_attack_table::AttackTable;
 use crate::{MoveGenerator, MoveType};
+use chess_kit_attack_table::AttackTable;
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionState};
 use chess_kit_primitives::{Black, MoveList, Sides, White, moves::MoveType::EnPassant};
 use std::marker::PhantomData;
 
+/// `DefaultMoveGenerator` is a default implementation of the `MoveGenerator` trait
+///
+/// @type
 pub struct DefaultMoveGenerator<AT: AttackTable> {
     _attack_table: PhantomData<AT>,
 }
 
 impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
-    // new creates a new move generator
-    //
-    // @impl: MoveGenerator::new
+    /// new creates a new move generator
+    ///
+    /// @impl: MoveGenerator::new
     #[inline(always)]
     fn new() -> Self {
         Self {
@@ -19,10 +22,10 @@ impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
         }
     }
 
-    // generate_moves generates all the pseudo-legal moves of the given move type
-    // from the current position and pushes them to the move list
-    //
-    // @impl: MoveGenerator::generate_moves
+    /// generate_moves generates all the pseudo-legal moves of the given move type
+    /// from the current position and pushes them to the move list
+    ///
+    /// @impl: MoveGenerator::generate_moves
     fn generate_moves<PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
@@ -39,10 +42,10 @@ impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
         }
     }
 
-    // generate_legal_moves generates all the legal moves from the current position
-    // and pushes them to the move list
-    //
-    // @impl: MoveGenerator::generate_legal_moves
+    /// generate_legal_moves generates all the legal moves from the current position
+    /// and pushes them to the move list
+    ///
+    /// @impl: MoveGenerator::generate_legal_moves
     fn generate_legal_moves<PositionT: PositionState + PositionAttacks + PositionMoves>(
         &self,
         position: &PositionT,

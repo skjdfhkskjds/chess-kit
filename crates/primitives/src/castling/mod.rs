@@ -3,11 +3,15 @@ mod display;
 
 use chess_kit_derive::BitOps;
 
-// Castling rights are stored in a u8 containing the following bits:
-//
-// | pad  | bq | bk | wq | wk |
-// |:----:|:--:|:--:|:--:|:--:|
-// | 0101 |  1 |  1 |  1 |  1 |
+/// Castling is a typed representation of the castling rights in a position
+///
+/// The data is stored in a u8 with the following schema:
+///
+/// | pad  | bq | bk | wq | wk |
+/// |:----:|:--:|:--:|:--:|:--:|
+/// | 0101 |  1 |  1 |  1 |  1 |
+///
+/// @type
 #[repr(transparent)]
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, BitOps)]
 pub struct Castling(u8);

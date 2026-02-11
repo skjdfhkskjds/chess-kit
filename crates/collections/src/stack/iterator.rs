@@ -1,6 +1,8 @@
-use super::{Stack, Copyable};
+use super::{Copyable, Stack};
 
-// StackIter is a double-ended iterator over the stack
+/// StackIter is a double-ended iterator over the stack
+///
+/// @type
 pub struct StackIter<'a, T: Copyable, const CAP: usize> {
     stack: &'a Stack<T, CAP>,
     front: usize,

@@ -1,6 +1,6 @@
-use chess_kit_attack_table::AttackTable;
-use crate::position::DefaultPosition;
 use crate::State;
+use crate::position::DefaultPosition;
+use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{File, Pieces, Rank, Sides};
 use std::fmt;
 

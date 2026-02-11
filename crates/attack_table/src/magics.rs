@@ -1,6 +1,4 @@
-use crate::sliding_pieces::{
-    bishop_attack_board, bishop_mask, rook_attack_board, rook_mask,
-};
+use crate::sliding_pieces::{bishop_attack_board, bishop_mask, rook_attack_board, rook_mask};
 use crate::table::MagicTable;
 use chess_kit_primitives::{Bitboard, Square};
 
@@ -61,9 +59,9 @@ pub(crate) struct RookMagicsTable {
 }
 
 impl BishopMagicsTable {
-    // new creates and initializes a new bishop magics table
-    //
-    // @return: new bishop magics table
+    /// new creates and initializes a new bishop magics table
+    ///
+    /// @return: new bishop magics table
     pub const fn new() -> Self {
         let mut attack_table = Self {
             table: [Bitboard::empty(); BISHOP_TABLE_SIZE],
@@ -77,9 +75,9 @@ impl BishopMagicsTable {
 }
 
 impl RookMagicsTable {
-    // new creates and initializes a new rook magics table
-    //
-    // @return: new rook magics table
+    /// new creates and initializes a new rook magics table
+    ///
+    /// @return: new rook magics table
     pub const fn new() -> Self {
         let mut attack_table = Self {
             table: [Bitboard::empty(); ROOK_TABLE_SIZE],
@@ -92,6 +90,10 @@ impl RookMagicsTable {
     }
 }
 
+/// `Magic` is a struct that represents a magic number and its associated mask,
+/// shift, offset, and num
+///
+/// @type
 #[derive(Copy, Clone)]
 pub struct Magic {
     mask: u64,   // square mask
@@ -101,13 +103,13 @@ pub struct Magic {
 }
 
 impl Magic {
-    // new creates a new magic with the given mask, shift, offset, and num
-    //
-    // @param: mask - mask for the magic
-    // @param: shift - shift for the magic
-    // @param: offset - offset for the magic
-    // @param: num - num for the magic
-    // @return: new magic
+    /// new creates a new magic with the given mask, shift, offset, and num
+    ///
+    /// @param: mask - mask for the magic
+    /// @param: shift - shift for the magic
+    /// @param: offset - offset for the magic
+    /// @param: num - num for the magic
+    /// @return: new magic
     pub const fn new(mask: u64, shift: u8, offset: u64, num: u64) -> Self {
         Self {
             mask,
@@ -117,17 +119,17 @@ impl Magic {
         }
     }
 
-    // default creates a new default magic
-    //
-    // @return: new default magic
+    /// default creates a new default magic
+    ///
+    /// @return: new default magic
     pub const fn default() -> Self {
         Self::new(0, 0, 0, 0)
     }
 
-    // idx gets the magic index for the given occupancy
-    //
-    // @param: occupancy - occupancy to get the magic index for
-    // @return: magic index for the given occupancy
+    /// idx gets the magic index for the given occupancy
+    ///
+    /// @param: occupancy - occupancy to get the magic index for
+    /// @return: magic index for the given occupancy
     #[inline(always)]
     pub const fn idx(&self, occupancy: Bitboard) -> usize {
         let blockerboard = occupancy.const_unwrap() & self.mask;
@@ -135,27 +137,30 @@ impl Magic {
     }
 }
 
-// new_rook_square_magics creates a new magic for the given square
-//
-// note: this function is copy-pasted to improve CTFE performance by avoiding
-//       branching in the hot path
-//
-// @param: offset - offset into the existing attack table
-// @param: square - square to create the magic for
-// @param: table - attack table to create the magic for
-// @return: new magic for the given square
-// @side-effect: modifies the attack table to contain the bitboard(s) for
-//               the given rook square
+/// new_rook_square_magics creates a new magic for the given square
+///
+/// note: this function is copy-pasted to improve CTFE performance by avoiding
+///       branching in the hot path
+///
+/// @param: offset - offset into the existing attack table
+/// @param: square - square to create the magic for
+/// @param: table - attack table to create the magic for
+/// @return: new magic for the given square
+/// @side-effect: modifies the attack table to contain the bitboard(s) for
+///               the given rook square
 const fn new_rook_square_magics(offset: &mut u64, square: Square, table: &mut [Bitboard]) -> Magic {
     let mask = rook_mask(square).const_unwrap();
 
-    let bits = mask.count_ones(); // number of set bits in the mask
-    let permutations = 1u64 << bits; // number of blocker boards to be indexed
+    let bits = mask.count_ones();
+    // number of set bits in the mask
+    let permutations = 1u64 << bits;
+    // number of blocker boards to be indexed
 
     // create the magic for the given square
     let magic = Magic::new(
         mask,
-        (64 - bits) as u8, // shift
+        (64 - bits) as u8,
+        // shift
         *offset,
         ROOK_MAGIC_NUMS[square.idx()],
     );
@@ -184,17 +189,17 @@ const fn new_rook_square_magics(offset: &mut u64, square: Square, table: &mut [B
     magic
 }
 
-// new_bishop_square_magics creates a new magic for the given square
-//
-// note: this function is copy-pasted to improve CTFE performance by avoiding
-//       branching in the hot path
-//
-// @param: offset - offset into the existing attack table
-// @param: square - square to create the magic for
-// @param: table - attack table to create the magic for
-// @return: new magic for the given square
-// @side-effect: modifies the attack table to contain the bitboard(s) for
-//               the given square
+/// new_bishop_square_magics creates a new magic for the given square
+///
+/// note: this function is copy-pasted to improve CTFE performance by avoiding
+///       branching in the hot path
+///
+/// @param: offset - offset into the existing attack table
+/// @param: square - square to create the magic for
+/// @param: table - attack table to create the magic for
+/// @return: new magic for the given square
+/// @side-effect: modifies the attack table to contain the bitboard(s) for
+///               the given square
 const fn new_bishop_square_magics(
     offset: &mut u64,
     square: Square,
@@ -202,13 +207,16 @@ const fn new_bishop_square_magics(
 ) -> Magic {
     let mask = bishop_mask(square).const_unwrap();
 
-    let bits = mask.count_ones(); // number of set bits in the mask
-    let permutations = 1u64 << bits; // number of blocker boards to be indexed
+    let bits = mask.count_ones();
+    // number of set bits in the mask
+    let permutations = 1u64 << bits;
+    // number of blocker boards to be indexed
 
     // create the magic for the given square
     let magic = Magic::new(
         mask,
-        (64 - bits) as u8, // shift
+        (64 - bits) as u8,
+        // shift
         *offset,
         BISHOP_MAGIC_NUMS[square.idx()],
     );
@@ -237,12 +245,12 @@ const fn new_bishop_square_magics(
     magic
 }
 
-// new_rook_magics creates a new magics table for the rook
-//
-// @param: table - attack table to create the magic for
-// @return: new magic table for the given piece
-// @side-effect: modifies the attack table to contain the bitboards for the
-//               given piece
+/// new_rook_magics creates a new magics table for the rook
+///
+/// @param: table - attack table to create the magic for
+/// @return: new magic table for the given piece
+/// @side-effect: modifies the attack table to contain the bitboards for the
+///               given piece
 const fn new_rook_magics(table: &mut [Bitboard]) -> MagicTable {
     let mut magics: MagicTable = [Magic::default(); Square::TOTAL];
 
@@ -259,12 +267,12 @@ const fn new_rook_magics(table: &mut [Bitboard]) -> MagicTable {
     magics
 }
 
-// new_bishop_magics creates a new magics table for the bishop
-//
-// @param: table - attack table to create the magic for
-// @return: new magic table for the bishop
-// @side-effect: modifies the attack table to contain the bitboards for the
-//               bishop
+/// new_bishop_magics creates a new magics table for the bishop
+///
+/// @param: table - attack table to create the magic for
+/// @return: new magic table for the bishop
+/// @side-effect: modifies the attack table to contain the bitboards for the
+///               bishop
 const fn new_bishop_magics(table: &mut [Bitboard]) -> MagicTable {
     let mut magics: MagicTable = [Magic::default(); Square::TOTAL];
 

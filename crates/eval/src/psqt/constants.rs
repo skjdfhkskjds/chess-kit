@@ -1,22 +1,22 @@
 use super::{GamePhase, PSQTable, PieceValue as PV};
 use chess_kit_primitives::{Pieces, Sides, Square};
 
-// PHASE_VALUES is a constant array of values representing the impact that a
-// piece has on the game phase heuristic
-//
-// TODO: we have a leading 0 for Pieces::NONE, remove when possible
+/// PHASE_VALUES is a constant array of values representing the impact that a
+/// piece has on the game phase heuristic
+///
+/// TODO: we have a leading 0 for Pieces::NONE, remove when possible
 pub(super) const PHASE_VALUES: [GamePhase; Pieces::TOTAL] = [0, 0, 1050, 405, 305, 155, 0];
 
-// MIDDLEGAME_PHASE_MIN and MIDDLEGAME_PHASE_MAX are the minimum and maximum
-// values for the middlegame phase
+/// MIDDLEGAME_PHASE_MIN and MIDDLEGAME_PHASE_MAX are the minimum and maximum
+/// values for the middlegame phase
 pub(super) const MIDDLEGAME_PHASE_MIN: GamePhase = 435;
 pub(super) const MIDDLEGAME_PHASE_MAX: GamePhase = 5255;
 
-// PIECE_TABLES is a constant array of piece tables for each side and piece
-//
-// note: this table is useful to autovectorize access to the PSQT collection of
-//       constants AND avoids the need to conditionally invert the square lookup
-//       for the white perspective at runtime
+/// PIECE_TABLES is a constant array of piece tables for each side and piece
+///
+/// note: this table is useful to autovectorize access to the PSQT collection of
+///       constants AND avoids the need to conditionally invert the square lookup
+///       for the white perspective at runtime
 pub(super) const PIECE_TABLES: [[PSQTable; Pieces::TOTAL]; Sides::TOTAL] = {
     let mut tables = [[[PV::new(0, 0); Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL];
 

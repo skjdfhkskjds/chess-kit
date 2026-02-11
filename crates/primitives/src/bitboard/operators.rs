@@ -1,64 +1,64 @@
 use crate::{Bitboard, Direction};
 
 impl Bitboard {
-    // wrapping_sub performs a wrapping subtraction of a bitboard with any type
-    // that can be converted to a u64
-    //
-    // @param: rhs - value to wrapping subtract from the bitboard
-    // @return: result of the wrapping subtraction
+    /// wrapping_sub performs a wrapping subtraction of a bitboard with any type
+    /// that can be converted to a u64
+    ///
+    /// @param: rhs - value to wrapping subtract from the bitboard
+    /// @return: result of the wrapping subtraction
     #[inline(always)]
     pub fn wrapping_sub<T: Into<u64>>(self, rhs: T) -> Self {
         Self(self.0.wrapping_sub(rhs.into()))
     }
 
-    // wrapping_mul performs a wrapping multiplication of a bitboard with any
-    // type that can be converted to a u64
-    //
-    // @param: rhs - value to wrapping multiply the bitboard by
-    // @return: result of the wrapping multiplication
+    /// wrapping_mul performs a wrapping multiplication of a bitboard with any
+    /// type that can be converted to a u64
+    ///
+    /// @param: rhs - value to wrapping multiply the bitboard by
+    /// @return: result of the wrapping multiplication
     #[inline(always)]
     pub fn wrapping_mul<T: Into<u64>>(self, rhs: T) -> Self {
         Self(self.0.wrapping_mul(rhs.into()))
     }
 
-    // rotate_left performs a left rotation of a bitboard by a given number of
-    // bits
-    //
-    // @param: rhs - number of bits to rotate the bitboard by
-    // @return: result of the left rotation
+    /// rotate_left performs a left rotation of a bitboard by a given number of
+    /// bits
+    ///
+    /// @param: rhs - number of bits to rotate the bitboard by
+    /// @return: result of the left rotation
     #[inline(always)]
     pub fn rotate_left(self, rhs: u32) -> Self {
         Self(self.0.rotate_left(rhs))
     }
 
-    // count_ones counts the number of bits set in the bitboard
-    //
-    // @return: number of bits set in the bitboard
+    /// count_ones counts the number of bits set in the bitboard
+    ///
+    /// @return: number of bits set in the bitboard
     #[inline(always)]
     pub const fn count_ones(&self) -> u32 {
         self.0.count_ones()
     }
 
-    // trailing_zeros counts the number of trailing zeros in the bitboard
-    //
-    // @return: number of trailing zeros in the bitboard
+    /// trailing_zeros counts the number of trailing zeros in the bitboard
+    ///
+    /// @return: number of trailing zeros in the bitboard
     #[inline(always)]
     pub const fn trailing_zeros(&self) -> u32 {
         self.0.trailing_zeros()
     }
 
-    // leading_zeros counts the number of leading zeros in the bitboard
-    //
-    // @return: number of leading zeros in the bitboard
+    /// leading_zeros counts the number of leading zeros in the bitboard
+    ///
+    /// @return: number of leading zeros in the bitboard
     #[inline(always)]
     pub const fn leading_zeros(&self) -> u32 {
         self.0.leading_zeros()
     }
 
-    // shift shifts the bitboard in the given direction
-    //
-    // @param: direction - direction to shift the bitboard in
-    // @return: result of the shift
+    /// shift shifts the bitboard in the given direction
+    ///
+    /// @param: direction - direction to shift the bitboard in
+    /// @return: result of the shift
     #[inline(always)]
     pub const fn shift(self, direction: Direction) -> Self {
         match direction {

@@ -1,8 +1,8 @@
 use crate::bitboard::Bitboard;
 use crate::{Direction, File, Rank, Square};
 
-// BITBOARD_RANKS is a constant array of bitboards, where each bitboard has
-// the bits for that rank set to 1
+/// BITBOARD_RANKS is a constant array of bitboards, where each bitboard has
+/// the bits for that rank set to 1
 pub const BITBOARD_RANKS: [Bitboard; Rank::TOTAL] = {
     const RANK_1: u64 = 0xFF;
     let mut ranks = [Bitboard::empty(); Rank::TOTAL];
@@ -17,8 +17,8 @@ pub const BITBOARD_RANKS: [Bitboard; Rank::TOTAL] = {
     ranks
 };
 
-// BITBOARD_FILES is a constant array of bitboards, where each bitboard has
-// the bits for that file set to 1
+/// BITBOARD_FILES is a constant array of bitboards, where each bitboard has
+/// the bits for that file set to 1
 pub const BITBOARD_FILES: [Bitboard; File::TOTAL] = {
     const FILE_A: u64 = 0x0101_0101_0101_0101;
     let mut files = [Bitboard::empty(); File::TOTAL];
@@ -33,10 +33,10 @@ pub const BITBOARD_FILES: [Bitboard; File::TOTAL] = {
     files
 };
 
-// diagonal_mask returns the mask for the diagonal of the given square
-//
-// @param: sq - square to get the diagonal mask for
-// @return: diagonal mask for the given square
+/// diagonal_mask returns the mask for the diagonal of the given square
+///
+/// @param: sq - square to get the diagonal mask for
+/// @return: diagonal mask for the given square
 #[inline(always)]
 const fn diagonal_mask(sq: Square) -> Bitboard {
     let f0 = sq.file() as i8;
@@ -59,10 +59,10 @@ const fn diagonal_mask(sq: Square) -> Bitboard {
     Bitboard::new(mask)
 }
 
-// anti_diagonal_mask returns the mask for the anti-diagonal of the given square
-//
-// @param: sq - square to get the anti-diagonal mask for
-// @return: anti-diagonal mask for the given square
+/// anti_diagonal_mask returns the mask for the anti-diagonal of the given square
+///
+/// @param: sq - square to get the anti-diagonal mask for
+/// @return: anti-diagonal mask for the given square
 #[inline(always)]
 const fn anti_diagonal_mask(sq: Square) -> Bitboard {
     let f0 = sq.file() as i8;
@@ -85,8 +85,8 @@ const fn anti_diagonal_mask(sq: Square) -> Bitboard {
     Bitboard::new(mask)
 }
 
-// BITBOARD_DIAGONALS is a constant array of bitboards, where each bitboard has
-// the bits for that diagonal set to 1
+/// BITBOARD_DIAGONALS is a constant array of bitboards, where each bitboard has
+/// the bits for that diagonal set to 1
 pub const BITBOARD_DIAGONALS: [Bitboard; Square::TOTAL] = {
     let mut diagonals = [Bitboard::empty(); Square::TOTAL];
     let mut i = 0;
@@ -97,8 +97,8 @@ pub const BITBOARD_DIAGONALS: [Bitboard; Square::TOTAL] = {
     diagonals
 };
 
-// BITBOARD_ANTI_DIAGONALS is a constant array of bitboards, where each bitboard
-// has the bits for that anti-diagonal set to 1
+/// BITBOARD_ANTI_DIAGONALS is a constant array of bitboards, where each bitboard
+/// has the bits for that anti-diagonal set to 1
 pub const BITBOARD_ANTI_DIAGONALS: [Bitboard; Square::TOTAL] = {
     let mut anti_diagonals = [Bitboard::empty(); Square::TOTAL];
     let mut i = 0;
@@ -109,12 +109,12 @@ pub const BITBOARD_ANTI_DIAGONALS: [Bitboard; Square::TOTAL] = {
     anti_diagonals
 };
 
-// BITBOARD_BETWEEN is a constant array of bitboards, where each bitboard has
-// the bits for that between set to 1
-//
-// @note: we define the between bitboard as the bitboard that contains the bits
-//        for the squares that are on the line between the two given squares,
-//        excluding the start square and including the end square
+/// BITBOARD_BETWEEN is a constant array of bitboards, where each bitboard has
+/// the bits for that between set to 1
+///
+/// @note: we define the between bitboard as the bitboard that contains the bits
+///        for the squares that are on the line between the two given squares,
+///        excluding the start square and including the end square
 pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
     let mut between = [[Bitboard::empty(); Square::TOTAL]; Square::TOTAL];
     let mut i = 0;
@@ -179,7 +179,7 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
             }
 
             // set the attack ray for the source and target squares
-            // 
+            //
             // note: for the inverse direction, exclude the target and include
             //       the source square to get the inverse between bitboard
             between[i][j] = Bitboard::new(ray);
@@ -197,9 +197,9 @@ pub const BITBOARD_BETWEEN: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
     between
 };
 
-// BITBOARD_LINES is a constant array of bitboards, where each bitboard is has
-// the bits for that line from edge to edge intersecting the given squares set
-// to 1
+/// BITBOARD_LINES is a constant array of bitboards, where each bitboard is has
+/// the bits for that line from edge to edge intersecting the given squares set
+/// to 1
 pub const BITBOARD_LINES: [[Bitboard; Square::TOTAL]; Square::TOTAL] = {
     let mut lines = [[Bitboard::empty(); Square::TOTAL]; Square::TOTAL];
 

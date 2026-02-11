@@ -4,15 +4,15 @@ use chess_kit_position::{CastlingSquares, PositionAttacks, PositionState};
 use chess_kit_primitives::{Bitboard, MoveList, Pieces, Side};
 
 impl<AT: AttackTable> DefaultMoveGenerator<AT> {
-    // generate_moves_for_side generates all the pseudo-legal moves of the given
-    // move type for the side to move from the current position and pushes them to
-    // the move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate moves for
-    // @return: void
-    // @side-effects: modifies the `move list`
+    /// generate_moves_for_side generates all the pseudo-legal moves of the given
+    /// move type for the side to move from the current position and pushes them to
+    /// the move list
+    ///
+    /// @param: position - immutable reference to the position
+    /// @param: list - mutable reference to the move list
+    /// @param: move_type - move type to generate moves for
+    /// @return: void
+    /// @side-effects: modifies the `move list`
     #[inline(always)]
     pub(crate) fn generate_moves_for_side<
         SideT: Side,
@@ -23,23 +23,23 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         list: &mut MoveList,
         move_type: MoveType,
     ) {
-        // get the set of possible destination squares for our next move based
-        // on the move type and the number of pieces delivering check to the
-        // king
-        //
-        // additionally, if the king is in double-check, the only moves that are
-        // legal would be king moves that physically evade the square currently
-        // being attacked, so we can skip all other pieces and only consider the
-        // king
+        /// get the set of possible destination squares for our next move based
+        /// on the move type and the number of pieces delivering check to the
+        /// king
+        ///
+        /// additionally, if the king is in double-check, the only moves that are
+        /// legal would be king moves that physically evade the square currently
+        /// being attacked, so we can skip all other pieces and only consider the
+        /// king
         let mut destinations = Bitboard::empty();
         if move_type != MoveType::Evasions || !position.checkers().more_than_one() {
             destinations = match move_type {
                 MoveType::Evasions => {
-                    // if the move type is evasions, then there must be exactly
-                    // one piece delivering check
+                    /// if the move type is evasions, then there must be exactly
+                    /// one piece delivering check
                     //
-                    // in this case, the only moves we should consider are ones
-                    // that would either block the check or capture that piece
+                    /// in this case, the only moves we should consider are ones
+                    /// that would either block the check or capture that piece
                     debug_assert!(
                         position.checkers().exactly_one(),
                         "checkers should be exactly one"
@@ -62,15 +62,15 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         self.generate_king_moves::<SideT, PositionT>(position, list, destinations, move_type);
     }
 
-    // generate_queen_moves generates all the pseudo-legal moves of the given
-    // move type for the queen from the current position and pushes them to the
-    // move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate moves of
-    // @return: void
-    // @side-effects: modifies the `move list`
+    /// generate_queen_moves generates all the pseudo-legal moves of the given
+    /// move type for the queen from the current position and pushes them to the
+    /// move list
+    ///
+    /// @param: position - immutable reference to the position
+    /// @param: list - mutable reference to the move list
+    /// @param: move_type - move type to generate moves of
+    /// @return: void
+    /// @side-effects: modifies the `move list`
     #[inline(always)]
     fn generate_queen_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
@@ -89,14 +89,14 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         }
     }
 
-    // generate_rook_moves generates all the pseudo-legal moves of the given
-    // move type for the rook from the current position and pushes them to the
-    // move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate moves of
-    // @return: void
+    /// generate_rook_moves generates all the pseudo-legal moves of the given
+    /// move type for the rook from the current position and pushes them to the
+    /// move list
+    ///
+    /// @param: position - immutable reference to the position
+    /// @param: list - mutable reference to the move list
+    /// @param: move_type - move type to generate moves of
+    /// @return: void
     #[inline(always)]
     fn generate_rook_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
@@ -115,14 +115,14 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         }
     }
 
-    // generate_bishop_moves generates all the pseudo-legal moves of the given
-    // move type for the bishop from the current position and pushes them to the
-    // move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate moves of
-    // @return: void
+    /// generate_bishop_moves generates all the pseudo-legal moves of the given
+    /// move type for the bishop from the current position and pushes them to the
+    /// move list
+    ///
+    /// @param: position - immutable reference to the position
+    /// @param: list - mutable reference to the move list
+    /// @param: move_type - move type to generate moves of
+    /// @return: void
     #[inline(always)]
     fn generate_bishop_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
@@ -141,14 +141,14 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         }
     }
 
-    // generate_knight_moves generates all the pseudo-legal moves of the given
-    // move type for the knight from the current position and pushes them to the
-    // move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate moves of
-    // @return: void
+    /// generate_knight_moves generates all the pseudo-legal moves of the given
+    /// move type for the knight from the current position and pushes them to the
+    /// move list
+    ///
+    /// @param: position - immutable reference to the position
+    /// @param: list - mutable reference to the move list
+    /// @param: move_type - move type to generate moves of
+    /// @return: void
     #[inline(always)]
     fn generate_knight_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
@@ -165,15 +165,15 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         }
     }
 
-    // generate_pawn_moves generates all the pseudo-legal moves of the given
-    // move type for the pawns from the current position and pushes them to the
-    // move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate moves of
-    // @return: void
-    // @side-effects: modifies the `move list`
+    /// generate_pawn_moves generates all the pseudo-legal moves of the given
+    /// move type for the pawns from the current position and pushes them to the
+    /// move list
+    ///
+    /// @param: position - immutable reference to the position
+    /// @param: list - mutable reference to the move list
+    /// @param: move_type - move type to generate moves of
+    /// @return: void
+    /// @side-effects: modifies the `move list`
     #[inline(always)]
     fn generate_pawn_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
@@ -313,15 +313,15 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         }
     }
 
-    // generate_king_moves generates all the pseudo-legal moves of the given
-    // move type for the king from the current position and pushes them to the
-    // move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @param: move_type - move type to generate moves of
-    // @return: void
-    // @side-effects: modifies the `move list`
+    /// generate_king_moves generates all the pseudo-legal moves of the given
+    /// move type for the king from the current position and pushes them to the
+    /// move list
+    ///
+    /// @param: position - immutable reference to the position
+    /// @param: list - mutable reference to the move list
+    /// @param: move_type - move type to generate moves of
+    /// @return: void
+    /// @side-effects: modifies the `move list`
     #[inline(always)]
     fn generate_king_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
@@ -350,15 +350,15 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         }
     }
 
-    // generate_castle_moves generates all the pseudo-legal moves of the given
-    // move type for the castling from the current position and pushes them to the
-    // move list
-    //
-    // @param: position - immutable reference to the position
-    // @param: list - mutable reference to the move list
-    // @return: void
-    // TODO: current implementation does not support chess960, as it assumes the
-    //       squares along the path from the king and rook
+    /// generate_castle_moves generates all the pseudo-legal moves of the given
+    /// move type for the castling from the current position and pushes them to the
+    /// move list
+    ///
+    /// @param: position - immutable reference to the position
+    /// @param: list - mutable reference to the move list
+    /// @return: void
+    /// TODO: current implementation does not support chess960, as it assumes the
+    ///       squares along the path from the king and rook
     #[inline(always)]
     fn generate_castle_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,

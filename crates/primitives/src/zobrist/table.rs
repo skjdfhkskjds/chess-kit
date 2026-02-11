@@ -4,13 +4,13 @@ use crate::{
 };
 
 impl ZobristTable {
-    // new_key generates a new zobrist key for the given position
-    //
-    // @marker: SideT - side to move
-    // @param: castling - castling rights
-    // @param: en_passant - en passant square
-    // @param: bitboards - bitboards to generate the zobrist key for
-    // @return: zobrist key for the given position
+    /// new_key generates a new zobrist key for the given position
+    ///
+    /// @marker: SideT - side to move
+    /// @param: castling - castling rights
+    /// @param: en_passant - en passant square
+    /// @param: bitboards - bitboards to generate the zobrist key for
+    /// @return: zobrist key for the given position
     pub fn new_key<SideT: Side>(
         castling: Castling,
         en_passant: Option<Square>,
@@ -37,40 +37,40 @@ impl ZobristTable {
         key
     }
 
-    // piece returns the random value for the given side, piece, and square
-    //
-    // @marker: SideT - side to get the random value for
-    // @param: piece - piece to get the random value for
-    // @param: square - square to get the random value for
-    // @return: random value for the given side, piece, and square
+    /// piece returns the random value for the given side, piece, and square
+    ///
+    /// @marker: SideT - side to get the random value for
+    /// @param: piece - piece to get the random value for
+    /// @param: square - square to get the random value for
+    /// @return: random value for the given side, piece, and square
     #[inline(always)]
     pub fn piece<SideT: Side>(piece: Pieces, square: Square) -> ZobristKey {
         PIECE_RANDOMS[SideT::SIDE][piece][square]
     }
 
-    // castling returns the random value for the given castling rights
-    //
-    // @param: castling - castling rights to get the random value for
-    // @return: random value for the given castling rights
+    /// castling returns the random value for the given castling rights
+    ///
+    /// @param: castling - castling rights to get the random value for
+    /// @return: random value for the given castling rights
     #[inline(always)]
     pub fn castling(castling: Castling) -> ZobristKey {
         CASTLING_RANDOMS[u8::from(castling) as usize]
     }
 
-    // side returns the random value for the given side
-    //
-    // @marker: SideT - side to get the random value for
-    // @return: random value for the given side
+    /// side returns the random value for the given side
+    ///
+    /// @marker: SideT - side to get the random value for
+    /// @return: random value for the given side
     #[inline(always)]
     pub fn side<SideT: Side>() -> ZobristKey {
         SIDE_RANDOMS[SideT::SIDE]
     }
 
-    // en_passant returns the random value for the given en passant square
-    // or the random value associated with an absence of en passant
-    //
-    // @param: en_passant - en passant square to get the random value for
-    // @return: random value for the given en passant square
+    /// en_passant returns the random value for the given en passant square
+    /// or the random value associated with an absence of en passant
+    ///
+    /// @param: en_passant - en passant square to get the random value for
+    /// @return: random value for the given en passant square
     #[inline(always)]
     pub fn en_passant(en_passant: Option<Square>) -> ZobristKey {
         match en_passant {

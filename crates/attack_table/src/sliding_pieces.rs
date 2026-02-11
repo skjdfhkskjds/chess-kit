@@ -9,9 +9,9 @@ const RANK_EDGES: Bitboard = Bitboard::new(
 const FILE_EDGES: Bitboard =
     Bitboard::new(Bitboard::file(File::A).const_unwrap() | Bitboard::file(File::H).const_unwrap());
 
-// new_empty_rook_table creates a new empty rook table
-//
-// @return: new empty rook table
+/// new_empty_rook_table creates a new empty rook table
+///
+/// @return: new empty rook table
 pub(crate) const fn new_empty_rook_table() -> BitboardTable {
     let mut empty_rook_table: BitboardTable = [Bitboard::empty(); Square::TOTAL];
 
@@ -32,9 +32,9 @@ pub(crate) const fn new_empty_rook_table() -> BitboardTable {
     empty_rook_table
 }
 
-// new_empty_bishop_table creates a new empty bishop table
-//
-// @return: new empty bishop table
+/// new_empty_bishop_table creates a new empty bishop table
+///
+/// @return: new empty bishop table
 pub(crate) const fn new_empty_bishop_table() -> BitboardTable {
     let mut empty_bishop_table: BitboardTable = [Bitboard::empty(); Square::TOTAL];
 
@@ -55,10 +55,10 @@ pub(crate) const fn new_empty_bishop_table() -> BitboardTable {
     empty_bishop_table
 }
 
-// rook_mask returns the rook mask for the given square
-//
-// @param: square - square to get the mask for
-// @return: masking bitboard for the given square
+/// rook_mask returns the rook mask for the given square
+///
+/// @param: square - square to get the mask for
+/// @return: masking bitboard for the given square
 pub(crate) const fn rook_mask(square: Square) -> Bitboard {
     let edges = get_edges(square).const_unwrap();
     let attacks = EMPTY_ROOK_TABLE[square.idx()].const_unwrap();
@@ -66,10 +66,10 @@ pub(crate) const fn rook_mask(square: Square) -> Bitboard {
     Bitboard::new(attacks & !edges)
 }
 
-// bishop_mask returns the bishop mask for the given square
-//
-// @param: square - square to get the mask for
-// @return: masking bitboard for the given square
+/// bishop_mask returns the bishop mask for the given square
+///
+/// @param: square - square to get the mask for
+/// @return: masking bitboard for the given square
 pub(crate) const fn bishop_mask(square: Square) -> Bitboard {
     let edges = get_edges(square).const_unwrap();
     let attacks = EMPTY_BISHOP_TABLE[square.idx()].const_unwrap();
@@ -77,12 +77,12 @@ pub(crate) const fn bishop_mask(square: Square) -> Bitboard {
     Bitboard::new(attacks & !edges)
 }
 
-// rook_attack_board returns the attack board associated with the given
-// square and blocker board
-//
-// @param: square - square to get the attack board for
-// @param: blocker - blocker to use to generate the attack board
-// @return: attack board for the given square and blocker
+/// rook_attack_board returns the attack board associated with the given
+/// square and blocker board
+///
+/// @param: square - square to get the attack board for
+/// @param: blocker - blocker to use to generate the attack board
+/// @return: attack board for the given square and blocker
 pub(crate) const fn rook_attack_board(square: Square, blocker: Bitboard) -> Bitboard {
     let sq = Bitboard::square(square).const_unwrap();
     let occ = blocker.const_unwrap();
@@ -91,12 +91,12 @@ pub(crate) const fn rook_attack_board(square: Square, blocker: Bitboard) -> Bitb
     Bitboard::new(fast_attack_ray(occ, sq, file_mask) | fast_attack_ray(occ, sq, rank_mask))
 }
 
-// bishop_attack_board returns the attack board associated with the given
-// square and blocker board.
-//
-// @param: square - square to get the attack board for
-// @param: blocker - blocker to use to generate the attack board
-// @return: attack board for the given square and blocker
+/// bishop_attack_board returns the attack board associated with the given
+/// square and blocker board.
+///
+/// @param: square - square to get the attack board for
+/// @param: blocker - blocker to use to generate the attack board
+/// @return: attack board for the given square and blocker
 pub(crate) const fn bishop_attack_board(square: Square, blocker: Bitboard) -> Bitboard {
     let sq = Bitboard::square(square).const_unwrap();
     let occ = blocker.const_unwrap();
@@ -106,12 +106,12 @@ pub(crate) const fn bishop_attack_board(square: Square, blocker: Bitboard) -> Bi
     Bitboard::new(fast_attack_ray(occ, sq, diagonal) | fast_attack_ray(occ, sq, anti_diagonal))
 }
 
-// get_edges generates a bitboard of all the edges of the board excluding
-// the given square.
-//
-// @param: exclude - square to exclude from the edges
-// @return: bitboard of all the edges of the board
-// TODO: think about moving this function elsewhere
+/// get_edges generates a bitboard of all the edges of the board excluding
+/// the given square.
+///
+/// @param: exclude - square to exclude from the edges
+/// @return: bitboard of all the edges of the board
+/// TODO: think about moving this function elsewhere
 const fn get_edges(exclude: Square) -> Bitboard {
     let exclude_file = Bitboard::file(exclude.file()).const_unwrap();
     let exclude_rank = Bitboard::rank(exclude.rank()).const_unwrap();
@@ -121,18 +121,18 @@ const fn get_edges(exclude: Square) -> Bitboard {
     )
 }
 
-// attack_ray returns the attack ray from the current square in the given
-// line based on the given bitboard.
-//
-// note: this function uses Hyperbola Quintessence to generate the ray, see
-//       https://www.chessprogramming.org/Hyperbola_Quintessence for details
-//
-// @param: occupancy - occupancy bitboard
-// @param: square - square to start the attack ray from
-// @param: line_mask - line mask to use to generate the attack ray
-// @return: attack ray bitboard
-//
-// @requires: occupancy already excludes square
+/// attack_ray returns the attack ray from the current square in the given
+/// line based on the given bitboard.
+///
+/// note: this function uses Hyperbola Quintessence to generate the ray, see
+///       https://www.chessprogramming.org/Hyperbola_Quintessence for details
+///
+/// @param: occupancy - occupancy bitboard
+/// @param: square - square to start the attack ray from
+/// @param: line_mask - line mask to use to generate the attack ray
+/// @return: attack ray bitboard
+///
+/// @requires: occupancy already excludes square
 const fn fast_attack_ray(occupancy: u64, square: u64, line_mask: u64) -> u64 {
     let mut forward = occupancy & line_mask;
     let mut reverse = forward.reverse_bits(); // o'-s'

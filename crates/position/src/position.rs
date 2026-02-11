@@ -4,11 +4,14 @@ use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Bitboard, Black, Pieces, Side, Sides, Square, White, ZobristTable};
 use std::marker::PhantomData;
 
+/// `DefaultPosition` is a default implementation of the `Position` trait
+///
+/// @type
 pub struct DefaultPosition<AT: AttackTable, StateT: State> {
-    pub history: History<StateT>,            // history of the position state
-    pub sides: [Bitboard; Sides::TOTAL + 1], // occupancy bitboard per side
-    pub bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
-    pub pieces: [Pieces; Square::TOTAL],     // piece type on each square
+    pub(crate) history: History<StateT>, // history of the position state
+    pub(crate) sides: [Bitboard; Sides::TOTAL + 1], // occupancy bitboard per side
+    pub(crate) bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
+    pub(crate) pieces: [Pieces; Square::TOTAL], // piece type on each square
 
     _attack_table: PhantomData<AT>,
 }
@@ -18,10 +21,10 @@ where
     AT: AttackTable,
     StateT: State,
 {
-    // new creates a new position with all bitboards and pieces initialized to 0
-    // and the zobrist random values set to 0
-    //
-    // @impl: Position::new
+    /// new creates a new position with all bitboards and pieces initialized to 0
+    /// and the zobrist random values set to 0
+    ///
+    /// @impl: Position::new
     fn new() -> Self {
         Self {
             history: History::default(),
@@ -32,9 +35,9 @@ where
         }
     }
 
-    // reset resets the position to a new initial state
-    //
-    // @impl: Position::reset
+    /// reset resets the position to a new initial state
+    ///
+    /// @impl: Position::reset
     fn reset(&mut self) {
         self.history.clear();
         self.history.push(StateT::default());
@@ -50,7 +53,11 @@ where
     AT: AttackTable,
     StateT: State,
 {
-    // init initializes the position
+    /// init initializes the position
+    ///
+    /// @param: eval_state - mutable reference to the evaluation state to initialize
+    /// @return: void
+    /// @side-effects: modifies the `position` and the evaluation state
     fn init<EvalStateT: EvalState>(&mut self, eval_state: &mut EvalStateT) {
         self.init_sides();
         self.init_pieces(eval_state);
@@ -61,12 +68,12 @@ where
         }
     }
 
-    // init_sides initializes the `sides` bitboards by ORing the bitboards of
-    // each side
-    //
-    // @return: void
-    // @side-effects: modifies the `sides` bitboards
-    // @requires: `bitboards` is initialized
+    /// init_sides initializes the `sides` bitboards by ORing the bitboards of
+    /// each side
+    ///
+    /// @return: void
+    /// @side-effects: modifies the `sides` bitboards
+    /// @requires: `bitboards` is initialized
     fn init_sides(&mut self) {
         let white = self.bitboards[Sides::White];
         let black = self.bitboards[Sides::Black];
@@ -79,12 +86,12 @@ where
         self.sides[Sides::TOTAL] = self.occupancy::<White>() | self.occupancy::<Black>();
     }
 
-    // init_pieces initializes the `pieces` array by iterating through the
-    // bitboards of each side and setting the piece type on each square
-    //
-    // @return: void
-    // @requires: `bitboards` is initialized
-    // @side-effects: modifies the `pieces` array
+    /// init_pieces initializes the `pieces` array by iterating through the
+    /// bitboards of each side and setting the piece type on each square
+    ///
+    /// @return: void
+    /// @requires: `bitboards` is initialized
+    /// @side-effects: modifies the `pieces` array and the evaluation state
     fn init_pieces<EvalStateT: EvalState>(&mut self, eval_state: &mut EvalStateT) {
         let white = self.bitboards[Sides::White];
         let black = self.bitboards[Sides::Black];
@@ -111,10 +118,10 @@ where
         }
     }
 
-    // init_state initializes the state for the given position
-    //
-    // @return: void
-    // @side-effects: modifies the `state`
+    /// init_state initializes the state for the given position
+    ///
+    /// @return: void
+    /// @side-effects: modifies the `state`
     fn init_state<SideT: Side>(&mut self) {
         // in our position definition, we define the state's en passant square
         // to be present if the previous move was a double pawn push AND the
@@ -153,13 +160,10 @@ where
     AT: AttackTable,
     StateT: State,
 {
-    // load_fen loads a new position from the given FEN string
-    //
-    // @impl: PositionFromFEN::load_fen
-    fn load_fen<EvalStateT: EvalState>(
-        &mut self,
-        fen: &str,
-    ) -> Result<EvalStateT, FENError> {
+    /// load_fen loads a new position from the given FEN string
+    ///
+    /// @impl: PositionFromFEN::load_fen
+    fn load_fen<EvalStateT: EvalState>(&mut self, fen: &str) -> Result<EvalStateT, FENError> {
         let fen_parser = FENParser::parse(fen);
         if fen_parser.is_err() {
             return Err(fen_parser.err().unwrap());

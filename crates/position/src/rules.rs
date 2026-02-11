@@ -1,6 +1,6 @@
-use chess_kit_attack_table::AttackTable;
-use crate::position::DefaultPosition;
 use crate::State;
+use crate::position::DefaultPosition;
+use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Black, Pieces, Sides, White};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
@@ -8,27 +8,27 @@ where
     AT: AttackTable,
     StateT: State,
 {
-    // is_draw checks if the position is a draw
-    //
-    // @return: true if the position is a draw, false otherwise
+    /// is_draw checks if the position is a draw
+    ///
+    /// @return: true if the position is a draw, false otherwise
     pub fn is_draw(&self) -> bool {
         self.is_draw_by_fifty_moves() || !self.can_force_checkmate() || self.is_draw_by_repetition()
     }
 
-    // is_draw_by_fifty_moves checks if the position is a draw according to the
-    // 50-move rule
-    //
-    // @return: true if the position is a draw by the rule, false otherwise
+    /// is_draw_by_fifty_moves checks if the position is a draw according to the
+    /// 50-move rule
+    ///
+    /// @return: true if the position is a draw by the rule, false otherwise
     #[inline(always)]
     pub fn is_draw_by_fifty_moves(&self) -> bool {
         // Note: 100 since we are using the halfmove clock
         self.state().halfmoves() >= 100
     }
 
-    // is_draw_by_insufficient_material checks if the position is a draw according
-    // to the draw by insufficient material rule
-    //
-    // @return: true if the position is a draw by the rule, false otherwise
+    /// is_draw_by_insufficient_material checks if the position is a draw according
+    /// to the draw by insufficient material rule
+    ///
+    /// @return: true if the position is a draw by the rule, false otherwise
     pub fn is_draw_by_insufficient_material(&self) -> bool {
         // Get the piece bitboards for white and black.
         let w = self.bitboards[Sides::White];
@@ -77,10 +77,10 @@ where
         }
     }
 
-    // is_draw_by_repetition checks if the position is a draw according to the
-    // draw by repetition rule
-    //
-    // @return: true if the position is a draw by the rule, false otherwise
+    /// is_draw_by_repetition checks if the position is a draw according to the
+    /// draw by repetition rule
+    ///
+    /// @return: true if the position is a draw by the rule, false otherwise
     pub fn is_draw_by_repetition(&self) -> bool {
         let mut count = 0;
 
@@ -103,9 +103,9 @@ where
         count >= 3
     }
 
-    // can_force_checkmate checks if either side can force checkmate
-    //
-    // @return: true if either side can force checkmate, false otherwise
+    /// can_force_checkmate checks if either side can force checkmate
+    ///
+    /// @return: true if either side can force checkmate, false otherwise
     pub fn can_force_checkmate(&self) -> bool {
         let w = self.bitboards[Sides::White];
         let b = self.bitboards[Sides::Black];
