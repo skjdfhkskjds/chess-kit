@@ -9,7 +9,7 @@ use chess_kit::perft::PerftData;
 use chess_kit::position::{DefaultPosition, DefaultState};
 use chess_kit::transposition::DefaultTranspositionTable;
 
-// run_perft_tests runs the perft tests
+/// run_perft_tests runs the perft tests
 #[test]
 fn run_perft_tests() {
     // assemble the test cases

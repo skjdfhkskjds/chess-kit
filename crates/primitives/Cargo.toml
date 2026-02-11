@@ -1,0 +1,7 @@
+[package]
+name = "chess-kit-primitives"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chess-kit-derive = { path = "../macros" }

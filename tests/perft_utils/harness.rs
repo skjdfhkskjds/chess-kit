@@ -13,13 +13,18 @@ const TT_SIZE: usize = 0;
 #[cfg(not(feature = "no_tt"))]
 const TT_SIZE: usize = 32;
 
+/// `PerftHarnessMode` is an enum that represents the mode to run the perft harness in
+///
+/// @type
 #[allow(dead_code)]
 pub enum PerftHarnessMode {
     Default,
     Divide,
 }
 
-// PerftHarness is a test harness for running perft tests
+/// `PerftHarness` is a test harness for running perft tests
+///
+/// @type
 pub struct PerftHarness<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
 where
     MoveGeneratorT: MoveGenerator,
@@ -47,10 +52,10 @@ where
     EvalStateT: EvalState,
     TranspositionTableT: TranspositionTable<PerftData>,
 {
-    // new creates a new perft harness
-    //
-    // @param: test_cases - the test cases to run
-    // @return: a new perft harness
+    /// new creates a new perft harness
+    ///
+    /// @param: test_cases - the test cases to run
+    /// @return: a new perft harness
     pub fn new(mode: PerftHarnessMode, test_cases: Vec<PerftTest>) -> Self {
         let tt = TranspositionTableT::new(TT_SIZE);
 
@@ -65,9 +70,9 @@ where
         }
     }
 
-    // run_test runs a single test case
-    //
-    // @param: test - the test case to run
+    /// run_test runs a single test case
+    ///
+    /// @param: test - the test case to run
     fn run_test(&mut self, test: &PerftTest) {
         // clear old state
         self.position.reset();
@@ -82,7 +87,7 @@ where
             );
             return;
         }
-        self.accumulator.init(&self.position);
+        self.accumulator.push(result.unwrap());
 
         // run the test case per depth
         let now = Instant::now();
@@ -114,9 +119,9 @@ where
         assert_eq!(nodes, test.data.node_count());
     }
 
-    // run runs all the test cases
-    //
-    // @return: void
+    /// run runs all the test cases
+    ///
+    /// @return: void
     pub fn run(&mut self) {
         let tests = self.test_cases.clone();
         let total = tests.len();
