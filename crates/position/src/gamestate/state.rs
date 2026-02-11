@@ -1,6 +1,6 @@
 use super::{Clock, State, StateReader, StateWriter};
-use chess_kit_primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
 use chess_kit_collections::Copyable;
+use chess_kit_primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
 
 // StateHeader is a header for a state that contains the parts of the state up
 // to (and excluding) the state key
@@ -164,7 +164,7 @@ impl StateReader for DefaultState {
     // @impl: StateReader::king_blocker_pieces
     #[inline(always)]
     fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
-        self.king_blockers[SideT::INDEX]
+        self.king_blockers[SideT::SIDE]
     }
 
     // pinning_pieces returns the bitboard of the pieces that are pinning the
@@ -173,7 +173,7 @@ impl StateReader for DefaultState {
     // @impl: StateReader::pinning_pieces
     #[inline(always)]
     fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
-        self.pinners[SideT::INDEX]
+        self.pinners[SideT::SIDE]
     }
 
     // check_squares returns the bitboard of squares that a given piece would
@@ -299,7 +299,7 @@ impl StateWriter for DefaultState {
     // @impl: StateWriter::set_king_blocker_pieces
     #[inline(always)]
     fn set_king_blocker_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
-        self.king_blockers[SideT::INDEX] = pieces;
+        self.king_blockers[SideT::SIDE] = pieces;
     }
 
     // set_pinning_pieces sets the bitboard of the pieces that are pinning the
@@ -308,7 +308,7 @@ impl StateWriter for DefaultState {
     // @impl: StateWriter::set_pinning_pieces
     #[inline(always)]
     fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
-        self.pinners[SideT::INDEX] = pieces;
+        self.pinners[SideT::SIDE] = pieces;
     }
 
     // set_check_squares sets the bitboard of squares that a given piece would

@@ -16,6 +16,6 @@ pub use files::File;
 pub use moves::{Move, MoveList, MoveType};
 pub use pieces::Pieces;
 pub use ranks::Rank;
-pub use sides::{Black, Side, Sides, White};
+pub use sides::{Black, Side, SideTable, Sides, White};
 pub use squares::Square;
 pub use zobrist::{ZobristKey, ZobristTable};

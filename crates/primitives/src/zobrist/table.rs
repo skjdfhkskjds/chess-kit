@@ -1,6 +1,4 @@
-use crate::zobrist::{
-    CASTLING_RANDOMS, EN_PASSANT_RANDOMS, PIECE_RANDOMS, SIDE_RANDOMS,
-};
+use crate::zobrist::{CASTLING_RANDOMS, EN_PASSANT_RANDOMS, PIECE_RANDOMS, SIDE_RANDOMS};
 use crate::{
     Bitboard, Black, Castling, Pieces, Side, Sides, Square, White, ZobristKey, ZobristTable,
 };
@@ -47,7 +45,7 @@ impl ZobristTable {
     // @return: random value for the given side, piece, and square
     #[inline(always)]
     pub fn piece<SideT: Side>(piece: Pieces, square: Square) -> ZobristKey {
-        PIECE_RANDOMS[SideT::INDEX][piece][square]
+        PIECE_RANDOMS[SideT::SIDE][piece][square]
     }
 
     // castling returns the random value for the given castling rights
@@ -65,7 +63,7 @@ impl ZobristTable {
     // @return: random value for the given side
     #[inline(always)]
     pub fn side<SideT: Side>() -> ZobristKey {
-        SIDE_RANDOMS[SideT::INDEX]
+        SIDE_RANDOMS[SideT::SIDE]
     }
 
     // en_passant returns the random value for the given en passant square

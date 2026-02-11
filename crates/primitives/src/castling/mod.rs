@@ -1,7 +1,6 @@
 mod castling;
 mod display;
 
-use crate::{Black, Side, White};
 use chess_kit_derive::BitOps;
 
 // Castling rights are stored in a u8 containing the following bits:
@@ -27,29 +26,11 @@ impl Castling {
     pub const TOTAL: usize = 16;
 }
 
-// `SideCastling` is a trait that defines constants for the castling rights of
-// a given side
-//
-// @trait
-pub trait SideCastling: Side {
-    // ALL is the combined castling rights for the given side
-    const ALL: Castling;
-
-    // KINGSIDE is the kingside castling rights for the given side
-    const KINGSIDE: Castling;
-
-    // QUEENSIDE is the queenside castling rights for the given side
-    const QUEENSIDE: Castling;
-}
-
-impl SideCastling for White {
-    const ALL: Castling = Castling::WHITE;
-    const KINGSIDE: Castling = Castling::WHITE_KING;
-    const QUEENSIDE: Castling = Castling::WHITE_QUEEN;
-}
-
-impl SideCastling for Black {
-    const ALL: Castling = Castling::BLACK;
-    const KINGSIDE: Castling = Castling::BLACK_KING;
-    const QUEENSIDE: Castling = Castling::BLACK_QUEEN;
+// SideCastling is a per-side table of castling rights
+crate::define_sides! {
+    SideCastling: Castling {
+        ALL => (Castling::WHITE, Castling::BLACK),
+        KINGSIDE => (Castling::WHITE_KING, Castling::BLACK_KING),
+        QUEENSIDE => (Castling::WHITE_QUEEN, Castling::BLACK_QUEEN),
+    }
 }

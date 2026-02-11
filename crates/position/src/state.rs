@@ -1,6 +1,6 @@
-use chess_kit_attack_table::AttackTable;
 use crate::position::DefaultPosition;
 use crate::{PositionState, State};
+use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
 
 impl<AT, StateT> DefaultPosition<AT, StateT>
@@ -51,7 +51,7 @@ where
     // @impl: PositionState::occupancy
     #[inline(always)]
     fn occupancy<SideT: Side>(&self) -> Bitboard {
-        self.sides[SideT::INDEX]
+        self.sides[SideT::SIDE]
     }
 
     // piece_at gets the piece type at the given square
@@ -90,7 +90,7 @@ where
     // @impl: PositionState::get_piece
     #[inline(always)]
     fn get_piece<SideT: Side>(&self, piece: Pieces) -> Bitboard {
-        self.bitboards[SideT::INDEX][piece]
+        self.bitboards[SideT::SIDE][piece]
     }
 
     // en_passant gets the current en passant square, if it exists

@@ -56,7 +56,7 @@ impl AttackTable for DefaultAttackTable {
     // @impl: PieceTargetsTable::pawn_targets
     #[inline(always)]
     fn pawn_targets<SideT: Side>(sq: Square) -> Bitboard {
-        PAWN_TABLE[SideT::INDEX][sq]
+        PAWN_TABLE[SideT::SIDE][sq]
     }
 
     // all_pawn_targets returns the squares that the all the pawns on the given

@@ -1,7 +1,7 @@
+use crate::{DefaultMoveGenerator, MoveType, PawnOffsets, PawnRanks};
 use chess_kit_attack_table::{AttackTable, PawnDirections};
-use crate::{DefaultMoveGenerator, MoveType, SideToMove};
-use chess_kit_position::{PositionAttacks, PositionState};
-use chess_kit_primitives::{Bitboard, MoveList, Pieces};
+use chess_kit_position::{CastlingSquares, PositionAttacks, PositionState};
+use chess_kit_primitives::{Bitboard, MoveList, Pieces, Side};
 
 impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // generate_moves_for_side generates all the pseudo-legal moves of the given
@@ -15,7 +15,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // @side-effects: modifies the `move list`
     #[inline(always)]
     pub(crate) fn generate_moves_for_side<
-        SideT: SideToMove,
+        SideT: Side,
         PositionT: PositionState + PositionAttacks,
     >(
         &self,
@@ -72,7 +72,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // @return: void
     // @side-effects: modifies the `move list`
     #[inline(always)]
-    fn generate_queen_moves<SideT: SideToMove, PositionT: PositionState + PositionAttacks>(
+    fn generate_queen_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -98,7 +98,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // @param: move_type - move type to generate moves of
     // @return: void
     #[inline(always)]
-    fn generate_rook_moves<SideT: SideToMove, PositionT: PositionState + PositionAttacks>(
+    fn generate_rook_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -124,7 +124,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // @param: move_type - move type to generate moves of
     // @return: void
     #[inline(always)]
-    fn generate_bishop_moves<SideT: SideToMove, PositionT: PositionState + PositionAttacks>(
+    fn generate_bishop_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -150,7 +150,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // @param: move_type - move type to generate moves of
     // @return: void
     #[inline(always)]
-    fn generate_knight_moves<SideT: SideToMove, PositionT: PositionState + PositionAttacks>(
+    fn generate_knight_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -175,7 +175,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // @return: void
     // @side-effects: modifies the `move list`
     #[inline(always)]
-    fn generate_pawn_moves<SideT: SideToMove, PositionT: PositionState + PositionAttacks>(
+    fn generate_pawn_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -183,8 +183,8 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         move_type: MoveType,
     ) {
         let empty_squares = position.empty_squares();
-        let single_step_rank = Bitboard::rank(SideT::SINGLE_STEP_RANK);
-        let promotable_rank = Bitboard::rank(SideT::PROMOTABLE_RANK);
+        let single_step_rank = Bitboard::rank(PawnRanks::SINGLE_STEP[SideT::SIDE]);
+        let promotable_rank = Bitboard::rank(PawnRanks::PROMOTABLE[SideT::SIDE]);
 
         // get the enemies for the pawns to target
         let enemies = if matches!(move_type, MoveType::Evasions) {
@@ -218,10 +218,10 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             }
 
             // push the pawn pushes to the move list
-            self.push_pawn_moves(single_step_pawns, SideT::PAWN_PUSH_OFFSET, list);
+            self.push_pawn_moves(single_step_pawns, PawnOffsets::PUSH[SideT::SIDE], list);
             self.push_pawn_moves(
                 double_step_pawns,
-                SideT::PAWN_PUSH_OFFSET + SideT::PAWN_PUSH_OFFSET,
+                PawnOffsets::PUSH[SideT::SIDE] + PawnOffsets::PUSH[SideT::SIDE],
                 list,
             );
         }
@@ -247,17 +247,23 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             }
 
             // push the all variants of pawn promotions to the move list
-            self.push_pawn_promotions(pushes, SideT::PAWN_PUSH_OFFSET, false, list, move_type);
+            self.push_pawn_promotions(
+                pushes,
+                PawnOffsets::PUSH[SideT::SIDE],
+                false,
+                list,
+                move_type,
+            );
             self.push_pawn_promotions(
                 right_targets,
-                SideT::PAWN_RIGHT_TARGET_OFFSET,
+                PawnOffsets::RIGHT_TARGET[SideT::SIDE],
                 true,
                 list,
                 move_type,
             );
             self.push_pawn_promotions(
                 left_targets,
-                SideT::PAWN_LEFT_TARGET_OFFSET,
+                PawnOffsets::LEFT_TARGET[SideT::SIDE],
                 true,
                 list,
                 move_type,
@@ -276,8 +282,8 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
                 AT::all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Left) & enemies;
 
             // push the pawn captures to the move list
-            self.push_pawn_moves(right_targets, SideT::PAWN_RIGHT_TARGET_OFFSET, list);
-            self.push_pawn_moves(left_targets, SideT::PAWN_LEFT_TARGET_OFFSET, list);
+            self.push_pawn_moves(right_targets, PawnOffsets::RIGHT_TARGET[SideT::SIDE], list);
+            self.push_pawn_moves(left_targets, PawnOffsets::LEFT_TARGET[SideT::SIDE], list);
 
             // generate en passant captures if possible
             let en_passant = position.en_passant();
@@ -317,7 +323,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // @return: void
     // @side-effects: modifies the `move list`
     #[inline(always)]
-    fn generate_king_moves<SideT: SideToMove, PositionT: PositionState + PositionAttacks>(
+    fn generate_king_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -354,7 +360,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     // TODO: current implementation does not support chess960, as it assumes the
     //       squares along the path from the king and rook
     #[inline(always)]
-    fn generate_castle_moves<SideT: SideToMove, PositionT: PositionState + PositionAttacks>(
+    fn generate_castle_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -379,15 +385,18 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             // get the blockers (squares in between the king and the rook)
             //
             // TOOD: refactor this call to use Bitboard::between
-            let blockers = Bitboard::square(SideT::KINGSIDE_DESTINATION)
-                | Bitboard::square(SideT::KINGSIDE_ROOK_DESTINATION);
+            let blockers = Bitboard::square(CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE])
+                | Bitboard::square(CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE]);
 
             // if the squares along the path are empty and the king is not moving
             // "through" check, we can castle
             if !occupancy.intersects(blockers)
-                && !position.is_attacked::<SideT>(SideT::KINGSIDE_ROOK_DESTINATION, occupancy)
+                && !position.is_attacked::<SideT>(
+                    CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE],
+                    occupancy,
+                )
             {
-                moves |= Bitboard::square(SideT::KINGSIDE_DESTINATION);
+                moves |= Bitboard::square(CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE]);
             }
         }
 
@@ -395,15 +404,18 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             // same as in the kingside implementation
             //
             // Note: the queenside blockers include an additional square, see
-            //       `QUEENSIDE_ROOK_INTERMEDIATE` for more details.
-            let blockers = Bitboard::square(SideT::QUEENSIDE_DESTINATION)
-                | Bitboard::square(SideT::QUEENSIDE_ROOK_DESTINATION)
-                | Bitboard::square(SideT::QUEENSIDE_ROOK_INTERMEDIATE);
+            //       `CASTLING_QUEENSIDE_ROOK_INTERMEDIATE` for more details.
+            let blockers = Bitboard::square(CastlingSquares::QUEENSIDE_DESTINATION[SideT::SIDE])
+                | Bitboard::square(CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE])
+                | Bitboard::square(CastlingSquares::QUEENSIDE_ROOK_INTERMEDIATE[SideT::SIDE]);
 
             if !occupancy.intersects(blockers)
-                && !position.is_attacked::<SideT>(SideT::QUEENSIDE_ROOK_DESTINATION, occupancy)
+                && !position.is_attacked::<SideT>(
+                    CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE],
+                    occupancy,
+                )
             {
-                moves |= Bitboard::square(SideT::QUEENSIDE_DESTINATION);
+                moves |= Bitboard::square(CastlingSquares::QUEENSIDE_DESTINATION[SideT::SIDE]);
             }
         }
 

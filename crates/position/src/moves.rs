@@ -1,5 +1,5 @@
 use super::{
-    DefaultPosition, PositionAttacks, PositionMoves, PositionState, SideCastlingSquares, State,
+    CastlingSquares, DefaultPosition, PositionAttacks, PositionMoves, PositionState, State,
 };
 use chess_kit_attack_table::AttackTable;
 use chess_kit_eval::EvalState;
@@ -79,7 +79,7 @@ where
     // @param: mv - move to check if delivers a check
     // @return: true if the move delivers a check, false otherwise
     #[inline(always)]
-    fn delivers_check<SideT: SideCastlingSquares>(&self, mv: Move) -> bool {
+    fn delivers_check<SideT: Side>(&self, mv: Move) -> bool {
         let from = mv.from();
         let to = mv.to();
         let piece = self.piece_at(from);
@@ -168,10 +168,10 @@ where
                 )
             }
             MoveType::Castle => {
-                let rook_square = if to == SideT::KINGSIDE_DESTINATION {
-                    SideT::KINGSIDE_ROOK_DESTINATION
+                let rook_square = if to == CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE] {
+                    CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE]
                 } else {
-                    SideT::QUEENSIDE_ROOK_DESTINATION
+                    CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE]
                 };
 
                 // check if the opponent's king is being attacked by the rook
@@ -202,8 +202,8 @@ where
     fn move_piece_no_incrementals<SideT: Side>(&mut self, piece: Pieces, from: Square, to: Square) {
         let from_to = Bitboard::square(from) | Bitboard::square(to);
 
-        self.bitboards[SideT::INDEX][piece] ^= from_to;
-        self.sides[SideT::INDEX] ^= from_to;
+        self.bitboards[SideT::SIDE][piece] ^= from_to;
+        self.sides[SideT::SIDE] ^= from_to;
         self.sides[Sides::TOTAL] ^= from_to;
         self.pieces[from] = Pieces::None;
         self.pieces[to] = piece;
@@ -217,7 +217,7 @@ where
     // @return: void
     // @side-effects: modifies the `position`
     #[inline(always)]
-    fn move_piece<SideT: SideCastlingSquares, EvalStateT: EvalState>(
+    fn move_piece<SideT: Side, EvalStateT: EvalState>(
         &mut self,
         piece: Pieces,
         from: Square,
@@ -247,7 +247,7 @@ where
     // @side-effects: resets the halfmove clock
     // @side-effects: updates castling permissions (if applicable)
     #[inline(always)]
-    fn capture_piece<SideT: SideCastlingSquares, EvalStateT: EvalState>(
+    fn capture_piece<SideT: Side, EvalStateT: EvalState>(
         &mut self,
         piece: Pieces,
         square: Square,
@@ -263,9 +263,9 @@ where
         // the side has castling permissions, then revoke the appropriate
         // castling permissions
         if piece == Pieces::Rook && self.state().castling().can_castle::<SideT>() {
-            if square == SideT::QUEENSIDE_ROOK {
+            if square == CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE] {
                 self.set_castling(self.state().castling().revoke_queenside::<SideT>());
-            } else if square == SideT::KINGSIDE_ROOK {
+            } else if square == CastlingSquares::KINGSIDE_ROOK[SideT::SIDE] {
                 self.set_castling(self.state().castling().revoke_kingside::<SideT>());
             }
         }
@@ -394,8 +394,7 @@ where
     #[inline(always)]
     fn make_move_for_side<SideT, EvalStateT>(&mut self, mv: Move, eval: &mut EvalStateT)
     where
-        SideT: SideCastlingSquares,
-        SideT::Other: SideCastlingSquares,
+        SideT: Side,
         EvalStateT: EvalState,
     {
         // TODO: move the delivers check logic outside of the make move logic
@@ -433,20 +432,20 @@ where
 
                 // if the move is a castle, move the appropriate rook as well
                 if matches!(mv.type_of(), MoveType::Castle) {
-                    if to == SideT::KINGSIDE_DESTINATION {
+                    if to == CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE] {
                         // kingside castle
                         self.move_piece::<SideT, EvalStateT>(
                             Pieces::Rook,
-                            SideT::KINGSIDE_ROOK,
-                            SideT::KINGSIDE_ROOK_DESTINATION,
+                            CastlingSquares::KINGSIDE_ROOK[SideT::SIDE],
+                            CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE],
                             eval,
                         );
                     } else {
                         // queenside castle
                         self.move_piece::<SideT, EvalStateT>(
                             Pieces::Rook,
-                            SideT::QUEENSIDE_ROOK,
-                            SideT::QUEENSIDE_ROOK_DESTINATION,
+                            CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE],
+                            CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE],
                             eval,
                         );
                     }
@@ -466,9 +465,9 @@ where
                 // revoke the appropriate castling permissions if the rook is
                 // leaving the starting square
                 if self.state().castling().can_castle::<SideT>() {
-                    if from == SideT::KINGSIDE_ROOK {
+                    if from == CastlingSquares::KINGSIDE_ROOK[SideT::SIDE] {
                         self.set_castling(self.state().castling().revoke_kingside::<SideT>());
-                    } else if from == SideT::QUEENSIDE_ROOK {
+                    } else if from == CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE] {
                         self.set_castling(self.state().castling().revoke_queenside::<SideT>());
                     }
                 }
@@ -650,11 +649,7 @@ where
     // @return: void
     // @side-effects: modifies the `position`
     #[inline(always)]
-    fn unmake_move_for_side<SideT>(&mut self, mv: Move)
-    where
-        SideT: SideCastlingSquares,
-        SideT::Other: SideCastlingSquares,
-    {
+    fn unmake_move_for_side<SideT: Side>(&mut self, mv: Move) {
         // extract key move data
         let from = mv.from();
         let to = mv.to();
@@ -676,17 +671,17 @@ where
                 self.move_piece_no_incrementals::<SideT>(Pieces::King, to, from);
 
                 // if the move was a castle, move the appropriate rook back as well
-                if to == SideT::KINGSIDE_DESTINATION {
+                if to == CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE] {
                     self.move_piece_no_incrementals::<SideT>(
                         Pieces::Rook,
-                        SideT::KINGSIDE_ROOK_DESTINATION,
-                        SideT::KINGSIDE_ROOK,
+                        CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE],
+                        CastlingSquares::KINGSIDE_ROOK[SideT::SIDE],
                     );
-                } else if to == SideT::QUEENSIDE_DESTINATION {
+                } else if to == CastlingSquares::QUEENSIDE_DESTINATION[SideT::SIDE] {
                     self.move_piece_no_incrementals::<SideT>(
                         Pieces::Rook,
-                        SideT::QUEENSIDE_ROOK_DESTINATION,
-                        SideT::QUEENSIDE_ROOK,
+                        CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE],
+                        CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE],
                     );
                 }
             }

@@ -1,4 +1,5 @@
-use crate::{Castling, SideCastling};
+use crate::castling::SideCastling;
+use crate::{Castling, Side};
 
 impl Castling {
     // none returns a castling rights value with no castling rights
@@ -25,67 +26,77 @@ impl Castling {
         self.0
     }
 
-    // with_kingside adds the kingside castling rights for SideT
+    // with_kingside adds the kingside castling rights for the given side
     //
+    // @marker: S - side to add the kingside castling rights for
     // @return: castling rights value with the kingside rights added
     #[inline]
-    pub fn with_kingside<S: SideCastling>(&self) -> Self {
-        Self(self.0 | S::KINGSIDE.0)
+    pub fn with_kingside<S: Side>(&self) -> Self {
+        Self(self.0 | SideCastling::KINGSIDE[S::SIDE].0)
     }
 
-    // with_queenside adds the queenside castling rights for SideT
+    // with_queenside adds the queenside castling rights for the given side
     //
+    // @marker: S - side to add the queenside castling rights for
     // @return: castling rights value with the queenside rights added
     #[inline]
-    pub fn with_queenside<S: SideCastling>(&self) -> Self {
-        Self(self.0 | S::QUEENSIDE.0)
+    pub fn with_queenside<S: Side>(&self) -> Self {
+        Self(self.0 | SideCastling::QUEENSIDE[S::SIDE].0)
     }
 
-    // revoke revokes all the castling rights for SideT
+    // revoke revokes all the castling rights for the given side
     //
+    // @marker: S - side to revoke the castling rights for
     // @return: castling rights value with the castling rights revoked
     #[inline]
-    pub fn revoke<S: SideCastling>(&self) -> Self {
-        Self(self.0 & !(S::ALL.0))
+    pub fn revoke<S: Side>(&self) -> Self {
+        Self(self.0 & !(SideCastling::ALL[S::SIDE].0))
     }
 
-    // revoke_kingside revokes the kingside castling rights for SideT
+    // revoke_kingside revokes the kingside castling rights for the given side
     //
+    // @marker: S - side to revoke the kingside castling rights for
     // @return: castling rights value with the kingside rights revoked
     #[inline]
-    pub fn revoke_kingside<S: SideCastling>(&self) -> Self {
-        Self(self.0 & !(S::KINGSIDE.0))
+    pub fn revoke_kingside<S: Side>(&self) -> Self {
+        Self(self.0 & !(SideCastling::KINGSIDE[S::SIDE].0))
     }
 
-    // revoke_queenside revokes the queenside castling rights for SideT
+    // revoke_queenside revokes the queenside castling rights for the given side
     //
+    // @marker: S - side to revoke the queenside castling rights for
     // @return: castling rights value with the queenside rights revoked
     #[inline]
-    pub fn revoke_queenside<S: SideCastling>(&self) -> Self {
-        Self(self.0 & !(S::QUEENSIDE.0))
+    pub fn revoke_queenside<S: Side>(&self) -> Self {
+        Self(self.0 & !(SideCastling::QUEENSIDE[S::SIDE].0))
     }
 
-    // can_castle checks if the castling rights allow SideT to castle
+    // can_castle checks if the castling rights allow the given side to castle
     //
-    // @return: true if SideT can castle, false otherwise
+    // @marker: S - side to check castling rights for
+    // @return: true if the side can castle, false otherwise
     #[inline(always)]
-    pub fn can_castle<S: SideCastling>(&self) -> bool {
-        (self.0 & S::ALL.0) != Castling::NONE.0
+    pub fn can_castle<S: Side>(&self) -> bool {
+        (self.0 & SideCastling::ALL[S::SIDE].0) != Castling::NONE.0
     }
 
-    // kingside checks if the castling rights allow SideT to castle kingside
+    // kingside checks if the castling rights allow the given side to castle
+    // kingside
     //
-    // @return: true if SideT can castle kingside, false otherwise
+    // @marker: S - side to check kingside castling rights for
+    // @return: true if the side can castle kingside, false otherwise
     #[inline(always)]
-    pub fn kingside<S: SideCastling>(&self) -> bool {
-        (self.0 & S::KINGSIDE.0) != Castling::NONE.0
+    pub fn kingside<S: Side>(&self) -> bool {
+        (self.0 & SideCastling::KINGSIDE[S::SIDE].0) != Castling::NONE.0
     }
 
-    // queenside checks if the castling rights allow SideT to castle queenside
+    // queenside checks if the castling rights allow the given side to castle
+    // queenside
     //
-    // @return: true if SideT can castle queenside, false otherwise
+    // @marker: S - side to check queenside castling rights for
+    // @return: true if the side can castle queenside, false otherwise
     #[inline(always)]
-    pub fn queenside<S: SideCastling>(&self) -> bool {
-        (self.0 & S::QUEENSIDE.0) != Castling::NONE.0
+    pub fn queenside<S: Side>(&self) -> bool {
+        (self.0 & SideCastling::QUEENSIDE[S::SIDE].0) != Castling::NONE.0
     }
 }

@@ -1,5 +1,5 @@
 use crate::fen::{FENError, Parser};
-use chess_kit_primitives::{Castling, White, Black};
+use chess_kit_primitives::{Black, Castling, White};
 
 pub struct CastlingParser {
     pub castling: Castling,
