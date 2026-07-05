@@ -18,9 +18,6 @@ edition = "2024"
 [profile.release]
 lto = true
 
-[features]
-no_tt = []
-
 [dependencies]
 chess-kit-derive = { path = "crates/macros" }
 chess-kit-collections = { path = "crates/collections" }

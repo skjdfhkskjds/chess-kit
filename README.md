@@ -21,3 +21,25 @@
 - [position](crates/position): chess board and position representation
 - [primitives](crates/primitives): core types used as the building blocks for other modules
 - [transposition](crates/transposition): transposition table support
+
+## Testing
+
+Run the workspace's normal unit and integration tests with:
+
+```sh
+cargo test --workspace --lib --tests
+```
+
+Perft correctness lives with the `perft` crate:
+
+```sh
+cargo test -p chess-kit-perft --test perft_smoke
+```
+
+The larger perft suite is an explicit full regression run, not a default benchmark:
+
+```sh
+cargo test -p chess-kit-perft --release --test perft_full -- --ignored --nocapture
+```
+
+`cargo test --workspace` also runs doctests. Some existing macro doctest examples are not currently valid test cases, so use `--lib --tests` for the current default correctness path until those examples are repaired.

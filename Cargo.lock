@@ -58,6 +58,7 @@ dependencies = [
 name = "chess-kit-perft"
 version = "0.1.0"
 dependencies = [
+ "chess-kit-attack-table",
  "chess-kit-collections",
  "chess-kit-eval",
  "chess-kit-movegen",

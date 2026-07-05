@@ -10,3 +10,6 @@ chess-kit-position = { path = "../position" }
 chess-kit-primitives = { path = "../primitives" }
 chess-kit-transposition = { path = "../transposition" }
 chess-kit-eval = { path = "../eval" }
+
+[dev-dependencies]
+chess-kit-attack-table = { path = "../attack_table" }

@@ -1,0 +1,43 @@
+use chess_kit_attack_table::DefaultAttackTable;
+use chess_kit_eval::NoOpEvalState;
+use chess_kit_position::{DefaultPosition, DefaultState, Position, PositionFromFEN, StateReader};
+use chess_kit_primitives::ZobristKey;
+
+#[test]
+fn zobrist_keys_match_known_positions() {
+    for (index, line) in include_str!("fixtures/zobrist.epd").lines().enumerate() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+
+        let parts = line.split('|').collect::<Vec<_>>();
+        assert_eq!(
+            parts.len(),
+            2,
+            "invalid Zobrist fixture line {}: expected <FEN>|<key>",
+            index + 1
+        );
+
+        let fen = parts[0];
+        let key = ZobristKey::try_from(parts[1])
+            .unwrap_or_else(|_| panic!("invalid Zobrist key {}", parts[1]));
+
+        let mut position = DefaultPosition::<DefaultAttackTable, DefaultState>::new();
+        position
+            .load_fen::<NoOpEvalState>(fen)
+            .unwrap_or_else(|err| panic!("error loading FEN '{fen}': {err}"));
+
+        let zobrist_key = position.state().key();
+        assert_eq!(
+            zobrist_key,
+            key,
+            "fixture line {}: FEN: {}, Expected: {}, Actual: {}, Position: {}",
+            index + 1,
+            fen,
+            key,
+            zobrist_key,
+            position
+        );
+    }
+}
