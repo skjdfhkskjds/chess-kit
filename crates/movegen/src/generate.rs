@@ -44,7 +44,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
                         position.checkers().exactly_one(),
                         "checkers should be exactly one"
                     );
-                    let checker = position.checkers().must_first();
+                    let checker = position.checkers().first_unchecked();
                     Bitboard::between(position.king_square::<SideT>(), checker)
                 }
                 MoveType::NonEvasions => !position.occupancy::<SideT>(),

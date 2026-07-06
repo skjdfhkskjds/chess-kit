@@ -81,7 +81,7 @@ where
             SideT::SIDE,
             self
         );
-        self.get_piece::<SideT>(Pieces::King).must_first()
+        self.get_piece::<SideT>(Pieces::King).first_unchecked()
     }
 
     /// get_piece gets a bitboard representing all the squares that are occupied

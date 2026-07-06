@@ -145,11 +145,11 @@ where
                     "captured square should be exactly one"
                 );
                 debug_assert!(
-                    captured_square.must_first().file() == to.file(),
+                    captured_square.first_unchecked().file() == to.file(),
                     "captured square and the square that the pawn just moved to should be on the same file"
                 );
                 debug_assert!(
-                    captured_square.must_first().distance(to) == 8,
+                    captured_square.first_unchecked().distance(to) == 8,
                     "captured square and the square that the pawn just moved to should be one rank apart"
                 );
 
@@ -538,7 +538,7 @@ where
         // note: the while loop is a hack to conditionally break out
         #[allow(clippy::never_loop)]
         while check_en_passant {
-            let en_passant_square = AT::pawn_pushes::<SideT::Other>(to).must_first();
+            let en_passant_square = AT::pawn_pushes::<SideT::Other>(to).first_unchecked();
 
             // invariant checks for the en passant square
             debug_assert!(
