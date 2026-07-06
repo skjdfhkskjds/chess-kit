@@ -12,7 +12,6 @@ use common::{PerftHarness, PerftHarnessMode, load_cases};
 #[ignore = "run explicitly as the full perft regression suite"]
 fn perft_full_suite() {
     let test_cases = load_cases(include_str!("fixtures/perft_full.epd"));
-    let total = test_cases.len();
     let mut harness = PerftHarness::<
         DefaultMoveGenerator<DefaultAttackTable>,
         DefaultPosition<DefaultAttackTable, DefaultState>,
@@ -21,16 +20,5 @@ fn perft_full_suite() {
         DefaultTranspositionTable<PerftData>,
     >::new(PerftHarnessMode::Default, test_cases, None);
 
-    let reports = harness.run();
-    for (index, report) in reports.iter().enumerate() {
-        println!(
-            "perft_full {}/{}: {} nodes [{:?}, {:.0} nodes/s, tt usage: {}%]",
-            index + 1,
-            total,
-            report.nodes,
-            report.elapsed,
-            report.nodes_per_second,
-            report.tt_usage_percent
-        );
-    }
+    harness.run();
 }
