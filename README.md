@@ -33,13 +33,11 @@ cargo test --workspace --lib --tests
 Perft correctness lives with the `perft` crate:
 
 ```sh
-cargo test -p chess-kit-perft --test perft_smoke
+cargo test -p chess-kit-perft --release --test perft_smoke
 ```
 
-The larger perft suite is an explicit full regression run, not a default benchmark:
+The larger perft suite is useful as a benchmarking tool but superfluous for correctness testing:
 
 ```sh
-cargo test -p chess-kit-perft --release --test perft_full -- --ignored --nocapture
+cargo test -p chess-kit-perft --release --test perft_full -- --ignored --no-capture
 ```
-
-`cargo test --workspace` also runs doctests. Some existing macro doctest examples are not currently valid test cases, so use `--lib --tests` for the current default correctness path until those examples are repaired.
