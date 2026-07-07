@@ -28,7 +28,7 @@ impl EvalState for PSQTEvalState {
     /// new creates a new, empty eval state
     ///
     /// @impl: EvalState::new
-    #[inline(always)]
+    #[inline]
     fn new() -> Self {
         Self {
             phase: 0,
@@ -40,7 +40,7 @@ impl EvalState for PSQTEvalState {
     /// score returns the evaluation score of this state
     ///
     /// @impl: EvalState::score
-    #[inline(always)]
+    #[inline]
     fn score(&mut self) -> Score {
         // TODO: figure out a way to implement at-most-once semantics for score
         //       computation while preserving lazy pop/clear
@@ -53,7 +53,7 @@ impl EvalState for PSQTEvalState {
     /// is set on the board for the given side
     ///
     /// @impl: EvalState::on_set_piece
-    #[inline(always)]
+    #[inline]
     fn on_set_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
         self.phase += PHASE_VALUES[piece];
         self.scores[SideT::SIDE] += PIECE_TABLES[SideT::SIDE][piece][square];
@@ -63,7 +63,7 @@ impl EvalState for PSQTEvalState {
     /// is removed from the board for the given side
     ///
     /// @impl: EvalState::on_remove_piece
-    #[inline(always)]
+    #[inline]
     fn on_remove_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
         self.phase -= PHASE_VALUES[piece];
         self.scores[SideT::SIDE] -= PIECE_TABLES[SideT::SIDE][piece][square];
@@ -74,14 +74,14 @@ impl Copyable for PSQTEvalState {
     /// copy_from copies the contents of another PSQTEvalState into this one
     ///
     /// @impl: Copyable::copy_from
-    #[inline(always)]
+    #[inline]
     fn copy_from(&mut self, other: &Self) {
         *self = *other;
     }
 }
 
 impl Default for PSQTEvalState {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

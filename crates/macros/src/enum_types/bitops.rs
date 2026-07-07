@@ -21,7 +21,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
 
     let helper_impl = quote! {
         impl #name {
-            #[inline(always)]
+            #[inline]
             const fn __chess_kit_enum_bitops_from_raw(value: #repr_ty) -> Self {
                 unsafe { ::core::mem::transmute::<#repr_ty, Self>(value) }
             }
@@ -33,7 +33,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl ::core::ops::Shl<u64> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u64) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) << rhs)
                 }
@@ -42,14 +42,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl<'a> ::core::ops::Shl<u64> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u64) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs)
                 }
             }
 
             impl ::core::ops::ShlAssign<u64> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shl_assign(&mut self, rhs: u64) {
                     *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs);
                 }
@@ -64,7 +64,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl ::core::ops::Shl<u32> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u32) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) << rhs)
                 }
@@ -73,14 +73,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl<'a> ::core::ops::Shl<u32> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u32) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs)
                 }
             }
 
             impl ::core::ops::ShlAssign<u32> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shl_assign(&mut self, rhs: u32) {
                     *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs);
                 }
@@ -95,7 +95,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl ::core::ops::Shl<u8> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u8) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) << rhs)
                 }
@@ -104,14 +104,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl<'a> ::core::ops::Shl<u8> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u8) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs)
                 }
             }
 
             impl ::core::ops::ShlAssign<u8> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shl_assign(&mut self, rhs: u8) {
                     *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs);
                 }
@@ -126,7 +126,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl ::core::ops::Shr<u64> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u64) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) >> rhs)
                 }
@@ -135,14 +135,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl<'a> ::core::ops::Shr<u64> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u64) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs)
                 }
             }
 
             impl ::core::ops::ShrAssign<u64> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shr_assign(&mut self, rhs: u64) {
                     *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs);
                 }
@@ -157,7 +157,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl ::core::ops::Shr<u32> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u32) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) >> rhs)
                 }
@@ -166,14 +166,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl<'a> ::core::ops::Shr<u32> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u32) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs)
                 }
             }
 
             impl ::core::ops::ShrAssign<u32> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shr_assign(&mut self, rhs: u32) {
                     *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs);
                 }
@@ -188,7 +188,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl ::core::ops::Shr<u8> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u8) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) >> rhs)
                 }
@@ -197,14 +197,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
             impl<'a> ::core::ops::Shr<u8> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u8) -> Self::Output {
                     #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs)
                 }
             }
 
             impl ::core::ops::ShrAssign<u8> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shr_assign(&mut self, rhs: u8) {
                     *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs);
                 }
@@ -223,7 +223,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::BitOr for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) | (rhs as #repr_ty))
             }
@@ -232,7 +232,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::BitOr<#name> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) | (rhs as #repr_ty))
             }
@@ -241,7 +241,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::BitOr<&'a #name> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: &'a #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) | (*rhs as #repr_ty))
             }
@@ -250,7 +250,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::BitOr<#repr_ty> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) | rhs)
             }
@@ -259,28 +259,28 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::BitOr<#repr_ty> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) | rhs)
             }
         }
 
         impl ::core::ops::BitOrAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn bitor_assign(&mut self, rhs: Self) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) | (rhs as #repr_ty));
             }
         }
 
         impl<'a> ::core::ops::BitOrAssign<&'a #name> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitor_assign(&mut self, rhs: &'a #name) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) | (*rhs as #repr_ty));
             }
         }
 
         impl ::core::ops::BitOrAssign<#repr_ty> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitor_assign(&mut self, rhs: #repr_ty) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) | rhs);
             }
@@ -292,7 +292,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::BitAnd for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: Self) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) & (rhs as #repr_ty))
             }
@@ -301,7 +301,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::BitAnd<#name> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) & (rhs as #repr_ty))
             }
@@ -310,7 +310,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::BitAnd<&'a #name> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: &'a #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) & (*rhs as #repr_ty))
             }
@@ -319,7 +319,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::BitAnd<#repr_ty> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) & rhs)
             }
@@ -328,28 +328,28 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::BitAnd<#repr_ty> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) & rhs)
             }
         }
 
         impl ::core::ops::BitAndAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn bitand_assign(&mut self, rhs: Self) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) & (rhs as #repr_ty));
             }
         }
 
         impl<'a> ::core::ops::BitAndAssign<&'a #name> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitand_assign(&mut self, rhs: &'a #name) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) & (*rhs as #repr_ty));
             }
         }
 
         impl ::core::ops::BitAndAssign<#repr_ty> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitand_assign(&mut self, rhs: #repr_ty) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) & rhs);
             }
@@ -361,7 +361,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::Not for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn not(self) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw(!(self as #repr_ty))
             }
@@ -373,7 +373,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::BitXor for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: Self) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) ^ (rhs as #repr_ty))
             }
@@ -382,7 +382,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::BitXor<#name> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) ^ (rhs as #repr_ty))
             }
@@ -391,7 +391,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::BitXor<&'a #name> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: &'a #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) ^ (*rhs as #repr_ty))
             }
@@ -400,7 +400,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::BitXor<#repr_ty> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) ^ rhs)
             }
@@ -409,28 +409,28 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::BitXor<#repr_ty> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) ^ rhs)
             }
         }
 
         impl ::core::ops::BitXorAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn bitxor_assign(&mut self, rhs: Self) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) ^ (rhs as #repr_ty));
             }
         }
 
         impl<'a> ::core::ops::BitXorAssign<&'a #name> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitxor_assign(&mut self, rhs: &'a #name) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) ^ (*rhs as #repr_ty));
             }
         }
 
         impl ::core::ops::BitXorAssign<#repr_ty> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitxor_assign(&mut self, rhs: #repr_ty) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) ^ rhs);
             }
@@ -442,7 +442,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::Shl for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shl(self, rhs: #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) << (rhs as #repr_ty))
             }
@@ -451,14 +451,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::Shl for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shl(self, rhs: &'a #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << (*rhs as #repr_ty))
             }
         }
 
         impl ::core::ops::ShlAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn shl_assign(&mut self, rhs: #name) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << (rhs as #repr_ty));
             }
@@ -467,7 +467,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::Shl<#repr_ty> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shl(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) << rhs)
             }
@@ -476,14 +476,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::Shl<#repr_ty> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shl(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs)
             }
         }
 
         impl ::core::ops::ShlAssign<#repr_ty> for #name {
-            #[inline(always)]
+            #[inline]
             fn shl_assign(&mut self, rhs: #repr_ty) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) << rhs);
             }
@@ -499,7 +499,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::Shr for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shr(self, rhs: #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) >> (rhs as #repr_ty))
             }
@@ -508,14 +508,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::Shr for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shr(self, rhs: &'a #name) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> (*rhs as #repr_ty))
             }
         }
 
         impl ::core::ops::ShrAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn shr_assign(&mut self, rhs: #name) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> (rhs as #repr_ty));
             }
@@ -524,7 +524,7 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl ::core::ops::Shr<#repr_ty> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shr(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((self as #repr_ty) >> rhs)
             }
@@ -533,14 +533,14 @@ pub fn expand_enum_bitops(input: &DeriveInput) -> Result<TokenStream> {
         impl<'a> ::core::ops::Shr<#repr_ty> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shr(self, rhs: #repr_ty) -> Self::Output {
                 #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs)
             }
         }
 
         impl ::core::ops::ShrAssign<#repr_ty> for #name {
-            #[inline(always)]
+            #[inline]
             fn shr_assign(&mut self, rhs: #repr_ty) {
                 *self = #name::__chess_kit_enum_bitops_from_raw((*self as #repr_ty) >> rhs);
             }

@@ -19,7 +19,7 @@ impl Bitboard {
     ///
     /// @param: bits - u64 value to create the bitboard from
     /// @return: new bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn new(bits: u64) -> Self {
         Self(bits)
     }
@@ -27,7 +27,7 @@ impl Bitboard {
     /// empty creates a new bitboard with all bits set to 0
     ///
     /// @return: new bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn empty() -> Self {
         Self(0)
     }
@@ -35,7 +35,7 @@ impl Bitboard {
     /// all creates a new bitboard with all bits set to 1
     ///
     /// @return: new bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn all() -> Self {
         Self(u64::MAX)
     }
@@ -44,7 +44,7 @@ impl Bitboard {
     ///
     /// @param: square - square to create the bitboard from
     /// @return: new bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn square(square: Square) -> Self {
         Self(1 << square.idx())
     }
@@ -53,7 +53,7 @@ impl Bitboard {
     ///
     /// @param: file - file to create the bitboard from
     /// @return: new bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn file(file: File) -> Self {
         BITBOARD_FILES[file.idx()]
     }
@@ -62,7 +62,7 @@ impl Bitboard {
     ///
     /// @param: rank - rank to create the bitboard from
     /// @return: new bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn rank(rank: Rank) -> Self {
         BITBOARD_RANKS[rank.idx()]
     }
@@ -72,7 +72,7 @@ impl Bitboard {
     ///
     /// @param: sq - square to create the bitboard from
     /// @return: new bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn diagonal(sq: Square) -> Self {
         BITBOARD_DIAGONALS[sq.idx()]
     }
@@ -82,7 +82,7 @@ impl Bitboard {
     ///
     /// @param: sq - square to create the bitboard from
     /// @return: new bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn anti_diagonal(sq: Square) -> Self {
         BITBOARD_ANTI_DIAGONALS[sq.idx()]
     }
@@ -93,7 +93,7 @@ impl Bitboard {
     /// @param: start - start square (exclusive)
     /// @param: end - end square (inclusive)
     /// @return: between bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn between(start: Square, end: Square) -> Self {
         BITBOARD_BETWEEN[start.idx()][end.idx()]
     }
@@ -104,7 +104,7 @@ impl Bitboard {
     /// @param: s1 - first square
     /// @param: s2 - second square
     /// @return: line bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn line(s1: Square, s2: Square) -> Self {
         BITBOARD_LINES[s1.idx()][s2.idx()]
     }
@@ -112,7 +112,7 @@ impl Bitboard {
     /// is_empty checks if the bitboard is empty
     ///
     /// @return: true if the bitboard is empty, false otherwise
-    #[inline(always)]
+    #[inline]
     pub const fn is_empty(&self) -> bool {
         self.0 == 0
     }
@@ -120,7 +120,7 @@ impl Bitboard {
     /// not_empty checks if the bitboard is not empty
     ///
     /// @return: true if the bitboard is not empty, false otherwise
-    #[inline(always)]
+    #[inline]
     pub const fn not_empty(&self) -> bool {
         self.0 != 0
     }
@@ -128,7 +128,7 @@ impl Bitboard {
     /// exactly_one checks if the bitboard has exactly one bit set
     ///
     /// @return: true if the bitboard has exactly one bit set, false otherwise
-    #[inline(always)]
+    #[inline]
     pub const fn exactly_one(&self) -> bool {
         self.not_empty() && !self.more_than_one()
     }
@@ -136,7 +136,7 @@ impl Bitboard {
     /// more_than_one checks if the bitboard has more than one bit set
     ///
     /// @return: true if the bitboard has more than one bit set, false otherwise
-    #[inline(always)]
+    #[inline]
     pub const fn more_than_one(&self) -> bool {
         self.0 & self.0.wrapping_sub(1) != 0
     }
@@ -146,7 +146,7 @@ impl Bitboard {
     ///
     /// @param: other - other bitboard to check for intersection
     /// @return: true if there is an intersection between this and the other bitboard, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn intersects(&self, other: Bitboard) -> bool {
         (self & other).not_empty()
     }
@@ -156,7 +156,7 @@ impl Bitboard {
     /// @param: square - square to remove the piece from
     /// @return: void
     /// @side-effects: modifies the `bitboard`
-    #[inline(always)]
+    #[inline]
     pub fn remove_at(&mut self, square: Square) {
         self.0 ^= Bitboard::square(square).0;
     }
@@ -166,7 +166,7 @@ impl Bitboard {
     /// @param: square - square to set the piece on
     /// @return: void
     /// @side-effects: modifies the `bitboard`
-    #[inline(always)]
+    #[inline]
     pub fn set_at(&mut self, square: Square) {
         self.0 |= Bitboard::square(square).0;
     }
@@ -175,7 +175,7 @@ impl Bitboard {
     ///
     /// @param: square - square to check
     /// @return: true if the given square is set in the bitboard, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn has_square(&self, square: Square) -> bool {
         self.intersects(Bitboard::square(square))
     }
@@ -187,7 +187,7 @@ impl Bitboard {
     /// @param: s2 - second square forming the "between" line to check
     /// @param: square - square to check
     /// @return: true if the given square is between s1 and s2, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn in_between(s1: Square, s2: Square, square: Square) -> bool {
         Bitboard::between(s1, s2).has_square(square)
     }
@@ -200,7 +200,7 @@ impl Bitboard {
     /// @param: square - square to check
     /// @return: true if the given square is on the edge to edge line which
     ///          intersects s1 and s2, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn in_line(s1: Square, s2: Square, square: Square) -> bool {
         Bitboard::line(s1, s2).has_square(square)
     }

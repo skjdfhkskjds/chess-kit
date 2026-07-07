@@ -5,7 +5,7 @@ use chess_kit_primitives::ZobristKey;
 struct ZobristKeyHashFn;
 
 impl HashFn<ZobristKey> for ZobristKeyHashFn {
-    #[inline(always)]
+    #[inline]
     fn hash(key: ZobristKey) -> (usize, u32) {
         // split the zobrist key into an index and a key
         //
@@ -41,7 +41,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// insert inserts an entry into the transposition table
     ///
     /// @impl: TranspositionTable::insert
-    #[inline(always)]
+    #[inline]
     fn insert(&mut self, zobrist_key: ZobristKey, data: NodeT) {
         self.map.set(zobrist_key, data);
     }
@@ -50,7 +50,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// key
     ///
     /// @impl: TranspositionTable::probe
-    #[inline(always)]
+    #[inline]
     fn probe(&self, zobrist_key: ZobristKey) -> Option<&NodeT> {
         self.map.get(zobrist_key)
     }
@@ -58,7 +58,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// is_enabled checks if the transposition table is enabled
     ///
     /// @impl: TranspositionTable::is_enabled
-    #[inline(always)]
+    #[inline]
     fn is_enabled(&self) -> bool {
         self.map.is_enabled()
     }
@@ -66,7 +66,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// capacity returns the maximum number of entries in the transposition table
     ///
     /// @impl: TranspositionTable::capacity
-    #[inline(always)]
+    #[inline]
     fn capacity(&self) -> usize {
         self.map.capacity()
     }
@@ -82,7 +82,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// clear clears the transposition table
     ///
     /// @impl: TranspositionTable::clear
-    #[inline(always)]
+    #[inline]
     fn clear(&mut self) {
         self.map.clear();
     }
@@ -91,7 +91,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// between 0 and 1000 ('permille')
     ///
     /// @impl: TranspositionTable::usage_permille
-    #[inline(always)]
+    #[inline]
     fn usage_permille(&self) -> u16 {
         self.map.usage(1000f64)
     }
@@ -100,7 +100,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// between 0 and 100 ('percent')
     ///
     /// @impl: TranspositionTable::usage_percent
-    #[inline(always)]
+    #[inline]
     fn usage_percent(&self) -> u16 {
         self.map.usage(100f64)
     }

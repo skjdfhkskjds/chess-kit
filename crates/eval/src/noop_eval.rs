@@ -14,7 +14,7 @@ impl EvalState for NoOpEvalState {
     /// new creates a new, empty eval state
     ///
     /// @impl: EvalState::new
-    #[inline(always)]
+    #[inline]
     fn new() -> Self {
         Self
     }
@@ -22,7 +22,7 @@ impl EvalState for NoOpEvalState {
     /// score returns the evaluation score of this state
     ///
     /// @impl: EvalState::score
-    #[inline(always)]
+    #[inline]
     fn score(&mut self) -> Score {
         0
     }
@@ -31,14 +31,14 @@ impl EvalState for NoOpEvalState {
     /// is set on the board for the given side
     ///
     /// @impl: EvalState::on_set_piece
-    #[inline(always)]
+    #[inline]
     fn on_set_piece<SideT: Side>(&mut self, _: Pieces, _: Square) {}
 
     /// on_remove_piece is the incremental update callback that fires when a piece
     /// is removed from the board for the given side
     ///
     /// @impl: EvalState::on_remove_piece
-    #[inline(always)]
+    #[inline]
     fn on_remove_piece<SideT: Side>(&mut self, _: Pieces, _: Square) {}
 }
 
@@ -46,7 +46,7 @@ impl Copyable for NoOpEvalState {
     /// copy_from copies the contents of another NoOpEvalState into this one
     ///
     /// @impl: Copyable::copy_from
-    #[inline(always)]
+    #[inline]
     fn copy_from(&mut self, other: &Self) {
         *self = *other;
     }

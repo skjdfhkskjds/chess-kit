@@ -12,7 +12,7 @@ where
     ///
     /// @return: void
     /// @side-effects: modifies the game state
-    #[inline(always)]
+    #[inline]
     pub(crate) fn swap_sides<SideT: Side>(&mut self) {
         // compute the new key for the position
         let key = ZobristTable::side::<SideT>() ^ ZobristTable::side::<SideT::Other>();

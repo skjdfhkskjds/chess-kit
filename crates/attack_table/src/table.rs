@@ -27,7 +27,7 @@ impl AttackTable for DefaultAttackTable {
     /// square
     ///
     /// @impl: PieceTargetsTable::king_targets
-    #[inline(always)]
+    #[inline]
     fn king_targets(sq: Square) -> Bitboard {
         KING_TABLE[sq]
     }
@@ -36,7 +36,7 @@ impl AttackTable for DefaultAttackTable {
     /// given square
     ///
     /// @impl: PieceTargetsTable::knight_targets
-    #[inline(always)]
+    #[inline]
     fn knight_targets(sq: Square) -> Bitboard {
         KNIGHT_TABLE[sq]
     }
@@ -45,7 +45,7 @@ impl AttackTable for DefaultAttackTable {
     /// square
     ///
     /// @impl: PieceTargetsTable::pawn_pushes
-    #[inline(always)]
+    #[inline]
     fn pawn_pushes<SideT: Side>(sq: Square) -> Bitboard {
         match SideT::SIDE {
             Sides::White => Bitboard::square(sq) << 8u8,
@@ -57,7 +57,7 @@ impl AttackTable for DefaultAttackTable {
     /// square for the given side
     ///
     /// @impl: PieceTargetsTable::pawn_targets
-    #[inline(always)]
+    #[inline]
     fn pawn_targets<SideT: Side>(sq: Square) -> Bitboard {
         PAWN_TABLE[SideT::SIDE][sq]
     }
@@ -66,7 +66,7 @@ impl AttackTable for DefaultAttackTable {
     /// squares target from the given side in the given direction
     ///
     /// @impl: PieceTargetsTable::all_pawn_targets
-    #[inline(always)]
+    #[inline]
     fn all_pawn_targets<SideT: Side>(squares: Bitboard, direction: PawnDirections) -> Bitboard {
         match SideT::SIDE {
             Sides::White => match direction {
@@ -86,7 +86,7 @@ impl AttackTable for DefaultAttackTable {
     /// square on an empty board
     ///
     /// @impl: PieceTargetsTable::empty_rook_targets
-    #[inline(always)]
+    #[inline]
     fn empty_rook_targets(square: Square) -> Bitboard {
         EMPTY_ROOK_TABLE[square]
     }
@@ -94,7 +94,7 @@ impl AttackTable for DefaultAttackTable {
     /// rook_targets returns the attacks for the given square and bitboard.
     ///
     /// @impl: PieceTargetsTable::rook_targets
-    #[inline(always)]
+    #[inline]
     fn rook_targets(square: Square, bitboard: Bitboard) -> Bitboard {
         debug_assert!(
             ROOK_MAGICS_TABLE.magics[square].idx(bitboard) < ROOK_MAGICS_TABLE.table.len(),
@@ -107,7 +107,7 @@ impl AttackTable for DefaultAttackTable {
     /// square on an empty board
     ///
     /// @impl: PieceTargetsTable::empty_bishop_targets
-    #[inline(always)]
+    #[inline]
     fn empty_bishop_targets(square: Square) -> Bitboard {
         EMPTY_BISHOP_TABLE[square]
     }
@@ -115,7 +115,7 @@ impl AttackTable for DefaultAttackTable {
     /// bishop_targets returns the attacks for the given square and bitboard.
     ///
     /// @impl: PieceTargetsTable::bishop_targets
-    #[inline(always)]
+    #[inline]
     fn bishop_targets(square: Square, bitboard: Bitboard) -> Bitboard {
         BISHOP_MAGICS_TABLE.table[BISHOP_MAGICS_TABLE.magics[square].idx(bitboard)]
     }
@@ -123,7 +123,7 @@ impl AttackTable for DefaultAttackTable {
     /// queen_targets returns the attacks for the given square and bitboard.
     ///
     /// @impl: PieceTargetsTable::queen_targets
-    #[inline(always)]
+    #[inline]
     fn queen_targets(square: Square, bitboard: Bitboard) -> Bitboard {
         Self::rook_targets(square, bitboard) | Self::bishop_targets(square, bitboard)
     }

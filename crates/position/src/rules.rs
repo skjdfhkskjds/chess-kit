@@ -19,7 +19,7 @@ where
     /// 50-move rule
     ///
     /// @return: true if the position is a draw by the rule, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn is_draw_by_fifty_moves(&self) -> bool {
         // Note: 100 since we are using the halfmove clock
         self.state().halfmoves() >= 100

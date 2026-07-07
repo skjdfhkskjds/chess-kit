@@ -44,7 +44,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl ::core::ops::Shl<u64> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u64) -> Self::Output {
                     #name(self.0 << rhs)
                 }
@@ -53,14 +53,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl<'a> ::core::ops::Shl<u64> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u64) -> Self::Output {
                     #name(self.0 << rhs)
                 }
             }
 
             impl ::core::ops::ShlAssign<u64> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shl_assign(&mut self, rhs: u64) {
                     self.0 <<= rhs;
                 }
@@ -75,7 +75,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl ::core::ops::Shl<u32> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u32) -> Self::Output {
                     #name(self.0 << rhs)
                 }
@@ -84,14 +84,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl<'a> ::core::ops::Shl<u32> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u32) -> Self::Output {
                     #name(self.0 << rhs)
                 }
             }
 
             impl ::core::ops::ShlAssign<u32> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shl_assign(&mut self, rhs: u32) {
                     self.0 <<= rhs;
                 }
@@ -106,7 +106,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl ::core::ops::Shl<u8> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u8) -> Self::Output {
                     #name(self.0 << rhs)
                 }
@@ -115,14 +115,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl<'a> ::core::ops::Shl<u8> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shl(self, rhs: u8) -> Self::Output {
                     #name(self.0 << rhs)
                 }
             }
 
             impl ::core::ops::ShlAssign<u8> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shl_assign(&mut self, rhs: u8) {
                     self.0 <<= rhs;
                 }
@@ -137,7 +137,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl ::core::ops::Shr<u64> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u64) -> Self::Output {
                     #name(self.0 >> rhs)
                 }
@@ -146,14 +146,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl<'a> ::core::ops::Shr<u64> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u64) -> Self::Output {
                     #name(self.0 >> rhs)
                 }
             }
 
             impl ::core::ops::ShrAssign<u64> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shr_assign(&mut self, rhs: u64) {
                     self.0 >>= rhs;
                 }
@@ -168,7 +168,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl ::core::ops::Shr<u32> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u32) -> Self::Output {
                     #name(self.0 >> rhs)
                 }
@@ -177,14 +177,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl<'a> ::core::ops::Shr<u32> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u32) -> Self::Output {
                     #name(self.0 >> rhs)
                 }
             }
 
             impl ::core::ops::ShrAssign<u32> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shr_assign(&mut self, rhs: u32) {
                     self.0 >>= rhs;
                 }
@@ -199,7 +199,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl ::core::ops::Shr<u8> for #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u8) -> Self::Output {
                     #name(self.0 >> rhs)
                 }
@@ -208,14 +208,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             impl<'a> ::core::ops::Shr<u8> for &'a #name {
                 type Output = #name;
 
-                #[inline(always)]
+                #[inline]
                 fn shr(self, rhs: u8) -> Self::Output {
                     #name(self.0 >> rhs)
                 }
             }
 
             impl ::core::ops::ShrAssign<u8> for #name {
-                #[inline(always)]
+                #[inline]
                 fn shr_assign(&mut self, rhs: u8) {
                     self.0 >>= rhs;
                 }
@@ -228,14 +228,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
     let from_into_u64_impls = if !inner_is_u64 {
         quote! {
             impl ::core::convert::From<u64> for #name {
-                #[inline(always)]
+                #[inline]
                 fn from(value: u64) -> Self {
                     #name(value as #inner)
                 }
             }
 
             impl ::core::convert::From<#name> for u64 {
-                #[inline(always)]
+                #[inline]
                 fn from(value: #name) -> Self {
                     value.0 as u64
                 }
@@ -248,14 +248,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
     let from_into_u32_impls = if !inner_is_u32 {
         quote! {
             impl ::core::convert::From<u32> for #name {
-                #[inline(always)]
+                #[inline]
                 fn from(value: u32) -> Self {
                     #name(value as #inner)
                 }
             }
 
             impl ::core::convert::From<#name> for u32 {
-                #[inline(always)]
+                #[inline]
                 fn from(value: #name) -> Self {
                     value.0 as u32
                 }
@@ -268,14 +268,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
     let from_into_u8_impls = if !inner_is_u8 {
         quote! {
             impl ::core::convert::From<u8> for #name {
-                #[inline(always)]
+                #[inline]
                 fn from(value: u8) -> Self {
                     #name(value as #inner)
                 }
             }
 
             impl ::core::convert::From<#name> for u8 {
-                #[inline(always)]
+                #[inline]
                 fn from(value: #name) -> Self {
                     value.0 as u8
                 }
@@ -292,7 +292,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::BitOr for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: #name) -> Self::Output {
                 #name(self.0 | rhs.0)
             }
@@ -301,7 +301,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::BitOr<#name> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: #name) -> Self::Output {
                 #name(self.0 | rhs.0)
             }
@@ -310,7 +310,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::BitOr<&'a #name> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: &'a #name) -> Self::Output {
                 #name(self.0 | rhs.0)
             }
@@ -319,7 +319,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::BitOr<#inner> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: #inner) -> Self::Output {
                 #name(self.0 | rhs)
             }
@@ -328,28 +328,28 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::BitOr<#inner> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitor(self, rhs: #inner) -> Self::Output {
                 #name(self.0 | rhs)
             }
         }
 
         impl ::core::ops::BitOrAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn bitor_assign(&mut self, rhs: Self) {
                 self.0 |= rhs.0;
             }
         }
 
         impl<'a> ::core::ops::BitOrAssign<&'a #name> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitor_assign(&mut self, rhs: &'a #name) {
                 self.0 |= rhs.0;
             }
         }
 
         impl ::core::ops::BitOrAssign<#inner> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitor_assign(&mut self, rhs: #inner) {
                 self.0 |= rhs;
             }
@@ -362,7 +362,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::BitAnd for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: Self) -> Self::Output {
                 #name(self.0 & rhs.0)
             }
@@ -371,7 +371,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::BitAnd<#name> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: #name) -> Self::Output {
                 #name(self.0 & rhs.0)
             }
@@ -380,7 +380,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::BitAnd<&'a #name> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: &'a #name) -> Self::Output {
                 #name(self.0 & rhs.0)
             }
@@ -389,7 +389,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::BitAnd<#inner> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: #inner) -> Self::Output {
                 #name(self.0 & rhs)
             }
@@ -398,28 +398,28 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::BitAnd<#inner> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitand(self, rhs: #inner) -> Self::Output {
                 #name(self.0 & rhs)
             }
         }
 
         impl ::core::ops::BitAndAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn bitand_assign(&mut self, rhs: Self) {
                 self.0 &= rhs.0;
             }
         }
 
         impl<'a> ::core::ops::BitAndAssign<&'a #name> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitand_assign(&mut self, rhs: &'a #name) {
                 self.0 &= rhs.0;
             }
         }
 
         impl ::core::ops::BitAndAssign<#inner> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitand_assign(&mut self, rhs: #inner) {
                 self.0 &= rhs;
             }
@@ -432,7 +432,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::Not for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn not(self) -> Self::Output {
                 #name(!self.0)
             }
@@ -445,7 +445,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::BitXor for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: Self) -> Self::Output {
                 #name(self.0 ^ rhs.0)
             }
@@ -454,7 +454,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::BitXor<#name> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: #name) -> Self::Output {
                 #name(self.0 ^ rhs.0)
             }
@@ -463,7 +463,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::BitXor<&'a #name> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: &'a #name) -> Self::Output {
                 #name(self.0 ^ rhs.0)
             }
@@ -472,7 +472,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::BitXor<#inner> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: #inner) -> Self::Output {
                 #name(self.0 ^ rhs)
             }
@@ -481,28 +481,28 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::BitXor<#inner> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn bitxor(self, rhs: #inner) -> Self::Output {
                 #name(self.0 ^ rhs)
             }
         }
 
         impl ::core::ops::BitXorAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn bitxor_assign(&mut self, rhs: Self) {
                 self.0 ^= rhs.0;
             }
         }
 
         impl<'a> ::core::ops::BitXorAssign<&'a #name> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitxor_assign(&mut self, rhs: &'a #name) {
                 self.0 ^= rhs.0;
             }
         }
 
         impl ::core::ops::BitXorAssign<#inner> for #name {
-            #[inline(always)]
+            #[inline]
             fn bitxor_assign(&mut self, rhs: #inner) {
                 self.0 ^= rhs;
             }
@@ -515,7 +515,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::Shl for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shl(self, rhs: #name) -> Self::Output {
                 #name(self.0 << rhs.0)
             }
@@ -524,14 +524,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::Shl for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shl(self, rhs: &'a #name) -> Self::Output {
                 #name(self.0 << rhs.0)
             }
         }
 
         impl ::core::ops::ShlAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn shl_assign(&mut self, rhs: #name) {
                 self.0 <<= rhs.0;
             }
@@ -540,7 +540,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::Shl<#inner> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shl(self, rhs: #inner) -> Self::Output {
                 #name(self.0 << rhs)
             }
@@ -549,14 +549,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::Shl<#inner> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shl(self, rhs: #inner) -> Self::Output {
                 #name(self.0 << rhs)
             }
         }
 
         impl ::core::ops::ShlAssign<#inner> for #name {
-            #[inline(always)]
+            #[inline]
             fn shl_assign(&mut self, rhs: #inner) {
                 self.0 <<= rhs;
             }
@@ -573,7 +573,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::Shr for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shr(self, rhs: #name) -> Self::Output {
                 #name(self.0 >> rhs.0)
             }
@@ -582,14 +582,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::Shr for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shr(self, rhs: &'a #name) -> Self::Output {
                 #name(self.0 >> rhs.0)
             }
         }
 
         impl ::core::ops::ShrAssign for #name {
-            #[inline(always)]
+            #[inline]
             fn shr_assign(&mut self, rhs: #name) {
                 self.0 >>= rhs.0;
             }
@@ -598,7 +598,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl ::core::ops::Shr<#inner> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shr(self, rhs: #inner) -> Self::Output {
                 #name(self.0 >> rhs)
             }
@@ -607,14 +607,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         impl<'a> ::core::ops::Shr<#inner> for &'a #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn shr(self, rhs: #inner) -> Self::Output {
                 #name(self.0 >> rhs)
             }
         }
 
         impl ::core::ops::ShrAssign<#inner> for #name {
-            #[inline(always)]
+            #[inline]
             fn shr_assign(&mut self, rhs: #inner) {
                 self.0 >>= rhs;
             }
@@ -629,14 +629,14 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         // ================================================
 
         impl ::core::convert::From<#inner> for #name {
-            #[inline(always)]
+            #[inline]
             fn from(value: #inner) -> Self {
                 #name(value)
             }
         }
 
         impl ::core::convert::From<#name> for #inner {
-            #[inline(always)]
+            #[inline]
             fn from(value: #name) -> Self {
                 value.0
             }
@@ -647,7 +647,7 @@ pub fn expand_bitops(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
         #from_into_u8_impls
 
         impl #name {
-            #[inline(always)]
+            #[inline]
             pub const fn const_unwrap(self) -> #inner {
                 self.0
             }

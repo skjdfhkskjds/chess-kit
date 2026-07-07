@@ -15,7 +15,7 @@ impl<T: Value, const SIZE: usize> Bucket<T, SIZE> {
     /// new creates a new bucket with all entries initialized to empty
     ///
     /// @return: new bucket
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Self {
             entries: [Entry::new(); SIZE],
@@ -26,7 +26,7 @@ impl<T: Value, const SIZE: usize> Bucket<T, SIZE> {
     ///
     /// @param: key - key to fetch the data for
     /// @return: data if the key is found, None otherwise
-    #[inline(always)]
+    #[inline]
     pub fn get(&self, key: u32) -> Option<&T> {
         for entry in self.entries.iter() {
             if entry.key() == key {
@@ -42,7 +42,7 @@ impl<T: Value, const SIZE: usize> Bucket<T, SIZE> {
     /// @param: key - key to set the value to
     /// @param: data - data to set the value to
     /// @return: true if an entry was set for the first time, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn set(&mut self, key: u32, data: T) -> bool {
         // find the index of the entry with the lowest priority
         let mut min_priority = i8::MAX;
@@ -70,7 +70,7 @@ impl<T: Value, const SIZE: usize> Bucket<T, SIZE> {
     ///
     /// @return: void
     /// @side-effects: clears each entry in the bucket
-    #[inline(always)]
+    #[inline]
     pub fn clear(&mut self) {
         for entry in self.entries.iter_mut() {
             entry.clear();
@@ -80,7 +80,7 @@ impl<T: Value, const SIZE: usize> Bucket<T, SIZE> {
     /// size_of_mem returns the size of the memory occupied by the bucket
     ///
     /// @return: size of the memory occupied by the bucket
-    #[inline(always)]
+    #[inline]
     pub const fn size_of_mem() -> usize {
         std::mem::size_of::<Entry<T>>() * DEFAULT_SIZE
     }
@@ -88,14 +88,14 @@ impl<T: Value, const SIZE: usize> Bucket<T, SIZE> {
     /// capacity returns the maximum number of entries in the bucket
     ///
     /// @return: maximum number of entries in the bucket
-    #[inline(always)]
+    #[inline]
     pub const fn capacity() -> usize {
         DEFAULT_SIZE
     }
 }
 
 impl<T: Value, const SIZE: usize> Default for Bucket<T, SIZE> {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

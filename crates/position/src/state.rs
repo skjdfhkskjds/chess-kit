@@ -11,7 +11,7 @@ where
     /// state returns a reference to the current state
     ///
     /// @return: reference to the current state
-    #[inline(always)]
+    #[inline]
     pub fn state(&self) -> &StateT {
         self.history.top()
     }
@@ -19,7 +19,7 @@ where
     /// state_mut returns a mutable reference to the current state
     ///
     /// @return: mutable reference to the current state
-    #[inline(always)]
+    #[inline]
     pub fn state_mut(&mut self) -> &mut StateT {
         self.history.top_mut()
     }
@@ -33,7 +33,7 @@ where
     /// total_occupancy gets the full occupancy bitboard of both sides
     ///
     /// @impl: PositionState::total_occupancy
-    #[inline(always)]
+    #[inline]
     fn total_occupancy(&self) -> Bitboard {
         self.sides[Sides::TOTAL]
     }
@@ -41,7 +41,7 @@ where
     /// empty_squares gets the bitboard of all empty squares
     ///
     /// @impl: PositionState::empty_squares
-    #[inline(always)]
+    #[inline]
     fn empty_squares(&self) -> Bitboard {
         !self.total_occupancy()
     }
@@ -49,7 +49,7 @@ where
     /// occupancy gets the occupancy bitboard of SideT
     ///
     /// @impl: PositionState::occupancy
-    #[inline(always)]
+    #[inline]
     fn occupancy<SideT: Side>(&self) -> Bitboard {
         self.sides[SideT::SIDE]
     }
@@ -57,7 +57,7 @@ where
     /// piece_at gets the piece type at the given square
     ///
     /// @impl: PositionState::piece_at
-    #[inline(always)]
+    #[inline]
     fn piece_at(&self, square: Square) -> Pieces {
         self.pieces[square]
     }
@@ -65,7 +65,7 @@ where
     /// turn gets the side to move
     ///
     /// @impl: PositionState::turn
-    #[inline(always)]
+    #[inline]
     fn turn(&self) -> Sides {
         self.state().turn()
     }
@@ -73,7 +73,7 @@ where
     /// king_square gets the square that the king of SideT is currently occupying
     ///
     /// @impl: PositionState::king_square
-    #[inline(always)]
+    #[inline]
     fn king_square<SideT: Side>(&self) -> Square {
         debug_assert!(
             self.get_piece::<SideT>(Pieces::King).exactly_one(),
@@ -88,7 +88,7 @@ where
     /// by all of SideT's `piece` pieces
     ///
     /// @impl: PositionState::get_piece
-    #[inline(always)]
+    #[inline]
     fn get_piece<SideT: Side>(&self, piece: Pieces) -> Bitboard {
         self.bitboards[SideT::SIDE][piece]
     }
@@ -96,7 +96,7 @@ where
     /// en_passant gets the current en passant square, if it exists
     ///
     /// @impl: PositionState::en_passant
-    #[inline(always)]
+    #[inline]
     fn en_passant(&self) -> Option<Square> {
         self.state().en_passant()
     }
@@ -105,7 +105,7 @@ where
     /// position
     ///
     /// @impl: PositionState::castling
-    #[inline(always)]
+    #[inline]
     fn castling(&self) -> Castling {
         self.state().castling()
     }
@@ -113,7 +113,7 @@ where
     /// key gets the unique key identifier for the current position
     ///
     /// @impl: PositionState::key
-    #[inline(always)]
+    #[inline]
     fn key(&self) -> ZobristKey {
         self.state().key()
     }

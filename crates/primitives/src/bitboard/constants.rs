@@ -37,7 +37,7 @@ pub const BITBOARD_FILES: [Bitboard; File::TOTAL] = {
 ///
 /// @param: sq - square to get the diagonal mask for
 /// @return: diagonal mask for the given square
-#[inline(always)]
+#[inline]
 const fn diagonal_mask(sq: Square) -> Bitboard {
     let f0 = sq.file() as i8;
     let r0 = sq.rank() as i8;
@@ -63,7 +63,7 @@ const fn diagonal_mask(sq: Square) -> Bitboard {
 ///
 /// @param: sq - square to get the anti-diagonal mask for
 /// @return: anti-diagonal mask for the given square
-#[inline(always)]
+#[inline]
 const fn anti_diagonal_mask(sq: Square) -> Bitboard {
     let f0 = sq.file() as i8;
     let r0 = sq.rank() as i8;

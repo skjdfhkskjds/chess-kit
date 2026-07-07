@@ -22,7 +22,7 @@ impl<T> SideTable<T> {
 impl<T> Index<Sides> for SideTable<T> {
     type Output = T;
 
-    #[inline(always)]
+    #[inline]
     fn index(&self, side: Sides) -> &Self::Output {
         &self.0[side as usize]
     }

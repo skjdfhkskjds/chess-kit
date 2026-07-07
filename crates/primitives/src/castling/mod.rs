@@ -43,7 +43,7 @@ impl Castling {
     /// none returns a castling rights value with no castling rights
     ///
     /// @return: castling rights value with no castling rights
-    #[inline(always)]
+    #[inline]
     pub const fn none() -> Self {
         Castling::NONE
     }
@@ -51,7 +51,7 @@ impl Castling {
     /// all returns a castling rights value with all castling rights
     ///
     /// @return: castling rights value with all castling rights
-    #[inline(always)]
+    #[inline]
     pub const fn all() -> Self {
         Castling::ALL
     }
@@ -59,7 +59,7 @@ impl Castling {
     /// unwrap unwraps the castling rights value into a u8
     ///
     /// @return: castling rights value as a u8
-    #[inline(always)]
+    #[inline]
     pub const fn unwrap(self) -> u8 {
         self.0
     }
@@ -113,7 +113,7 @@ impl Castling {
     ///
     /// @marker: S - side to check castling rights for
     /// @return: true if the side can castle, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn can_castle<S: Side>(&self) -> bool {
         (self.0 & SideCastling::ALL[S::SIDE].0) != Castling::NONE.0
     }
@@ -123,7 +123,7 @@ impl Castling {
     ///
     /// @marker: S - side to check kingside castling rights for
     /// @return: true if the side can castle kingside, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn kingside<S: Side>(&self) -> bool {
         (self.0 & SideCastling::KINGSIDE[S::SIDE].0) != Castling::NONE.0
     }
@@ -133,7 +133,7 @@ impl Castling {
     ///
     /// @marker: S - side to check queenside castling rights for
     /// @return: true if the side can castle queenside, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn queenside<S: Side>(&self) -> bool {
         (self.0 & SideCastling::QUEENSIDE[S::SIDE].0) != Castling::NONE.0
     }

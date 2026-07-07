@@ -15,7 +15,7 @@ impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
     /// new creates a new move generator
     ///
     /// @impl: MoveGenerator::new
-    #[inline(always)]
+    #[inline]
     fn new() -> Self {
         Self {
             _attack_table: PhantomData,

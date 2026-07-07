@@ -19,7 +19,7 @@ impl ZobristKey {
     ///
     /// @param: value - u64 value to create the zobrist key from
     /// @return: new zobrist key
-    #[inline(always)]
+    #[inline]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
@@ -27,7 +27,7 @@ impl ZobristKey {
     /// default creates a new zobrist key with the default value
     ///
     /// @return: new zobrist key
-    #[inline(always)]
+    #[inline]
     pub const fn default() -> Self {
         Self(0)
     }

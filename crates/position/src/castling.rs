@@ -13,7 +13,7 @@ where
     /// @param: castling - castling rights to set
     /// @return: void
     /// @side-effects: modifies the `position`
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_castling(&mut self, castling: Castling) {
         let key =
             ZobristTable::castling(self.state().castling()) ^ ZobristTable::castling(castling);

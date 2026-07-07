@@ -55,7 +55,7 @@ where
     ///       early termination to improve performance
     ///
     /// @impl: PositionAttacks::is_attacked
-    #[inline(always)]
+    #[inline]
     fn is_attacked<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> bool {
         // generate the attack boards for each piece
         let king_attacks = AT::king_targets(square);
@@ -78,7 +78,7 @@ where
     /// move's king on the board
     ///
     /// @impl: PositionAttacks::checkers
-    #[inline(always)]
+    #[inline]
     fn checkers(&self) -> Bitboard {
         self.state().checkers()
     }
@@ -87,7 +87,7 @@ where
     /// blocking SideT's king from being in check
     ///
     /// @impl: PositionAttacks::king_blocker_pieces
-    #[inline(always)]
+    #[inline]
     fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
         self.state().king_blocker_pieces::<SideT>()
     }
@@ -96,7 +96,7 @@ where
     /// attacking SideT::Other's king-blocker pieces
     ///
     /// @impl: PositionAttacks::pinning_pieces
-    #[inline(always)]
+    #[inline]
     fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
         self.state().pinning_pieces::<SideT>()
     }
@@ -105,7 +105,7 @@ where
     /// would have to be on to deliver check to SideT::Other's king
     ///
     /// @impl: PositionAttacks::check_squares
-    #[inline(always)]
+    #[inline]
     fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
         self.state().check_squares::<SideT>(piece)
     }
@@ -122,7 +122,7 @@ where
     /// @param: square - square to check if is attacked by SideT::Other's sliders
     /// @param: occupancy - occupancy of the board
     /// @return: true if the given square is attacked by SideT::Other's sliders, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn is_attacked_by_sliders<SideT: Side>(&self, square: Square, occupancy: Bitboard) -> bool {
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
 
@@ -136,7 +136,7 @@ where
     /// pieces that are delivering check to SideT
     ///
     /// @return: bitboard of squares that SideT is checked by
-    #[inline(always)]
+    #[inline]
     pub fn is_checked_by<SideT: Side>(&self) -> Bitboard {
         self.is_attacked_by::<SideT>(self.king_square::<SideT>(), self.total_occupancy())
     }
@@ -144,7 +144,7 @@ where
     /// is_checked returns true if SideT is currently in check
     ///
     /// @return: true if SideT is checked, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn is_checked<SideT: Side>(&self) -> bool {
         self.is_attacked::<SideT>(self.king_square::<SideT>(), self.total_occupancy())
     }
@@ -158,7 +158,7 @@ where
     ///
     /// @param: square - square to check if is sniped by SideT::Other
     /// @return: true if the given square is sniped by SideT::Other, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn is_sniped_by<SideT: Side>(&self, square: Square) -> Bitboard {
         let queens = self.get_piece::<SideT::Other>(Pieces::Queen);
         let rooks_and_queens = self.get_piece::<SideT::Other>(Pieces::Rook) | queens;

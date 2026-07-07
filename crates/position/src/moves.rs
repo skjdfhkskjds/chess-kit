@@ -41,7 +41,7 @@ where
     ///
     /// @param: mv - move to check if is legal
     /// @return: true if the move is legal, false otherwise
-    #[inline(always)]
+    #[inline]
     fn is_legal_move<SideT: Side>(&self, mv: Move) -> bool {
         let from = mv.from();
         let to = mv.to();
@@ -78,7 +78,7 @@ where
     ///
     /// @param: mv - move to check if delivers a check
     /// @return: true if the move delivers a check, false otherwise
-    #[inline(always)]
+    #[inline]
     fn delivers_check<SideT: Side>(&self, mv: Move) -> bool {
         let from = mv.from();
         let to = mv.to();
@@ -198,7 +198,7 @@ where
     /// @param: to - square to move the piece to
     /// @return: void
     /// @side-effects: modifies the `position`
-    #[inline(always)]
+    #[inline]
     fn move_piece_no_incrementals<SideT: Side>(&mut self, piece: Pieces, from: Square, to: Square) {
         let from_to = Bitboard::square(from) | Bitboard::square(to);
 
@@ -216,7 +216,7 @@ where
     /// @param: to - square to move the piece to
     /// @return: void
     /// @side-effects: modifies the `position`
-    #[inline(always)]
+    #[inline]
     fn move_piece<SideT: Side, EvalStateT: EvalState>(
         &mut self,
         piece: Pieces,
@@ -246,7 +246,7 @@ where
     /// @side-effects: modifies the evaluation state
     /// @side-effects: resets the halfmove clock
     /// @side-effects: updates castling permissions (if applicable)
-    #[inline(always)]
+    #[inline]
     fn capture_piece<SideT: Side, EvalStateT: EvalState>(
         &mut self,
         piece: Pieces,
@@ -282,7 +282,7 @@ where
     ///
     /// @param: square - square to check
     /// @return: true if the given square is preventing a check to SideT
-    #[inline(always)]
+    #[inline]
     fn is_preventing_check<SideT: Side>(&self, square: Square) -> bool {
         self.state()
             .king_blocker_pieces::<SideT>()
@@ -294,7 +294,7 @@ where
     ///
     /// @return: void
     /// @side-effects: modifies the `state`
-    #[inline(always)]
+    #[inline]
     fn update_blockers<SideT: Side>(&mut self) {
         let king_square = self.king_square::<SideT>();
 
@@ -340,7 +340,7 @@ where
     ///
     /// @return: void
     /// @side-effects: modifies the `state`
-    #[inline(always)]
+    #[inline]
     pub(crate) fn update_check_info<SideT: Side>(&mut self) {
         // update the blockers and pinners for each side
         self.update_blockers::<White>();
@@ -391,7 +391,7 @@ where
     /// @side-effects: modifies the `position`
     /// @side-effects: modifies incremental game state
     /// @side-effects: modifies the evaluation state
-    #[inline(always)]
+    #[inline]
     fn make_move_for_side<SideT, EvalStateT>(&mut self, mv: Move, eval: &mut EvalStateT)
     where
         SideT: Side,
@@ -647,7 +647,7 @@ where
     ///
     /// @return: void
     /// @side-effects: modifies the `position`
-    #[inline(always)]
+    #[inline]
     fn unmake_move_for_side<SideT: Side>(&mut self, mv: Move) {
         // extract key move data
         let from = mv.from();

@@ -130,7 +130,7 @@ impl Magic {
     ///
     /// @param: occupancy - occupancy to get the magic index for
     /// @return: magic index for the given occupancy
-    #[inline(always)]
+    #[inline]
     pub const fn idx(&self, occupancy: Bitboard) -> usize {
         let blockerboard = occupancy.const_unwrap() & self.mask;
         ((blockerboard.wrapping_mul(self.num) >> self.shift) + self.offset) as usize

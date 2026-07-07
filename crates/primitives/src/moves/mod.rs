@@ -54,7 +54,7 @@ impl Move {
     /// @param: from - square to move from
     /// @param: to - square to move to
     /// @return: new instance of a move
-    #[inline(always)]
+    #[inline]
     pub fn new(from: Square, to: Square) -> Self {
         Self {
             data: (from.idx() as u16) + ((to.idx() as u16) << TO_SHIFT),
@@ -66,7 +66,7 @@ impl Move {
     ///
     /// @param: promoted - piece that the pawn promoted to
     /// @return: move with the promotion data set
-    #[inline(always)]
+    #[inline]
     pub fn with_promotion(mut self, promoted: Pieces) -> Self {
         // convert the promoted piece to the 2-bit representation and set the
         // bits in the move data
@@ -81,7 +81,7 @@ impl Move {
     /// with_en_passant sets the move type to en passant
     ///
     /// @return: move with the move type set to en passant
-    #[inline(always)]
+    #[inline]
     pub fn with_en_passant(mut self) -> Self {
         self.data += MoveType::EnPassant as u16;
         self
@@ -90,7 +90,7 @@ impl Move {
     /// with_castle sets the move type to castle
     ///
     /// @return: move with the move type set to castle
-    #[inline(always)]
+    #[inline]
     pub fn with_castle(mut self) -> Self {
         self.data += MoveType::Castle as u16;
         self
@@ -99,7 +99,7 @@ impl Move {
     /// from returns the square that the piece is moving from
     ///
     /// @return: square that the piece is moving from
-    #[inline(always)]
+    #[inline]
     pub fn from(&self) -> Square {
         Square::from_idx((self.data & SQUARE_MASK) as usize)
     }
@@ -108,7 +108,7 @@ impl Move {
     ///
     /// @param: self - immutable reference to the move
     /// @return: square that the piece is moving to
-    #[inline(always)]
+    #[inline]
     pub fn to(&self) -> Square {
         Square::from_idx(((self.data >> TO_SHIFT) & SQUARE_MASK) as usize)
     }
@@ -116,7 +116,7 @@ impl Move {
     /// promoted_to returns the piece that the pawn promoted to
     ///
     /// @return: piece that the pawn promoted to
-    #[inline(always)]
+    #[inline]
     pub fn promoted_to(&self) -> Pieces {
         Pieces::from_idx(
             ((self.data >> PROMOTED_SHIFT) & PROMOTED_MASK) as usize + Pieces::Knight.idx(),
@@ -126,7 +126,7 @@ impl Move {
     /// type_of returns the type of move
     ///
     /// @return: type of move
-    #[inline(always)]
+    #[inline]
     pub fn type_of(&self) -> MoveType {
         // SAFETY: the move type is always a valid move type
         unsafe { transmute::<u16, MoveType>(self.data & (MOVE_TYPE_MASK << MOVE_TYPE_SHIFT)) }
