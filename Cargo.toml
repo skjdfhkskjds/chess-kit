@@ -28,3 +28,4 @@ chess-kit-movegen = { path = "crates/movegen" }
 chess-kit-transposition = { path = "crates/transposition" }
 chess-kit-perft = { path = "crates/perft" }
 chess-kit-eval = { path = "crates/eval" }
+chess-kit-search = { path = "crates/search" }

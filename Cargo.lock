@@ -14,6 +14,7 @@ dependencies = [
  "chess-kit-perft",
  "chess-kit-position",
  "chess-kit-primitives",
+ "chess-kit-search",
  "chess-kit-transposition",
 ]
 
@@ -82,6 +83,19 @@ name = "chess-kit-primitives"
 version = "0.1.0"
 dependencies = [
  "chess-kit-derive",
+]
+
+[[package]]
+name = "chess-kit-search"
+version = "0.1.0"
+dependencies = [
+ "chess-kit-attack-table",
+ "chess-kit-collections",
+ "chess-kit-eval",
+ "chess-kit-movegen",
+ "chess-kit-position",
+ "chess-kit-primitives",
+ "chess-kit-transposition",
 ]
 
 [[package]]
