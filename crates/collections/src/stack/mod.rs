@@ -35,7 +35,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     /// new creates a new stack with all items initialized to the default
     ///
     /// @return: new stack
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Self {
             current: 0,
@@ -49,7 +49,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     /// @return: void
     /// @side-effects: modifies the stack, increments the current index
     /// @requires: the current index is less than the stack capacity
-    #[inline(always)]
+    #[inline]
     pub fn push(&mut self, item: T) {
         debug_assert!(self.current < CAP, "stack is full");
         self.current += 1;
@@ -62,7 +62,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     /// @return: mutable reference to the newly pushed item
     /// @side-effects: modifies the stack, increments the current index
     /// @requires: the stack is non-empty and not full
-    #[inline(always)]
+    #[inline]
     pub fn push_next(&mut self) -> &mut T {
         debug_assert!(self.current > 0, "cannot clone from an empty stack");
         debug_assert!(self.current < CAP, "stack is full");
@@ -77,7 +77,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     ///
     /// @side-effects: modifies the stack, decrements the current index
     /// @requires: the current index is greater than 1
-    #[inline(always)]
+    #[inline]
     pub fn pop(&mut self) {
         if self.current == 0 {
             return;
@@ -90,7 +90,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     ///
     /// @return: reference to the current item
     /// @requires: the stack is non-empty
-    #[inline(always)]
+    #[inline]
     pub fn top(&self) -> &T {
         debug_assert!(self.current > 0, "stack is empty");
         &self.items[self.current]
@@ -100,7 +100,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     ///
     /// @return: mutable reference to the current item
     /// @requires: the stack is non-empty
-    #[inline(always)]
+    #[inline]
     pub fn top_mut(&mut self) -> &mut T {
         debug_assert!(self.current > 0, "stack is empty");
         &mut self.items[self.current]
@@ -109,7 +109,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     /// size returns the number of items in the stack
     ///
     /// @return: the number of items in the stack
-    #[inline(always)]
+    #[inline]
     pub fn size(&self) -> usize {
         self.current
     }
@@ -117,7 +117,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     /// is_empty returns true if the stack is empty
     ///
     /// @return: true if the stack is empty
-    #[inline(always)]
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.current == 0
     }
@@ -125,7 +125,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     /// is_full returns true if the stack is full
     ///
     /// @return: true if the stack is full
-    #[inline(always)]
+    #[inline]
     pub fn is_full(&self) -> bool {
         self.current == CAP
     }
@@ -134,14 +134,14 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     ///
     /// @return: void
     /// @side-effects: sets the current index to 0
-    #[inline(always)]
+    #[inline]
     pub fn clear(&mut self) {
         self.current = 0;
     }
 }
 
 impl<T: Copyable, const CAP: usize> Default for Stack<T, CAP> {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

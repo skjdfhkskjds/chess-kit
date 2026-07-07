@@ -76,7 +76,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
     /// @param: data - the data to insert
     /// @return: void
     /// @side-effects: modifies the transposition table
-    #[inline(always)]
+    #[inline]
     pub fn set(&mut self, key: K, data: V) {
         if !self.is_enabled() {
             return;
@@ -91,7 +91,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
     ///
     /// @param: key - the key of the entry to get
     /// @return: the data if the entry is found, None otherwise
-    #[inline(always)]
+    #[inline]
     pub fn get(&self, key: K) -> Option<&V> {
         if !self.is_enabled() {
             return None;
@@ -105,7 +105,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
     /// is_enabled checks if the map is enabled
     ///
     /// @return: true if the map is enabled, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn is_enabled(&self) -> bool {
         self.memory_size > 0
     }
@@ -113,7 +113,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
     /// capacity returns the maximum number of entries in the map
     ///
     /// @return: maximum number of entries in the map
-    #[inline(always)]
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.capacity
     }
@@ -124,7 +124,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
     /// @param: memory_size - the new size of the map in MBs
     /// @return: void
     /// @side-effects: clears the map
-    #[inline(always)]
+    #[inline]
     pub fn resize(&mut self, memory_size: usize) {
         // if the memory size is unchanged, just clear the map
         if self.memory_size == memory_size {
@@ -140,7 +140,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
     ///
     /// @return: void
     /// @side-effects: clears the map
-    #[inline(always)]
+    #[inline]
     pub fn clear(&mut self) {
         for entry in self.buckets.iter_mut() {
             entry.clear();
@@ -151,7 +151,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
     /// buckets returns the number of buckets allocated in the map
     ///
     /// @return: number of buckets allocated in the map
-    #[inline(always)]
+    #[inline]
     pub fn buckets(&self) -> usize {
         self.max_buckets
     }
@@ -161,7 +161,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
     ///
     /// @param: base - the base to use for the calculation
     /// @return: usage ratio of the map
-    #[inline(always)]
+    #[inline]
     pub fn usage(&self, base: f64) -> u16 {
         if !self.is_enabled() {
             return 0;
@@ -176,7 +176,7 @@ impl<K, V: Value, Hasher: HashFn<K>> Map<K, V, Hasher> {
     ///
     /// @param: memory_size - the amount of memory in MBs
     /// @return: number of buckets and capacity that fit in memory_size
-    #[inline(always)]
+    #[inline]
     const fn calculate_sizes(memory_size: usize) -> (usize, usize) {
         let buckets = MB_TO_BYTES / Bucket::<V>::size_of_mem() * memory_size;
         let capacity = buckets * Bucket::<V>::capacity();

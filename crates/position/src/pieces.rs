@@ -15,7 +15,7 @@ where
     /// @param: square - square to remove the piece from
     /// @return: void
     /// @side-effects: modifies the `position`
-    #[inline(always)]
+    #[inline]
     pub(crate) fn remove_piece_no_incrementals<SideT: Side>(
         &mut self,
         piece: Pieces,
@@ -35,7 +35,7 @@ where
     /// @return: void
     /// @side-effects: modifies the `position`
     /// @side-effects: modifies the evaluation state
-    #[inline(always)]
+    #[inline]
     pub(crate) fn remove_piece<SideT: Side, EvalStateT: EvalState>(
         &mut self,
         piece: Pieces,
@@ -57,7 +57,7 @@ where
     /// @param: square - square to set the piece on
     /// @return: void
     /// @side-effects: modifies the `position`
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_piece_no_incrementals<SideT: Side>(&mut self, piece: Pieces, square: Square) {
         self.bitboards[SideT::SIDE][piece].set_at(square);
         self.sides[SideT::SIDE].set_at(square);
@@ -73,7 +73,7 @@ where
     /// @return: void
     /// @side-effects: modifies the `position`
     /// @side-effects: modifies the evaluation state
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_piece<SideT: Side, EvalStateT: EvalState>(
         &mut self,
         piece: Pieces,
@@ -93,7 +93,7 @@ where
     /// @param: square - square to set the en passant square for
     /// @return: void
     /// @side-effects: modifies the `position`
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_en_passant(&mut self, square: Square) {
         let current_ep = self.state().en_passant();
         let key = ZobristTable::en_passant(current_ep) ^ ZobristTable::en_passant(Some(square));
@@ -105,7 +105,7 @@ where
     ///
     /// @return: void
     /// @side-effects: modifies the `position`
-    #[inline(always)]
+    #[inline]
     pub(crate) fn clear_en_passant(&mut self) {
         let current_ep = self.state().en_passant();
         if current_ep.is_none() {

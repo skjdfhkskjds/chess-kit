@@ -19,7 +19,7 @@ where
     /// 50-move rule
     ///
     /// @return: true if the position is a draw by the rule, false otherwise
-    #[inline(always)]
+    #[inline]
     pub fn is_draw_by_fifty_moves(&self) -> bool {
         // Note: 100 since we are using the halfmove clock
         self.state().halfmoves() >= 100
@@ -69,8 +69,8 @@ where
                 }
 
                 // check if both bishops are on the same colour
-                let wb_sq = w[Pieces::Bishop].must_first();
-                let bb_sq = b[Pieces::Bishop].must_first();
+                let wb_sq = w[Pieces::Bishop].first_unchecked();
+                let bb_sq = b[Pieces::Bishop].first_unchecked();
                 wb_sq.is_white() == bb_sq.is_white()
             }
             _ => false,

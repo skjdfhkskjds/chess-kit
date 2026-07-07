@@ -6,7 +6,7 @@ impl Bitboard {
     ///
     /// @param: rhs - value to wrapping subtract from the bitboard
     /// @return: result of the wrapping subtraction
-    #[inline(always)]
+    #[inline]
     pub fn wrapping_sub<T: Into<u64>>(self, rhs: T) -> Self {
         Self(self.0.wrapping_sub(rhs.into()))
     }
@@ -16,7 +16,7 @@ impl Bitboard {
     ///
     /// @param: rhs - value to wrapping multiply the bitboard by
     /// @return: result of the wrapping multiplication
-    #[inline(always)]
+    #[inline]
     pub fn wrapping_mul<T: Into<u64>>(self, rhs: T) -> Self {
         Self(self.0.wrapping_mul(rhs.into()))
     }
@@ -26,7 +26,7 @@ impl Bitboard {
     ///
     /// @param: rhs - number of bits to rotate the bitboard by
     /// @return: result of the left rotation
-    #[inline(always)]
+    #[inline]
     pub fn rotate_left(self, rhs: u32) -> Self {
         Self(self.0.rotate_left(rhs))
     }
@@ -34,7 +34,7 @@ impl Bitboard {
     /// count_ones counts the number of bits set in the bitboard
     ///
     /// @return: number of bits set in the bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn count_ones(&self) -> u32 {
         self.0.count_ones()
     }
@@ -42,7 +42,7 @@ impl Bitboard {
     /// trailing_zeros counts the number of trailing zeros in the bitboard
     ///
     /// @return: number of trailing zeros in the bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn trailing_zeros(&self) -> u32 {
         self.0.trailing_zeros()
     }
@@ -50,7 +50,7 @@ impl Bitboard {
     /// leading_zeros counts the number of leading zeros in the bitboard
     ///
     /// @return: number of leading zeros in the bitboard
-    #[inline(always)]
+    #[inline]
     pub const fn leading_zeros(&self) -> u32 {
         self.0.leading_zeros()
     }
@@ -59,7 +59,7 @@ impl Bitboard {
     ///
     /// @param: direction - direction to shift the bitboard in
     /// @return: result of the shift
-    #[inline(always)]
+    #[inline]
     pub const fn shift(self, direction: Direction) -> Self {
         match direction {
             Direction::North => Self(self.0 << 8),

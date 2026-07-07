@@ -13,7 +13,7 @@ impl<EvalStateT: EvalState> Accumulator<EvalStateT> for DefaultAccumulator<EvalS
     /// new creates a new, uninitialized accumulator
     ///
     /// @impl: Accumulator::new
-    #[inline(always)]
+    #[inline]
     fn new() -> Self {
         Self {
             stack: Stack::new(),
@@ -23,7 +23,7 @@ impl<EvalStateT: EvalState> Accumulator<EvalStateT> for DefaultAccumulator<EvalS
     /// reset resets the accumulator to a new initial state
     ///
     /// @impl: Accumulator::reset
-    #[inline(always)]
+    #[inline]
     fn reset(&mut self) {
         self.stack.clear();
     }
@@ -31,7 +31,7 @@ impl<EvalStateT: EvalState> Accumulator<EvalStateT> for DefaultAccumulator<EvalS
     /// push pushes a new state onto the accumulator
     ///
     /// @impl: Accumulator::push
-    #[inline(always)]
+    #[inline]
     fn push(&mut self, state: EvalStateT) {
         self.stack.push(state);
     }
@@ -40,7 +40,7 @@ impl<EvalStateT: EvalState> Accumulator<EvalStateT> for DefaultAccumulator<EvalS
     /// from the copy of the current eval state
     ///
     /// @impl: Accumulator::push_next
-    #[inline(always)]
+    #[inline]
     fn push_next(&mut self) -> &mut EvalStateT {
         self.stack.push_next()
     }
@@ -48,7 +48,7 @@ impl<EvalStateT: EvalState> Accumulator<EvalStateT> for DefaultAccumulator<EvalS
     /// pop pops the last state from the accumulator
     ///
     /// @impl: Accumulator::pop
-    #[inline(always)]
+    #[inline]
     fn pop(&mut self) {
         self.stack.pop();
     }
@@ -56,7 +56,7 @@ impl<EvalStateT: EvalState> Accumulator<EvalStateT> for DefaultAccumulator<EvalS
     /// latest returns a reference to the latest state in the accumulator
     ///
     /// @impl: Accumulator::latest
-    #[inline(always)]
+    #[inline]
     fn latest(&self) -> &EvalStateT {
         self.stack.top()
     }
@@ -65,14 +65,14 @@ impl<EvalStateT: EvalState> Accumulator<EvalStateT> for DefaultAccumulator<EvalS
     /// accumulator
     ///
     /// @impl: Accumulator::latest_mut
-    #[inline(always)]
+    #[inline]
     fn latest_mut(&mut self) -> &mut EvalStateT {
         self.stack.top_mut()
     }
 }
 
 impl<EvalStateT: EvalState> Default for DefaultAccumulator<EvalStateT> {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

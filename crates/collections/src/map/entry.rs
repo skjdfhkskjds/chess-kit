@@ -17,7 +17,7 @@ where
     /// @param: key - key to set the value to
     /// @param: data - data to set the value to
     /// @return: new bucket
-    #[inline(always)]
+    #[inline]
     pub(crate) fn new() -> Self {
         Self {
             dirty: false,
@@ -29,7 +29,7 @@ where
     /// is_dirty checks if the bucket is dirty
     ///
     /// @return: true if the bucket is dirty, false otherwise
-    #[inline(always)]
+    #[inline]
     pub(crate) const fn is_dirty(&self) -> bool {
         self.dirty
     }
@@ -37,7 +37,7 @@ where
     /// key returns the key of the bucket
     ///
     /// @return: key of the bucket
-    #[inline(always)]
+    #[inline]
     pub(crate) const fn key(&self) -> u32 {
         self.key
     }
@@ -45,7 +45,7 @@ where
     /// data returns a reference to the data in the bucket
     ///
     /// @return: reference to the data in the bucket
-    #[inline(always)]
+    #[inline]
     pub(crate) const fn data(&self) -> &T {
         &self.data
     }
@@ -56,7 +56,7 @@ where
     /// @param: data - data to set the value to
     /// @return: void
     /// @side-effects: modifies the bucket
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set(&mut self, key: u32, data: T) {
         self.key = key;
         self.data = data;
@@ -67,7 +67,7 @@ where
     ///
     /// @return: void
     /// @side-effects: modifies the bucket
-    #[inline(always)]
+    #[inline]
     pub(crate) fn clear(&mut self) {
         self.key = 0;
         self.data = T::default();
@@ -79,7 +79,7 @@ impl<T> Default for Entry<T>
 where
     T: Copy + Default,
 {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

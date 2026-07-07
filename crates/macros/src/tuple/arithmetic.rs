@@ -43,7 +43,7 @@ pub fn expand_arithmetic(input: &DeriveInput) -> Result<proc_macro2::TokenStream
         impl ::core::ops::Add<#inner> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn add(self, rhs: #inner) -> Self::Output {
                 #name(self.0 + rhs)
             }
@@ -52,7 +52,7 @@ pub fn expand_arithmetic(input: &DeriveInput) -> Result<proc_macro2::TokenStream
         impl ::core::ops::Sub<#inner> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn sub(self, rhs: #inner) -> Self::Output {
                 #name(self.0 - rhs)
             }
@@ -61,7 +61,7 @@ pub fn expand_arithmetic(input: &DeriveInput) -> Result<proc_macro2::TokenStream
         impl ::core::ops::Mul<#inner> for #name {
             type Output = #name;
 
-            #[inline(always)]
+            #[inline]
             fn mul(self, rhs: #inner) -> Self::Output {
                 #name(self.0 * rhs)
             }

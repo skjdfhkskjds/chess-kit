@@ -14,7 +14,7 @@ impl PerftData {
     /// @param: depth - depth of the perft data
     /// @param: node_count - number of nodes at the given depth
     /// @return: new perft data
-    #[inline(always)]
+    #[inline]
     pub fn new(depth: Depth, node_count: NodeCount) -> Self {
         Self(depth, node_count)
     }
@@ -23,7 +23,7 @@ impl PerftData {
     ///
     /// @return: depth of the perft data
     /// TODO: method overloading via traits is bad style i think
-    #[inline(always)]
+    #[inline]
     pub fn depth(&self) -> Depth {
         self.0
     }
@@ -31,7 +31,7 @@ impl PerftData {
     /// node_count returns the number of nodes at the given depth
     ///
     /// @return: number of nodes at the given depth
-    #[inline(always)]
+    #[inline]
     pub fn node_count(&self) -> NodeCount {
         self.1
     }
@@ -41,7 +41,7 @@ impl NodeData for PerftData {
     /// empty creates a new instance of a node with no data
     ///
     /// @return: new instance of a node with no data
-    #[inline(always)]
+    #[inline]
     fn empty() -> Self {
         Self(0, 0)
     }
@@ -49,7 +49,7 @@ impl NodeData for PerftData {
     /// depth returns the depth of the node
     ///
     /// @return: depth of the node
-    #[inline(always)]
+    #[inline]
     fn depth(&self) -> i8 {
         self.0
     }
@@ -59,7 +59,7 @@ impl Value for PerftData {
     /// priority returns the priority of the value
     ///
     /// @return: the priority of the value
-    #[inline(always)]
+    #[inline]
     fn priority(&self) -> i8 {
         self.0
     }
@@ -69,7 +69,7 @@ impl Default for PerftData {
     /// default creates a new instance of a node with no data
     ///
     /// @return: new instance of a node with no data
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::empty()
     }

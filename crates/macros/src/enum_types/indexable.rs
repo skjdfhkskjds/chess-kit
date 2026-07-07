@@ -28,17 +28,17 @@ pub fn expand_indexable_enum(input: &DeriveInput) -> Result<TokenStream> {
 
     let output = quote! {
         impl #name {
-            #[inline(always)]
+            #[inline]
             pub const fn idx(self) -> usize {
                 self as usize
             }
 
-            #[inline(always)]
+            #[inline]
             pub const fn from_idx(idx: usize) -> Self {
                 unsafe { ::core::mem::transmute::<#repr_ty, Self>(idx as #repr_ty) }
             }
 
-            #[inline(always)]
+            #[inline]
             pub const fn from_idx_safe(idx: usize) -> ::core::option::Option<Self> {
                 if idx < #variant_count {
                     Some(unsafe { ::core::mem::transmute::<#repr_ty, Self>(idx as #repr_ty) })
@@ -52,14 +52,14 @@ pub fn expand_indexable_enum(input: &DeriveInput) -> Result<TokenStream> {
         impl<T, const N: usize> ::std::ops::Index<#name> for [T; N] {
             type Output = T;
 
-            #[inline(always)]
+            #[inline]
             fn index(&self, index: #name) -> &Self::Output {
                 &self[index as usize]
             }
         }
 
         impl<T, const N: usize> ::std::ops::IndexMut<#name> for [T; N] {
-            #[inline(always)]
+            #[inline]
             fn index_mut(&mut self, index: #name) -> &mut Self::Output {
                 &mut self[index as usize]
             }

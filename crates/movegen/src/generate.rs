@@ -13,7 +13,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: move_type - move type to generate moves for
     /// @return: void
     /// @side-effects: modifies the `move list`
-    #[inline(always)]
+    #[inline]
     pub(crate) fn generate_moves_for_side<
         SideT: Side,
         PositionT: PositionState + PositionAttacks,
@@ -44,7 +44,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
                         position.checkers().exactly_one(),
                         "checkers should be exactly one"
                     );
-                    let checker = position.checkers().must_first();
+                    let checker = position.checkers().first_unchecked();
                     Bitboard::between(position.king_square::<SideT>(), checker)
                 }
                 MoveType::NonEvasions => !position.occupancy::<SideT>(),
@@ -71,7 +71,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: move_type - move type to generate moves of
     /// @return: void
     /// @side-effects: modifies the `move list`
-    #[inline(always)]
+    #[inline]
     fn generate_queen_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
@@ -97,7 +97,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: list - mutable reference to the move list
     /// @param: move_type - move type to generate moves of
     /// @return: void
-    #[inline(always)]
+    #[inline]
     fn generate_rook_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
@@ -123,7 +123,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: list - mutable reference to the move list
     /// @param: move_type - move type to generate moves of
     /// @return: void
-    #[inline(always)]
+    #[inline]
     fn generate_bishop_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
@@ -149,7 +149,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: list - mutable reference to the move list
     /// @param: move_type - move type to generate moves of
     /// @return: void
-    #[inline(always)]
+    #[inline]
     fn generate_knight_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
@@ -174,7 +174,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: move_type - move type to generate moves of
     /// @return: void
     /// @side-effects: modifies the `move list`
-    #[inline(always)]
+    #[inline]
     fn generate_pawn_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
@@ -322,7 +322,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: move_type - move type to generate moves of
     /// @return: void
     /// @side-effects: modifies the `move list`
-    #[inline(always)]
+    #[inline]
     fn generate_king_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,
@@ -359,7 +359,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @return: void
     /// TODO: current implementation does not support chess960, as it assumes the
     ///       squares along the path from the king and rook
-    #[inline(always)]
+    #[inline]
     fn generate_castle_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
         &self,
         position: &PositionT,

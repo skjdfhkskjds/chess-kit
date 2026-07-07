@@ -9,7 +9,7 @@ impl PieceValue {
     /// @param: middlegame - the middlegame value of the piece
     /// @param: endgame - the endgame value of the piece
     /// @return: new piece value
-    #[inline(always)]
+    #[inline]
     pub const fn new(middlegame: i32, endgame: i32) -> Self {
         Self(middlegame, endgame)
     }
@@ -17,7 +17,7 @@ impl PieceValue {
     /// middlegame returns the middlegame value of the piece
     ///
     /// @return: middlegame value of the piece
-    #[inline(always)]
+    #[inline]
     pub const fn middlegame(&self) -> i32 {
         self.0
     }
@@ -25,7 +25,7 @@ impl PieceValue {
     /// endgame returns the endgame value of the piece
     ///
     /// @return: endgame value of the piece
-    #[inline(always)]
+    #[inline]
     pub const fn endgame(&self) -> i32 {
         self.1
     }
@@ -38,14 +38,14 @@ impl PieceValue {
 impl Add for PieceValue {
     type Output = Self;
 
-    #[inline(always)]
+    #[inline]
     fn add(self, other: Self) -> Self::Output {
         Self(self.0 + other.0, self.1 + other.1)
     }
 }
 
 impl AddAssign for PieceValue {
-    #[inline(always)]
+    #[inline]
     fn add_assign(&mut self, other: Self) {
         self.0 += other.0;
         self.1 += other.1;
@@ -55,14 +55,14 @@ impl AddAssign for PieceValue {
 impl Sub for PieceValue {
     type Output = Self;
 
-    #[inline(always)]
+    #[inline]
     fn sub(self, other: Self) -> Self::Output {
         Self(self.0 - other.0, self.1 - other.1)
     }
 }
 
 impl SubAssign for PieceValue {
-    #[inline(always)]
+    #[inline]
     fn sub_assign(&mut self, other: Self) {
         self.0 -= other.0;
         self.1 -= other.1;

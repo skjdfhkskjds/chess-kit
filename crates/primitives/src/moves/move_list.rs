@@ -30,7 +30,7 @@ impl MoveList {
     /// clear clears the move list
     ///
     /// @return: void
-    #[inline(always)]
+    #[inline]
     pub fn clear(&mut self) {
         self.len = 0;
     }
@@ -40,7 +40,7 @@ impl MoveList {
     /// @param: mv - move to push
     /// @return: void
     /// @side-effects: modifies the `move list`
-    #[inline(always)]
+    #[inline]
     pub fn push(&mut self, mv: Move) {
         debug_assert!(self.len < MAX_MOVES);
         self.buf[self.len].write(mv);
@@ -50,7 +50,7 @@ impl MoveList {
     /// len returns the number of moves in the move list
     ///
     /// @return: number of moves in the move list
-    #[inline(always)]
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
@@ -58,7 +58,7 @@ impl MoveList {
     /// is_empty returns true if the move list is empty
     ///
     /// @return: true if the move list is empty
-    #[inline(always)]
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
@@ -70,7 +70,7 @@ impl MoveList {
     ///
     /// @param: idx - index of the move to get
     /// @return: move at the given index
-    #[inline(always)]
+    #[inline]
     pub fn get(&self, idx: usize) -> Move {
         unsafe { self.buf[idx].assume_init() }
     }
@@ -80,7 +80,7 @@ impl MoveList {
     ///
     /// @param: idx - index of the move to get
     /// @return: move at the given index, or None if the index is out of bounds
-    #[inline(always)]
+    #[inline]
     pub fn get_safe(&self, idx: usize) -> Option<Move> {
         (idx < self.len).then(|| self.get(idx))
     }
@@ -92,7 +92,7 @@ impl MoveList {
     ///
     /// @param: idx - index of the move to get
     /// @return: mutable reference to the move at the given index
-    #[inline(always)]
+    #[inline]
     pub fn get_mut(&mut self, idx: usize) -> &mut Move {
         unsafe { self.buf[idx].assume_init_mut() }
     }
@@ -102,7 +102,7 @@ impl MoveList {
     ///
     /// @param: idx - index of the move to get
     /// @return: mutable reference to the move at the given index
-    #[inline(always)]
+    #[inline]
     pub fn get_mut_safe(&mut self, idx: usize) -> Option<&mut Move> {
         (idx < self.len).then(|| self.get_mut(idx))
     }
@@ -110,7 +110,7 @@ impl MoveList {
     /// iter iterates over the moves in the move list
     ///
     /// @return: iterator over the moves in the move list
-    #[inline(always)]
+    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = Move> + '_ {
         (0..self.len).map(move |i| unsafe { self.buf[i].assume_init() })
     }
@@ -120,7 +120,7 @@ impl MoveList {
     /// @param: predicate - predicate to filter the move list by
     /// @return: void
     /// @side-effects: modifies the `move list`
-    #[inline(always)]
+    #[inline]
     pub fn filter(&mut self, predicate: impl Fn(Move) -> bool) {
         let mut write = 0;
 
@@ -138,7 +138,7 @@ impl MoveList {
 }
 
 impl Default for MoveList {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

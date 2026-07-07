@@ -11,7 +11,7 @@ impl PSQTEvalState {
     ///
     /// @return: weighted phase value
     /// @side-effects: modifies the eval state
-    #[inline(always)]
+    #[inline]
     pub(super) fn weighted_phase(&self) -> f32 {
         // interpolate the phase value between the min and max
         let result = (self.phase - MIDDLEGAME_PHASE_MIN) as f32 / Self::MIDDLEGAME_PHASE_DENOM;
@@ -28,7 +28,7 @@ impl PSQTEvalState {
     ///
     /// @return: void
     /// @side-effects: modifies the eval state
-    #[inline(always)]
+    #[inline]
     pub(super) fn update_score(&mut self) {
         // calculate the middlegame score for both sides
         let mid_score = (self.scores[Sides::White].middlegame()
