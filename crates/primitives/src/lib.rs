@@ -1,6 +1,7 @@
 pub mod bitboard;
 pub mod castling;
 pub mod direction;
+pub mod depth;
 pub mod files;
 pub mod moves;
 pub mod pieces;
@@ -11,6 +12,7 @@ pub mod zobrist;
 
 pub use bitboard::Bitboard;
 pub use castling::{Castling, SideCastling};
+pub use depth::Depth;
 pub use direction::Direction;
 pub use files::File;
 pub use moves::{Move, MoveList, MoveType};

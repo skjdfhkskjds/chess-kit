@@ -1,8 +1,8 @@
 use chess_kit_collections::Value;
 use chess_kit_transposition::NodeData;
+use chess_kit_primitives::Depth;
 use std::fmt::{self, Display};
 
-pub type Depth = i8;
 pub type NodeCount = usize;
 
 #[derive(Debug, Clone, Copy)]

@@ -8,6 +8,8 @@ members = [
     "crates/movegen",
     "crates/transposition",
     "crates/perft",
+    "crates/eval",
+    "crates/search",
 ]
 
 [package]
