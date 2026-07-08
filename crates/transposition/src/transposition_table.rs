@@ -1,12 +1,12 @@
 use crate::{NodeData, TranspositionTable};
-use chess_kit_collections::{HashFn, Map};
+use chess_kit_collections::{HashFn, HashKey, Map};
 use chess_kit_primitives::ZobristKey;
 
 struct ZobristKeyHashFn;
 
 impl HashFn<ZobristKey> for ZobristKeyHashFn {
     #[inline]
-    fn hash(key: ZobristKey) -> (usize, u32) {
+    fn hash(key: &ZobristKey) -> HashKey {
         // split the zobrist key into an index and a key
         //
         // index: right-shifted by 32 bits and then truncated
@@ -16,9 +16,9 @@ impl HashFn<ZobristKey> for ZobristKeyHashFn {
         //       key is an alias/wrapper around a u64 and relies on the fact that
         //       the `as` cast truncates the superfluous upper bits
         // TODO: make a choice as to whether or not that invariant is reasonable
-        let index = u32::from(key >> 32u64) as usize;
-        let key = u32::from(key);
-        (index, key)
+        let index = u32::from(*key >> 32u64) as usize;
+        let tag = u32::from(*key);
+        HashKey { index, tag }
     }
 }
 
@@ -43,7 +43,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// @impl: TranspositionTable::insert
     #[inline]
     fn insert(&mut self, zobrist_key: ZobristKey, data: NodeT) {
-        self.map.set(zobrist_key, data);
+        self.map.set(&zobrist_key, data);
     }
 
     /// probe probes the transposition table for an entry with the given zobrist
@@ -52,7 +52,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// @impl: TranspositionTable::probe
     #[inline]
     fn probe(&self, zobrist_key: ZobristKey) -> Option<&NodeT> {
-        self.map.get(zobrist_key)
+        self.map.get(&zobrist_key)
     }
 
     /// is_enabled checks if the transposition table is enabled
@@ -93,7 +93,7 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// @impl: TranspositionTable::usage_permille
     #[inline]
     fn usage_permille(&self) -> u16 {
-        self.map.usage(1000f64)
+        self.map.usage(1000)
     }
 
     /// usage_percent returns the usage of the transposition table as a value
@@ -102,6 +102,6 @@ impl<NodeT: NodeData> TranspositionTable<NodeT> for DefaultTranspositionTable<No
     /// @impl: TranspositionTable::usage_percent
     #[inline]
     fn usage_percent(&self) -> u16 {
-        self.map.usage(100f64)
+        self.map.usage(100)
     }
 }
