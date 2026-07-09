@@ -4,7 +4,7 @@ Custom collection types used by `chess-kit`.
 
 ## Types
 
-- `Stack<T, CAP>`: fixed-capacity stack for copyable state histories.
+- `Stack<T, N>`: fixed-capacity stack for copyable state histories.
 - `Map<K, V, Hasher, Policy>`: fixed-memory hash map with bucket-local entries and priority-based eviction.
 
 ## Testing
@@ -32,20 +32,24 @@ cargo test -p chess-kit-collections map
 Compile the benchmark targets without running them:
 
 ```sh
-cargo bench -p chess-kit-collections --bench collections_runtime --no-run
-cargo bench -p chess-kit-collections --bench collections_memory --no-run
+cargo bench -p chess-kit-collections --bench stack_small_state --no-run
+cargo bench -p chess-kit-collections --bench stack_history_state --no-run
+cargo bench -p chess-kit-collections --bench map_compact_value --no-run
+cargo bench -p chess-kit-collections --bench map_wide_value --no-run
+cargo bench -p chess-kit-collections --bench baseline_std_hash_map --no-run
 ```
 
-Run the runtime benchmarks:
+Run benchmarks isolated by collection variant:
 
 ```sh
-cargo bench -p chess-kit-collections --bench collections_runtime
+cargo bench -p chess-kit-collections --bench stack_small_state
+cargo bench -p chess-kit-collections --bench stack_history_state
+cargo bench -p chess-kit-collections --bench map_compact_value
+cargo bench -p chess-kit-collections --bench map_wide_value
 ```
 
-Run the memory layout and allocation benchmarks:
+Run the non-equivalent standard library baseline:
 
 ```sh
-cargo bench -p chess-kit-collections --bench collections_memory
+cargo bench -p chess-kit-collections --bench baseline_std_hash_map
 ```
-
-Criterion writes benchmark reports under `target/criterion/`.

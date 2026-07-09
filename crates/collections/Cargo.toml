@@ -7,9 +7,21 @@ edition = "2024"
 criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
-name = "collections_runtime"
+name = "stack_small_state"
 harness = false
 
 [[bench]]
-name = "collections_memory"
+name = "stack_history_state"
+harness = false
+
+[[bench]]
+name = "map_compact_value"
+harness = false
+
+[[bench]]
+name = "map_wide_value"
+harness = false
+
+[[bench]]
+name = "baseline_std_hash_map"
 harness = false

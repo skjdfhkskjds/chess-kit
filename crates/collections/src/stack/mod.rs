@@ -1,4 +1,4 @@
-mod iterator;
+use std::slice;
 
 /// Copyable is a trait that defines the behavior of a copyable item
 ///
@@ -26,12 +26,12 @@ const DEFAULT_CAPACITY: usize = u8::MAX as usize;
 ///       pattern to do lightweight derivation of new items from existing ones
 ///
 /// @type
-pub struct Stack<T: Copyable, const CAP: usize = DEFAULT_CAPACITY> {
+pub struct Stack<T: Copyable, const N: usize = DEFAULT_CAPACITY> {
     pub(super) current: usize,  // number of active items
-    pub(super) items: [T; CAP], // stack of previous states
+    pub(super) items: [T; N],   // stack of previous states
 }
 
-impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
+impl<T: Copyable, const N: usize> Stack<T, N> {
     /// new creates a new stack with all items initialized to the default
     ///
     /// @return: new stack
@@ -39,7 +39,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     pub fn new() -> Self {
         Self {
             current: 0,
-            items: [T::default(); CAP],
+            items: [T::default(); N],
         }
     }
 
@@ -51,7 +51,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     /// @requires: the current index is less than the stack capacity
     #[inline]
     pub fn push(&mut self, item: T) {
-        debug_assert!(self.current < CAP, "stack is full");
+        debug_assert!(self.current < N, "stack is full");
         self.items[self.current] = item;
         self.current += 1;
     }
@@ -65,7 +65,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     #[inline]
     pub fn push_next(&mut self) -> &mut T {
         debug_assert!(self.current > 0, "cannot clone from an empty stack");
-        debug_assert!(self.current < CAP, "stack is full");
+        debug_assert!(self.current < N, "stack is full");
 
         let src_item = self.items[self.current - 1];
         let dst_idx = self.current;
@@ -128,7 +128,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     /// @return: true if the stack is full
     #[inline]
     pub fn is_full(&self) -> bool {
-        self.current == CAP
+        self.current == N
     }
 
     /// clear resets the stack to an empty state
@@ -150,6 +150,15 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     #[inline]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         &mut self.items[..self.current]
+    }
+}
+
+/// StackIter is a double-ended iterator over the stack.
+pub type StackIter<'a, T> = slice::Iter<'a, T>;
+
+impl<T: Copyable, const N: usize> Stack<T, N> {
+    pub fn iter(&self) -> StackIter<'_, T> {
+        self.as_slice().iter()
     }
 }
 

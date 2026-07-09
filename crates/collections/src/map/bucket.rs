@@ -1,8 +1,8 @@
 use super::{Entry, EvictionPolicy, Value, ValuePriority};
 use std::marker::PhantomData;
 
-/// DEFAULT_SIZE is the default number of entries per bucket
-pub const DEFAULT_SIZE: usize = 3;
+/// DEFAULT_CAPACITY is the default capacity of a bucket
+pub const DEFAULT_CAPACITY: usize = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SetResult {
@@ -14,17 +14,17 @@ pub(crate) enum SetResult {
 pub(crate) struct Bucket<
     T: Value,
     P: EvictionPolicy<T> = ValuePriority,
-    const SIZE: usize = DEFAULT_SIZE,
+    const N: usize = DEFAULT_CAPACITY,
 > {
-    entries: [Entry<T>; SIZE],
+    entries: [Entry<T>; N],
     _policy: PhantomData<P>,
 }
 
-impl<T: Value, P: EvictionPolicy<T>, const SIZE: usize> Bucket<T, P, SIZE> {
+impl<T: Value, P: EvictionPolicy<T>, const N: usize> Bucket<T, P, N> {
     #[inline]
     pub fn new() -> Self {
         Self {
-            entries: [Entry::new(); SIZE],
+            entries: [Entry::new(); N],
             _policy: PhantomData,
         }
     }
@@ -81,16 +81,16 @@ impl<T: Value, P: EvictionPolicy<T>, const SIZE: usize> Bucket<T, P, SIZE> {
 
     #[inline]
     pub const fn size_of_mem() -> usize {
-        std::mem::size_of::<Entry<T>>() * SIZE
+        std::mem::size_of::<Entry<T>>() * N
     }
 
     #[inline]
     pub const fn capacity() -> usize {
-        SIZE
+        N
     }
 }
 
-impl<T: Value, P: EvictionPolicy<T>, const SIZE: usize> Default for Bucket<T, P, SIZE> {
+impl<T: Value, P: EvictionPolicy<T>, const N: usize> Default for Bucket<T, P, N> {
     #[inline]
     fn default() -> Self {
         Self::new()
