@@ -27,7 +27,7 @@ const DEFAULT_CAPACITY: usize = u8::MAX as usize;
 ///
 /// @type
 pub struct Stack<T: Copyable, const CAP: usize = DEFAULT_CAPACITY> {
-    pub(super) current: usize,  // index of the current state
+    pub(super) current: usize,  // number of active items
     pub(super) items: [T; CAP], // stack of previous states
 }
 
@@ -52,8 +52,8 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     #[inline]
     pub fn push(&mut self, item: T) {
         debug_assert!(self.current < CAP, "stack is full");
-        self.current += 1;
         self.items[self.current] = item;
+        self.current += 1;
     }
 
     /// push_next adds a new item to the stack by deriving it from the copy of
@@ -67,10 +67,11 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
         debug_assert!(self.current > 0, "cannot clone from an empty stack");
         debug_assert!(self.current < CAP, "stack is full");
 
-        let src_item = self.items[self.current];
+        let src_item = self.items[self.current - 1];
+        let dst_idx = self.current;
         self.current += 1;
-        self.items[self.current].copy_from(&src_item);
-        &mut self.items[self.current]
+        self.items[dst_idx].copy_from(&src_item);
+        &mut self.items[dst_idx]
     }
 
     /// pop removes the last item from the stack and returns it
@@ -93,7 +94,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     #[inline]
     pub fn top(&self) -> &T {
         debug_assert!(self.current > 0, "stack is empty");
-        &self.items[self.current]
+        &self.items[self.current - 1]
     }
 
     /// top_mut returns a mutable reference to the top item
@@ -103,7 +104,7 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     #[inline]
     pub fn top_mut(&mut self) -> &mut T {
         debug_assert!(self.current > 0, "stack is empty");
-        &mut self.items[self.current]
+        &mut self.items[self.current - 1]
     }
 
     /// size returns the number of items in the stack
@@ -138,11 +139,96 @@ impl<T: Copyable, const CAP: usize> Stack<T, CAP> {
     pub fn clear(&mut self) {
         self.current = 0;
     }
+
+    /// as_slice returns the active stack items in insertion order.
+    #[inline]
+    pub fn as_slice(&self) -> &[T] {
+        &self.items[..self.current]
+    }
+
+    /// as_mut_slice returns the active stack items in insertion order.
+    #[inline]
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        &mut self.items[..self.current]
+    }
 }
 
 impl<T: Copyable, const CAP: usize> Default for Stack<T, CAP> {
     #[inline]
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
+    struct TestItem(u8);
+
+    impl Copyable for TestItem {
+        fn copy_from(&mut self, other: &Self) {
+            *self = *other;
+        }
+    }
+
+    #[test]
+    fn push_uses_all_capacity() {
+        let mut stack = Stack::<TestItem, 3>::new();
+
+        stack.push(TestItem(1));
+        stack.push(TestItem(2));
+        stack.push(TestItem(3));
+
+        assert!(stack.is_full());
+        assert_eq!(stack.size(), 3);
+        assert_eq!(stack.top(), &TestItem(3));
+        assert_eq!(stack.as_slice(), &[TestItem(1), TestItem(2), TestItem(3)]);
+    }
+
+    #[test]
+    fn push_next_copies_top_item_to_next_slot() {
+        let mut stack = Stack::<TestItem, 3>::new();
+        stack.push(TestItem(7));
+
+        let next = stack.push_next();
+        next.0 += 1;
+
+        assert_eq!(stack.as_slice(), &[TestItem(7), TestItem(8)]);
+    }
+
+    #[test]
+    fn pop_updates_top_and_empty_state() {
+        let mut stack = Stack::<TestItem, 2>::new();
+        stack.push(TestItem(1));
+        stack.push(TestItem(2));
+
+        stack.pop();
+        assert_eq!(stack.top(), &TestItem(1));
+
+        stack.pop();
+        stack.pop();
+        assert!(stack.is_empty());
+    }
+
+    #[test]
+    fn iterator_supports_full_forward_and_reverse_iteration() {
+        let mut stack = Stack::<TestItem, 4>::new();
+        for value in 1..=4 {
+            stack.push(TestItem(value));
+        }
+
+        let forward: Vec<_> = stack.iter().copied().collect();
+        let reverse: Vec<_> = stack.iter().rev().copied().collect();
+
+        assert_eq!(
+            forward,
+            vec![TestItem(1), TestItem(2), TestItem(3), TestItem(4)]
+        );
+        assert_eq!(
+            reverse,
+            vec![TestItem(4), TestItem(3), TestItem(2), TestItem(1)]
+        );
     }
 }

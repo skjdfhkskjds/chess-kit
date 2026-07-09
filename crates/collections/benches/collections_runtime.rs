@@ -24,7 +24,7 @@ fn bench_stack_push_pop<T, const CAP: usize>(
         b.iter(|| {
             let mut stack = Stack::<T, CAP>::new();
             for i in 0..STACK_ITERS {
-                if stack.size() + 1 >= CAP {
+                if stack.is_full() {
                     while !stack.is_empty() {
                         stack.pop();
                     }
@@ -51,7 +51,7 @@ fn bench_stack_push_next<T, const CAP: usize>(
             let mut stack = Stack::<T, CAP>::new();
             stack.push(T::default());
             for i in 0..STACK_ITERS {
-                if stack.size() + 1 >= CAP {
+                if stack.is_full() {
                     while stack.size() > 1 {
                         stack.pop();
                     }
@@ -67,7 +67,7 @@ fn bench_stack_push_next<T, const CAP: usize>(
 
 fn bench_stack_iter(c: &mut Criterion) {
     let mut group = c.benchmark_group("stack/iteration");
-    for len in [16_usize, 128, 254] {
+    for len in [16_usize, 128, 255] {
         group.throughput(Throughput::Elements(len as u64));
         group.bench_function(BenchmarkId::new("forward", len), |b| {
             b.iter_batched(
@@ -89,7 +89,7 @@ fn bench_stack_iter(c: &mut Criterion) {
             );
         });
 
-        group.bench_function(BenchmarkId::new("reverse_partial_until_last", len), |b| {
+        group.bench_function(BenchmarkId::new("reverse", len), |b| {
             b.iter_batched(
                 || {
                     let mut stack = Stack::<SmallState, 255>::new();
@@ -99,10 +99,8 @@ fn bench_stack_iter(c: &mut Criterion) {
                     stack
                 },
                 |stack| {
-                    let mut iter = stack.iter().rev();
                     let mut acc = 0_usize;
-                    for _ in 0..len.saturating_sub(1) {
-                        let item = iter.next().expect("reverse iterator should have an item");
+                    for item in stack.iter().rev() {
                         acc ^= black_box(item as *const SmallState as usize);
                     }
                     black_box(acc)
