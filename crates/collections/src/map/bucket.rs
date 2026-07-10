@@ -16,7 +16,7 @@ pub(crate) struct Bucket<
     P: EvictionPolicy<T> = ValuePriority,
     const N: usize = DEFAULT_CAPACITY,
 > {
-    entries: [Entry<T>; N],
+    entries: [Option<Entry<T>>; N],
     _policy: PhantomData<P>,
 }
 
@@ -24,7 +24,7 @@ impl<T: Value, P: EvictionPolicy<T>, const N: usize> Bucket<T, P, N> {
     #[inline]
     pub fn new() -> Self {
         Self {
-            entries: [Entry::new(); N],
+            entries: [None; N],
             _policy: PhantomData,
         }
     }
@@ -32,7 +32,11 @@ impl<T: Value, P: EvictionPolicy<T>, const N: usize> Bucket<T, P, N> {
     #[inline]
     pub fn get(&self, key: u32) -> Option<&T> {
         for entry in self.entries.iter() {
-            if entry.is_occupied() && entry.key() == key {
+            let Some(entry) = entry else {
+                continue;
+            };
+
+            if entry.key() == key {
                 return Some(entry.data());
             }
         }
@@ -45,15 +49,19 @@ impl<T: Value, P: EvictionPolicy<T>, const N: usize> Bucket<T, P, N> {
     #[inline]
     pub fn set(&mut self, key: u32, data: T) -> SetResult {
         for entry in self.entries.iter_mut() {
-            if entry.is_occupied() && entry.key() == key {
+            let Some(entry) = entry else {
+                continue;
+            };
+
+            if entry.key() == key {
                 entry.set(key, data);
                 return SetResult::Updated;
             }
         }
 
         for entry in self.entries.iter_mut() {
-            if !entry.is_occupied() {
-                entry.set(key, data);
+            if entry.is_none() {
+                *entry = Some(Entry::new(key, data));
                 return SetResult::Inserted;
             }
         }
@@ -61,6 +69,7 @@ impl<T: Value, P: EvictionPolicy<T>, const N: usize> Bucket<T, P, N> {
         let mut min_priority = i16::MAX;
         let mut min_priority_idx = 0;
         for (i, entry) in self.entries.iter().enumerate() {
+            let entry = entry.expect("full bucket contains only occupied entries");
             let priority = P::priority(entry.data());
             if priority < min_priority {
                 min_priority = priority;
@@ -68,20 +77,20 @@ impl<T: Value, P: EvictionPolicy<T>, const N: usize> Bucket<T, P, N> {
             }
         }
 
-        self.entries[min_priority_idx].set(key, data);
+        self.entries[min_priority_idx] = Some(Entry::new(key, data));
         SetResult::Evicted
     }
 
     #[inline]
     pub fn clear(&mut self) {
         for entry in self.entries.iter_mut() {
-            entry.clear();
+            *entry = None;
         }
     }
 
     #[inline]
     pub const fn size_of_mem() -> usize {
-        std::mem::size_of::<Entry<T>>() * N
+        std::mem::size_of::<Option<Entry<T>>>() * N
     }
 
     #[inline]
