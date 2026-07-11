@@ -1,5 +1,5 @@
 mod fixtures;
-mod support;
+mod utils;
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughput};
 use fixtures::CompactValue;
@@ -9,8 +9,8 @@ use std::hint::black_box;
 const MAP_ITEMS: usize = 20_000;
 
 fn performance_benches(c: &mut Criterion) {
-    let keys = support::map::compact_keys();
-    let values = support::map::compact_values();
+    let keys = utils::map::compact_keys();
+    let values = utils::map::compact_values();
     let mut group = c.benchmark_group("baseline/std_hash_map_non_equivalent");
     group.throughput(Throughput::Elements(MAP_ITEMS as u64));
     group.bench_function("insert", |b| {
