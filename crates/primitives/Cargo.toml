@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 chess-kit-derive = { path = "../macros" }
+chess-kit-collections = { path = "../collections" }

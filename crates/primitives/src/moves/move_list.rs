@@ -1,5 +1,6 @@
 use crate::moves::Move;
-use core::mem::MaybeUninit;
+use chess_kit_collections::{FixedArray, Retain};
+use core::slice;
 
 const MAX_MOVES: usize = 256;
 
@@ -7,8 +8,7 @@ const MAX_MOVES: usize = 256;
 ///
 /// @type
 pub struct MoveList {
-    len: usize,
-    buf: [MaybeUninit<Move>; MAX_MOVES],
+    moves: FixedArray<Move, MAX_MOVES>,
 }
 
 impl MoveList {
@@ -16,124 +16,96 @@ impl MoveList {
     ///
     /// @return: new move list
     pub const fn new() -> Self {
-        // Note: the internal buffer is uninitialized since the API contract
-        //       does not assume that there is any valid data in the buffer
-        //       on construction. When used in the move generator, the buffer
-        //       is filled with moves from `push`, so this is safe.
-        const UNINIT: MaybeUninit<Move> = MaybeUninit::uninit();
         Self {
-            len: 0,
-            buf: [UNINIT; MAX_MOVES],
+            moves: FixedArray::new(),
         }
     }
 
-    /// clear clears the move list
-    ///
-    /// @return: void
+    /// clear clears the move list.
     #[inline]
     pub fn clear(&mut self) {
-        self.len = 0;
+        self.moves.clear();
     }
 
-    /// push pushes a move to the move list
-    ///
-    /// @param: mv - move to push
-    /// @return: void
-    /// @side-effects: modifies the `move list`
+    /// push pushes a move to the move list.
     #[inline]
     pub fn push(&mut self, mv: Move) {
-        debug_assert!(self.len < MAX_MOVES);
-        self.buf[self.len].write(mv);
-        self.len += 1;
+        self.moves.push(mv);
     }
 
-    /// len returns the number of moves in the move list
-    ///
-    /// @return: number of moves in the move list
+    /// len returns the number of moves in the move list.
     #[inline]
     pub fn len(&self) -> usize {
-        self.len
+        self.moves.len()
     }
 
-    /// is_empty returns true if the move list is empty
-    ///
-    /// @return: true if the move list is empty
+    /// capacity returns the maximum number of moves this list can hold.
+    #[inline]
+    pub const fn capacity(&self) -> usize {
+        self.moves.capacity()
+    }
+
+    /// is_empty returns true if the move list is empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.len == 0
+        self.moves.is_empty()
     }
 
-    /// get returns the move at the given index
-    ///
-    /// Note: this is an unsafe operation since it assumes that the index is
-    ///       valid, but we allow this for performance reasons.
-    ///
-    /// @param: idx - index of the move to get
-    /// @return: move at the given index
+    /// is_full returns true if the move list cannot hold another move.
     #[inline]
-    pub fn get(&self, idx: usize) -> Move {
-        unsafe { self.buf[idx].assume_init() }
+    pub fn is_full(&self) -> bool {
+        self.moves.is_full()
     }
 
-    /// get_safe returns the move at the given index, or None if the index is
-    /// out of bounds.
-    ///
-    /// @param: idx - index of the move to get
-    /// @return: move at the given index, or None if the index is out of bounds
+    /// get returns the move at the given index, or None if it is out of bounds.
     #[inline]
-    pub fn get_safe(&self, idx: usize) -> Option<Move> {
-        (idx < self.len).then(|| self.get(idx))
+    pub fn get(&self, idx: usize) -> Option<&Move> {
+        self.moves.get(idx)
     }
 
-    /// get_mut returns a mutable reference to the move at the given index
-    ///
-    /// Note: this is an unsafe operation since it assumes that the index is
-    ///       valid, but we allow this for performance reasons.
-    ///
-    /// @param: idx - index of the move to get
-    /// @return: mutable reference to the move at the given index
+    /// get_mut returns a mutable move at the given index, or None if it is out
+    /// of bounds.
     #[inline]
-    pub fn get_mut(&mut self, idx: usize) -> &mut Move {
-        unsafe { self.buf[idx].assume_init_mut() }
+    pub fn get_mut(&mut self, idx: usize) -> Option<&mut Move> {
+        self.moves.get_mut(idx)
     }
 
-    /// get_mut_safe returns a mutable reference to the move at the given index,
-    /// or None if the index is out of bounds.
-    ///
-    /// @param: idx - index of the move to get
-    /// @return: mutable reference to the move at the given index
+    /// as_slice returns the generated moves in insertion order.
     #[inline]
-    pub fn get_mut_safe(&mut self, idx: usize) -> Option<&mut Move> {
-        (idx < self.len).then(|| self.get_mut(idx))
+    pub fn as_slice(&self) -> &[Move] {
+        self.moves.as_slice()
     }
 
-    /// iter iterates over the moves in the move list
-    ///
-    /// @return: iterator over the moves in the move list
+    /// as_mut_slice returns the generated moves in insertion order.
     #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = Move> + '_ {
-        (0..self.len).map(move |i| unsafe { self.buf[i].assume_init() })
+    pub fn as_mut_slice(&mut self) -> &mut [Move] {
+        self.moves.as_mut_slice()
     }
 
-    /// filter filters the move list by the given predicate
-    ///
-    /// @param: predicate - predicate to filter the move list by
-    /// @return: void
-    /// @side-effects: modifies the `move list`
+    /// filter removes moves that do not satisfy `predicate`.
     #[inline]
-    pub fn filter(&mut self, predicate: impl Fn(Move) -> bool) {
-        let mut write = 0;
+    pub fn filter(&mut self, mut predicate: impl FnMut(Move) -> bool) {
+        Retain::retain(&mut self.moves, |mv| predicate(*mv));
+    }
+}
 
-        for read in 0..self.len {
-            if predicate(unsafe { self.buf[read].assume_init() }) {
-                if write != read {
-                    self.buf.swap(write, read);
-                }
-                write += 1;
-            }
-        }
+impl<'a> IntoIterator for &'a MoveList {
+    type Item = &'a Move;
+    type IntoIter = slice::Iter<'a, Move>;
 
-        self.len = write;
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        (&self.moves).into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut MoveList {
+    type Item = &'a mut Move;
+    type IntoIter = slice::IterMut<'a, Move>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        (&mut self.moves).into_iter()
     }
 }
 
@@ -141,5 +113,48 @@ impl Default for MoveList {
     #[inline]
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Square::{A1, A2, B1, B2, C1, C2};
+
+    #[test]
+    fn exposes_collection_behavior_without_exposing_storage() {
+        let first = Move::new(A1, A2);
+        let second = Move::new(B1, B2);
+        let mut moves = MoveList::new();
+
+        assert_eq!(moves.capacity(), 256);
+        assert!(moves.is_empty());
+        assert!(!moves.is_full());
+
+        moves.push(first);
+        moves.push(second);
+
+        assert_eq!(moves.get(0), Some(&first));
+        assert_eq!(moves.get(2), None);
+        assert_eq!(
+            (&moves).into_iter().copied().collect::<Vec<_>>(),
+            vec![first, second]
+        );
+
+        *moves.get_mut(0).unwrap() = Move::new(C1, C2);
+        assert_eq!(moves.as_slice()[0], Move::new(C1, C2));
+    }
+
+    #[test]
+    fn filter_keeps_moves_in_order() {
+        let mut moves = MoveList::new();
+        moves.push(Move::new(A1, A2));
+        moves.push(Move::new(B1, B2));
+        moves.push(Move::new(C1, C2));
+
+        moves.filter(|mv| mv.from() != B1);
+
+        assert_eq!(moves.len(), 2);
+        assert_eq!(moves.as_slice(), &[Move::new(A1, A2), Move::new(C1, C2)]);
     }
 }

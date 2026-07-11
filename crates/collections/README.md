@@ -4,8 +4,13 @@ Custom collection types used by `chess-kit`.
 
 ## Types
 
+- `FixedArray<T, N>`: fixed-capacity, variable-length collection with inline storage.
 - `Stack<T, N>`: fixed-capacity stack for copyable state histories.
 - `Map<K, V, Hasher, Policy>`: fixed-memory hash map with bucket-local entries and priority-based eviction.
+
+## Traits
+
+- `Retain<T>`: in-place, order-preserving removal of items that do not match a predicate.
 
 ## Testing
 
@@ -37,6 +42,7 @@ cargo bench -p chess-kit-collections --bench stack_history_state --no-run
 cargo bench -p chess-kit-collections --bench map_compact_value --no-run
 cargo bench -p chess-kit-collections --bench map_wide_value --no-run
 cargo bench -p chess-kit-collections --bench baseline_std_hash_map --no-run
+cargo bench -p chess-kit-collections --bench fixed_array --no-run
 ```
 
 Run benchmarks isolated by collection variant:
@@ -46,6 +52,7 @@ cargo bench -p chess-kit-collections --bench stack_small_state
 cargo bench -p chess-kit-collections --bench stack_history_state
 cargo bench -p chess-kit-collections --bench map_compact_value
 cargo bench -p chess-kit-collections --bench map_wide_value
+cargo bench -p chess-kit-collections --bench fixed_array
 ```
 
 Run the non-equivalent standard library baseline:

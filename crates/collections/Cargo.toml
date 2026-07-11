@@ -25,3 +25,7 @@ harness = false
 [[bench]]
 name = "baseline_std_hash_map"
 harness = false
+
+[[bench]]
+name = "fixed_array"
+harness = false

@@ -148,6 +148,7 @@ dependencies = [
 name = "chess-kit-primitives"
 version = "0.1.0"
 dependencies = [
+ "chess-kit-collections",
  "chess-kit-derive",
 ]
 
