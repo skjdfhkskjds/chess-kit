@@ -1,5 +1,5 @@
 use crate::moves::Move;
-use chess_kit_collections::{FixedArray, Retain};
+use chess_kit_collections::FixedArray;
 use core::slice;
 
 const MAX_MOVES: usize = 256;
@@ -82,10 +82,10 @@ impl MoveList {
         self.moves.as_mut_slice()
     }
 
-    /// filter removes moves that do not satisfy `predicate`.
+    /// Removes every move for which `predicate` returns `false`.
     #[inline]
-    pub fn filter(&mut self, mut predicate: impl FnMut(Move) -> bool) {
-        Retain::retain(&mut self.moves, |mv| predicate(*mv));
+    pub fn retain(&mut self, predicate: impl FnMut(&Move) -> bool) {
+        self.moves.retain(predicate);
     }
 }
 
@@ -146,13 +146,13 @@ mod tests {
     }
 
     #[test]
-    fn filter_keeps_moves_in_order() {
+    fn retain_keeps_moves_in_order() {
         let mut moves = MoveList::new();
         moves.push(Move::new(A1, A2));
         moves.push(Move::new(B1, B2));
         moves.push(Move::new(C1, C2));
 
-        moves.filter(|mv| mv.from() != B1);
+        moves.retain(|mv| mv.from() != B1);
 
         assert_eq!(moves.len(), 2);
         assert_eq!(moves.as_slice(), &[Move::new(A1, A2), Move::new(C1, C2)]);

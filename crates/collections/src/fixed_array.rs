@@ -10,13 +10,6 @@ use core::{
     slice::SliceIndex,
 };
 
-/// Retain is implemented by collections that can remove items in place while
-/// preserving the order of the items that remain.
-pub trait Retain<T> {
-    /// Removes every item for which `predicate` returns `false`.
-    fn retain(&mut self, predicate: impl FnMut(&T) -> bool);
-}
-
 /// A fixed-capacity vector backed by inline storage.
 ///
 /// `FixedArray` never allocates. Its capacity is part of the type and only the
@@ -28,9 +21,6 @@ pub struct FixedArray<T, const N: usize> {
 }
 
 impl<T, const N: usize> FixedArray<T, N> {
-    /// The number of elements available in the inline allocation.
-    pub const CAPACITY: usize = N;
-
     /// Creates an empty fixed-capacity vector.
     #[inline]
     pub const fn new() -> Self {
@@ -300,11 +290,10 @@ impl<T, const N: usize> FixedArray<T, N> {
         unsafe { hint::assert_unchecked(new_len <= N) };
         self.len = new_len;
     }
-}
 
-impl<T, const N: usize> Retain<T> for FixedArray<T, N> {
+    /// Removes every item for which `predicate` returns `false`.
     #[inline]
-    fn retain(&mut self, mut predicate: impl FnMut(&T) -> bool) {
+    pub fn retain(&mut self, mut predicate: impl FnMut(&T) -> bool) {
         let original_len = self.len;
         let mut first_removed = 0;
 

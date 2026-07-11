@@ -4,13 +4,9 @@ Custom collection types used by `chess-kit`.
 
 ## Types
 
-- `FixedArray<T, N>`: fixed-capacity, variable-length collection with inline storage.
+- `FixedArray<T, N>`: fixed-capacity, variable-length collection with inline storage and in-place, order-preserving retention.
 - `Stack<T, N>`: fixed-capacity stack for copyable state histories.
 - `Map<K, V, Hasher, Policy>`: fixed-memory hash map with bucket-local entries and priority-based eviction.
-
-## Traits
-
-- `Retain<T>`: in-place, order-preserving removal of items that do not match a predicate.
 
 ## Testing
 

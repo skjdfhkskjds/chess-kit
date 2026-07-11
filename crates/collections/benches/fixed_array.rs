@@ -1,4 +1,4 @@
-use chess_kit_collections::{FixedArray, Retain};
+use chess_kit_collections::FixedArray;
 use criterion::{BatchSize, Criterion, Throughput, criterion_group, criterion_main};
 use std::hint::black_box;
 
