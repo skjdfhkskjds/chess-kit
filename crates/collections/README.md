@@ -41,6 +41,7 @@ cargo bench -p chess-kit-collections --bench stack_small_state --no-run
 cargo bench -p chess-kit-collections --bench stack_history_state --no-run
 cargo bench -p chess-kit-collections --bench map_compact_value --no-run
 cargo bench -p chess-kit-collections --bench map_wide_value --no-run
+cargo bench -p chess-kit-collections --bench map_node_value --no-run
 cargo bench -p chess-kit-collections --bench baseline_std_hash_map --no-run
 cargo bench -p chess-kit-collections --bench fixed_array --no-run
 ```
@@ -52,6 +53,7 @@ cargo bench -p chess-kit-collections --bench stack_small_state
 cargo bench -p chess-kit-collections --bench stack_history_state
 cargo bench -p chess-kit-collections --bench map_compact_value
 cargo bench -p chess-kit-collections --bench map_wide_value
+cargo bench -p chess-kit-collections --bench map_node_value
 cargo bench -p chess-kit-collections --bench fixed_array
 ```
 

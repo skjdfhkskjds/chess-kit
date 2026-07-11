@@ -23,6 +23,10 @@ name = "map_wide_value"
 harness = false
 
 [[bench]]
+name = "map_node_value"
+harness = false
+
+[[bench]]
 name = "baseline_std_hash_map"
 harness = false
 

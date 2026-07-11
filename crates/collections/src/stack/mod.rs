@@ -27,8 +27,8 @@ const DEFAULT_CAPACITY: usize = u8::MAX as usize;
 ///
 /// @type
 pub struct Stack<T: Copyable, const N: usize = DEFAULT_CAPACITY> {
-    pub(super) current: usize,  // number of active items
-    pub(super) items: [T; N],   // stack of previous states
+    pub(super) current: usize, // number of active items
+    pub(super) items: [T; N],  // stack of previous states
 }
 
 impl<T: Copyable, const N: usize> Stack<T, N> {
@@ -51,7 +51,7 @@ impl<T: Copyable, const N: usize> Stack<T, N> {
     /// @requires: the current index is less than the stack capacity
     #[inline]
     pub fn push(&mut self, item: T) {
-        debug_assert!(self.current < N, "stack is full");
+        assert!(self.current < N, "stack is full");
         self.items[self.current] = item;
         self.current += 1;
     }
@@ -67,11 +67,13 @@ impl<T: Copyable, const N: usize> Stack<T, N> {
         debug_assert!(self.current > 0, "cannot clone from an empty stack");
         debug_assert!(self.current < N, "stack is full");
 
-        let src_item = self.items[self.current - 1];
-        let dst_idx = self.current;
-        self.current += 1;
-        self.items[dst_idx].copy_from(&src_item);
-        &mut self.items[dst_idx]
+        let current = self.current;
+        let (active, spare) = self.items.split_at_mut(current);
+        let src_item = &active[current - 1];
+        let dst_item = &mut spare[0];
+        self.current = current + 1;
+        dst_item.copy_from(src_item);
+        dst_item
     }
 
     /// pop removes the last item from the stack and returns it
@@ -93,7 +95,7 @@ impl<T: Copyable, const N: usize> Stack<T, N> {
     /// @requires: the stack is non-empty
     #[inline]
     pub fn top(&self) -> &T {
-        debug_assert!(self.current > 0, "stack is empty");
+        assert!(self.current > 0, "stack is empty");
         &self.items[self.current - 1]
     }
 
@@ -103,7 +105,7 @@ impl<T: Copyable, const N: usize> Stack<T, N> {
     /// @requires: the stack is non-empty
     #[inline]
     pub fn top_mut(&mut self) -> &mut T {
-        debug_assert!(self.current > 0, "stack is empty");
+        assert!(self.current > 0, "stack is empty");
         &mut self.items[self.current - 1]
     }
 

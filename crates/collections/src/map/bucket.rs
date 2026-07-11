@@ -20,6 +20,16 @@ pub(crate) struct Bucket<
     _policy: PhantomData<P>,
 }
 
+impl<T: Value, P: EvictionPolicy<T>, const N: usize> Clone for Bucket<T, P, N> {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            entries: self.entries,
+            _policy: PhantomData,
+        }
+    }
+}
+
 impl<T: Value, P: EvictionPolicy<T>, const N: usize> Bucket<T, P, N> {
     #[inline]
     pub fn new() -> Self {
@@ -48,32 +58,30 @@ impl<T: Value, P: EvictionPolicy<T>, const N: usize> Bucket<T, P, N> {
     /// only when the bucket is already full.
     #[inline]
     pub fn set(&mut self, key: u32, data: T) -> SetResult {
-        for entry in self.entries.iter_mut() {
-            let Some(entry) = entry else {
-                continue;
-            };
-
-            if entry.key() == key {
-                entry.set(key, data);
-                return SetResult::Updated;
-            }
-        }
-
-        for entry in self.entries.iter_mut() {
-            if entry.is_none() {
-                *entry = Some(Entry::new(key, data));
-                return SetResult::Inserted;
+        for slot in self.entries.iter_mut() {
+            match slot {
+                Some(entry) if entry.key() == key => {
+                    entry.set(key, data);
+                    return SetResult::Updated;
+                }
+                Some(_) => {}
+                None => {
+                    // Buckets maintain an occupied prefix, so the key cannot
+                    // occur after this slot and no second scan is needed.
+                    *slot = Some(Entry::new(key, data));
+                    return SetResult::Inserted;
+                }
             }
         }
 
         let mut min_priority = i16::MAX;
         let mut min_priority_idx = 0;
-        for (i, entry) in self.entries.iter().enumerate() {
+        for (index, entry) in self.entries.iter().enumerate() {
             let entry = entry.expect("full bucket contains only occupied entries");
             let priority = P::priority(entry.data());
             if priority < min_priority {
                 min_priority = priority;
-                min_priority_idx = i;
+                min_priority_idx = index;
             }
         }
 

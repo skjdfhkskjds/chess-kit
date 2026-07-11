@@ -86,14 +86,17 @@ impl<K, V: Value, Hasher: HashFn<K>, Policy: EvictionPolicy<V>> Map<K, V, Hasher
     /// @return: a new map
     pub fn new(memory_size: usize) -> Self {
         let (bucket_count, capacity) = Self::calculate_sizes(memory_size);
+        let buckets = if bucket_count == 0 {
+            Vec::new()
+        } else {
+            vec![Bucket::<V, Policy>::new(); bucket_count]
+        };
 
         Self {
             len: 0,
             capacity,
             memory_size,
-            buckets: (0..bucket_count)
-                .map(|_| Bucket::<V, Policy>::new())
-                .collect(),
+            buckets,
             _key: PhantomData,
             _hasher: PhantomData,
             _policy: PhantomData,
