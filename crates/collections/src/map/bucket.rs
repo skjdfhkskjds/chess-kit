@@ -2,7 +2,7 @@ use super::{Entry, EvictionPolicy, Value, ValuePriority};
 use std::marker::PhantomData;
 
 /// DEFAULT_CAPACITY is the default capacity of a bucket
-pub const DEFAULT_CAPACITY: usize = 3;
+pub const DEFAULT_CAPACITY: usize = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SetResult {

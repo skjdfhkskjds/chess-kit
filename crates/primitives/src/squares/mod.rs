@@ -1,14 +1,14 @@
 mod display;
 
 use crate::{File, Rank};
-use chess_kit_derive::{EnumBitOps, IndexableEnum};
+use chess_kit_derive::{BitOps, IndexableEnum};
 
 /// `Square` is an enum that represents a square on the chess board. It is intended to provide
 /// a type-safe way to represent (and index on) a square on the board.
 ///
 /// @type
 #[repr(u8)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Hash, EnumBitOps, IndexableEnum)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Hash, BitOps, IndexableEnum)]
 #[rustfmt::skip]
 pub enum Square {
     A1, B1, C1, D1, E1, F1, G1, H1,
