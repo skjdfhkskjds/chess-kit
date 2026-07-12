@@ -68,12 +68,12 @@ impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
                 // generate all the pseudo-legal moves
                 self.generate_moves_for_side::<White, PositionT>(position, list, move_type);
 
-                // filter the moves to only include legal moves
-                list.filter(|mv| {
+                // retain the moves to only include legal moves
+                list.retain(|mv| {
                     !(((pinned.has_square(mv.from()))
                         || mv.from() == king_square
                         || matches!(mv.type_of(), EnPassant))
-                        && !position.is_legal_move::<White>(mv))
+                        && !position.is_legal_move::<White>(*mv))
                 })
             }
             Sides::Black => {
@@ -84,12 +84,12 @@ impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
                 // generate all the pseudo-legal moves
                 self.generate_moves_for_side::<Black, PositionT>(position, list, move_type);
 
-                // filter the moves to only include legal moves
-                list.filter(|mv| {
+                // retain the moves to only include legal moves
+                list.retain(|mv| {
                     !(((pinned.has_square(mv.from()))
                         || mv.from() == king_square
                         || matches!(mv.type_of(), EnPassant))
-                        && !position.is_legal_move::<Black>(mv))
+                        && !position.is_legal_move::<Black>(*mv))
                 })
             }
         }

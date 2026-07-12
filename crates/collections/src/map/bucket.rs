@@ -1,102 +1,176 @@
-use super::{Entry, Value};
+use super::{Entry, EvictionPolicy, Value, ValuePriority};
+use std::marker::PhantomData;
 
-/// DEFAULT_SIZE is the default number of entries per bucket
-pub const DEFAULT_SIZE: usize = 3;
+/// DEFAULT_CAPACITY is the default capacity of a bucket
+pub const DEFAULT_CAPACITY: usize = 4;
 
-/// Bucket is a collection of entries that are used to store data in a map
-///
-/// @type
-#[derive(Clone)]
-pub struct Bucket<T: Value, const SIZE: usize = DEFAULT_SIZE> {
-    entries: [Entry<T>; SIZE],
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SetResult {
+    Inserted,
+    Updated,
+    Evicted,
 }
 
-impl<T: Value, const SIZE: usize> Bucket<T, SIZE> {
-    /// new creates a new bucket with all entries initialized to empty
-    ///
-    /// @return: new bucket
+pub(crate) struct Bucket<
+    T: Value,
+    P: EvictionPolicy<T> = ValuePriority,
+    const N: usize = DEFAULT_CAPACITY,
+> {
+    entries: [Option<Entry<T>>; N],
+    _policy: PhantomData<P>,
+}
+
+impl<T: Value, P: EvictionPolicy<T>, const N: usize> Clone for Bucket<T, P, N> {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            entries: self.entries,
+            _policy: PhantomData,
+        }
+    }
+}
+
+impl<T: Value, P: EvictionPolicy<T>, const N: usize> Bucket<T, P, N> {
     #[inline]
     pub fn new() -> Self {
         Self {
-            entries: [Entry::new(); SIZE],
+            entries: [None; N],
+            _policy: PhantomData,
         }
     }
 
-    /// get fetches the first entry with the given key
-    ///
-    /// @param: key - key to fetch the data for
-    /// @return: data if the key is found, None otherwise
     #[inline]
     pub fn get(&self, key: u32) -> Option<&T> {
         for entry in self.entries.iter() {
+            let Some(entry) = entry else {
+                continue;
+            };
+
             if entry.key() == key {
                 return Some(entry.data());
             }
         }
+
         None
     }
 
-    /// set sets the value of the entry with the lowest priority to the given key
-    /// data pair
-    ///
-    /// @param: key - key to set the value to
-    /// @param: data - data to set the value to
-    /// @return: true if an entry was set for the first time, false otherwise
+    /// Inserts or updates a key/value pair, evicting the lowest-priority entry
+    /// only when the bucket is already full.
     #[inline]
-    pub fn set(&mut self, key: u32, data: T) -> bool {
-        // find the index of the entry with the lowest priority
-        let mut min_priority = i8::MAX;
-        let mut min_priority_idx = 0;
-        for i in 0..SIZE {
-            let priority = self.entries[i].data().priority();
-            if priority < min_priority {
-                min_priority = priority;
-                min_priority_idx = i;
+    pub fn set(&mut self, key: u32, data: T) -> SetResult {
+        for slot in self.entries.iter_mut() {
+            match slot {
+                Some(entry) if entry.key() == key => {
+                    entry.set(key, data);
+                    return SetResult::Updated;
+                }
+                Some(_) => {}
+                None => {
+                    // Buckets maintain an occupied prefix, so the key cannot
+                    // occur after this slot and no second scan is needed.
+                    *slot = Some(Entry::new(key, data));
+                    return SetResult::Inserted;
+                }
             }
         }
 
-        // check if the entry was dirty before this operation
-        let was_dirty = self.entries[min_priority_idx].is_dirty();
+        let mut min_priority = i16::MAX;
+        let mut min_priority_idx = 0;
+        for (index, entry) in self.entries.iter().enumerate() {
+            let entry = entry.expect("full bucket contains only occupied entries");
+            let priority = P::priority(entry.data());
+            if priority < min_priority {
+                min_priority = priority;
+                min_priority_idx = index;
+            }
+        }
 
-        // set the value of the entry
-        //
-        // note: we always replace the old value
-        self.entries[min_priority_idx].set(key, data);
-
-        !was_dirty
+        self.entries[min_priority_idx] = Some(Entry::new(key, data));
+        SetResult::Evicted
     }
 
-    /// clear clears the bucket to a clean state
-    ///
-    /// @return: void
-    /// @side-effects: clears each entry in the bucket
     #[inline]
     pub fn clear(&mut self) {
         for entry in self.entries.iter_mut() {
-            entry.clear();
+            *entry = None;
         }
     }
 
-    /// size_of_mem returns the size of the memory occupied by the bucket
-    ///
-    /// @return: size of the memory occupied by the bucket
     #[inline]
     pub const fn size_of_mem() -> usize {
-        std::mem::size_of::<Entry<T>>() * DEFAULT_SIZE
+        std::mem::size_of::<Option<Entry<T>>>() * N
     }
 
-    /// capacity returns the maximum number of entries in the bucket
-    ///
-    /// @return: maximum number of entries in the bucket
     #[inline]
     pub const fn capacity() -> usize {
-        DEFAULT_SIZE
+        N
     }
 }
 
-impl<T: Value, const SIZE: usize> Default for Bucket<T, SIZE> {
+impl<T: Value, P: EvictionPolicy<T>, const N: usize> Default for Bucket<T, P, N> {
     #[inline]
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
+    struct TestValue(i8);
+
+    impl Value for TestValue {
+        fn priority(&self) -> i8 {
+            self.0
+        }
+    }
+
+    #[test]
+    fn get_ignores_empty_entries_with_matching_default_key() {
+        let bucket = Bucket::<TestValue>::new();
+
+        assert_eq!(bucket.get(0), None);
+    }
+
+    #[test]
+    fn set_updates_existing_key_before_eviction() {
+        let mut bucket = Bucket::<TestValue>::new();
+
+        assert_eq!(bucket.set(1, TestValue(1)), SetResult::Inserted);
+        assert_eq!(bucket.set(2, TestValue(2)), SetResult::Inserted);
+        assert_eq!(bucket.set(3, TestValue(3)), SetResult::Inserted);
+        assert_eq!(bucket.set(1, TestValue(9)), SetResult::Updated);
+
+        assert_eq!(bucket.get(1), Some(&TestValue(9)));
+        assert_eq!(bucket.get(2), Some(&TestValue(2)));
+        assert_eq!(bucket.get(3), Some(&TestValue(3)));
+    }
+
+    #[test]
+    fn set_uses_empty_slots_before_comparing_priorities() {
+        let mut bucket = Bucket::<TestValue>::new();
+
+        assert_eq!(bucket.set(1, TestValue(9)), SetResult::Inserted);
+        assert_eq!(bucket.set(2, TestValue(8)), SetResult::Inserted);
+
+        assert_eq!(bucket.get(1), Some(&TestValue(9)));
+        assert_eq!(bucket.get(2), Some(&TestValue(8)));
+    }
+
+    #[test]
+    fn set_evicts_lowest_priority_when_full() {
+        let mut bucket = Bucket::<TestValue>::new();
+
+        bucket.set(1, TestValue(9));
+        bucket.set(2, TestValue(1));
+        bucket.set(3, TestValue(5));
+        assert_eq!(bucket.set(4, TestValue(7)), SetResult::Evicted);
+
+        assert_eq!(bucket.get(1), Some(&TestValue(9)));
+        assert_eq!(bucket.get(2), None);
+        assert_eq!(bucket.get(3), Some(&TestValue(5)));
+        assert_eq!(bucket.get(4), Some(&TestValue(7)));
     }
 }
