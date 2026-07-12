@@ -2,3 +2,34 @@
 name = "chess-kit-collections"
 version = "0.1.0"
 edition = "2024"
+
+[dev-dependencies]
+criterion = { version = "0.8", features = ["html_reports"] }
+
+[[bench]]
+name = "stack_small_state"
+harness = false
+
+[[bench]]
+name = "stack_history_state"
+harness = false
+
+[[bench]]
+name = "map_compact_value"
+harness = false
+
+[[bench]]
+name = "map_wide_value"
+harness = false
+
+[[bench]]
+name = "map_node_value"
+harness = false
+
+[[bench]]
+name = "baseline_std_hash_map"
+harness = false
+
+[[bench]]
+name = "fixed_array"
+harness = false

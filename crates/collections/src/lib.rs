@@ -1,5 +1,7 @@
+mod fixed_array;
 mod map;
 mod stack;
 
-pub use map::{Bucket, Entry, HashFn, Map, Value};
+pub use fixed_array::{FixedArray, FixedArrayIntoIter};
+pub use map::{EvictionPolicy, HashFn, HashKey, Map, Value, ValuePriority};
 pub use stack::{Copyable, Stack};

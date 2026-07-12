@@ -1,31 +1,48 @@
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
 
+mod bitops;
 mod enum_types;
 mod tuple;
 
-/// Derives the bitwise operator suite for tuple structs with a single field.
+/// Derives the bitwise operator suite for supported tuple structs and enums.
 ///
-/// The struct must have a single field that is a primitive type.
+/// Tuple structs must be non-generic and have a single primitive field.
+/// Enums must be non-generic, fieldless, and use an unsigned integer `repr`.
+///
+/// Enum operations must only produce values represented by an enum variant.
+/// Producing any other value is undefined behavior.
 ///
 /// ```
 /// use chess_kit_derive::BitOps;
 ///
-/// #[derive(BitOps, Copy, Clone, PartialEq, Eq)]
-/// struct BitOps(u8);
+/// #[derive(BitOps, Copy, Clone, Debug, PartialEq, Eq)]
+/// struct Flags(u8);
 ///
-/// let bitops = BitOps(0b1010);
-/// assert_eq!(bitops.bitand(BitOps(0b1100)), BitOps(0b1000));
-/// assert_eq!(bitops.bitor(BitOps(0b1100)), BitOps(0b1110));
-/// assert_eq!(bitops.bitxor(BitOps(0b1100)), BitOps(0b0110));
-/// assert_eq!(bitops.bitnot(), BitOps(0b0101));
-/// assert_eq!(bitops.bitshift_left(2), BitOps(0b101000));
-/// assert_eq!(bitops.bitshift_right(2), BitOps(0b101));
+/// assert_eq!(Flags(0b1010) & Flags(0b1100), Flags(0b1000));
+/// assert_eq!(Flags(0b1010) | Flags(0b1100), Flags(0b1110));
+/// assert_eq!(Flags(0b1010) ^ Flags(0b1100), Flags(0b0110));
+/// assert_eq!(Flags(0b1010) << 2_u8, Flags(0b101000));
+/// ```
+///
+/// ```
+/// use chess_kit_derive::BitOps;
+///
+/// #[derive(BitOps, Copy, Clone, Debug, PartialEq, Eq)]
+/// #[repr(u8)]
+/// enum Mask {
+///     Empty = 0,
+///     FileA = 1,
+///     FileB = 2,
+///     FileAB = 3,
+/// }
+///
+/// assert_eq!(Mask::FileA | Mask::FileB, Mask::FileAB);
 /// ```
 #[proc_macro_derive(BitOps)]
 pub fn derive_bitops(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    match tuple::bitops::expand_bitops(&input) {
+    match bitops::expand_bitops(&input) {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }
@@ -50,37 +67,6 @@ pub fn derive_bitops(input: TokenStream) -> TokenStream {
 pub fn derive_arithmetic(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     match tuple::arithmetic::expand_arithmetic(&input) {
-        Ok(tokens) => tokens.into(),
-        Err(err) => err.to_compile_error().into(),
-    }
-}
-
-/// Derives the bitwise operator suite for fieldless `#[repr(<unsigned>)]` enums.
-///
-/// The enum must list every discriminant that can be produced by the operators.
-/// If a bit operation yields a value without a corresponding variant the program
-/// will have undefined behaviour because the macro converts through
-/// `mem::transmute`.
-///
-/// ```
-/// use chess_kit_derive::EnumBitOps;
-///
-/// #[derive(EnumBitOps, Copy, Clone, PartialEq, Eq)]
-/// #[repr(u8)]
-/// enum Mask {
-///     Empty = 0,
-///     FileA = 0b0000_0001,
-///     FileB = 0b0000_0010,
-///     FileAB = 0b0000_0011,
-/// }
-///
-/// let mask = Mask::FileA | Mask::FileB;
-/// assert_eq!(mask as u8, Mask::FileAB as u8);
-/// ```
-#[proc_macro_derive(EnumBitOps)]
-pub fn derive_enum_bitops(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    match enum_types::bitops::expand_enum_bitops(&input) {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }
