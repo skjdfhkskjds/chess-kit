@@ -4,10 +4,8 @@ mod state;
 pub use state::DefaultState;
 
 use chess_kit_collections::{Copyable, Stack};
-use chess_kit_primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
+use chess_kit_primitives::{Bitboard, Castling, Clock, Pieces, Side, Sides, Square, ZobristKey};
 use std::fmt::Display;
-
-pub type Clock = u16;
 
 /// History is a stack of states representing the state history of a position
 ///

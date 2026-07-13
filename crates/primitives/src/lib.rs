@@ -1,5 +1,6 @@
 pub mod bitboard;
 pub mod castling;
+pub mod clock;
 pub mod direction;
 pub mod files;
 pub mod moves;
@@ -11,6 +12,7 @@ pub mod zobrist;
 
 pub use bitboard::Bitboard;
 pub use castling::{Castling, SideCastling};
+pub use clock::Clock;
 pub use direction::Direction;
 pub use files::File;
 pub use moves::{Move, MoveList, MoveType};
