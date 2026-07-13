@@ -21,7 +21,26 @@
 - [perft](crates/perft): perft utilities for validating move generation
 - [position](crates/position): chess board and position representation
 - [primitives](crates/primitives): core types used as the building blocks for other modules
+- [search](crates/search): chess position search algorithms
 - [transposition](crates/transposition): transposition table support
+
+## UCI
+
+The top-level binary is a minimal [UCI](https://backscattering.de/chess/uci/)
+engine backed by the current fixed-depth search:
+
+```sh
+cargo run --release
+```
+
+It supports the minimum command set needed by common chess GUIs and SPRT
+runners: `uci`, `isready`, `ucinewgame`, `position startpos`, `position fen`,
+clock-based `go`, and `quit`. It also accepts `go depth`, `go nodes`,
+`go movetime`, `stop`, and `ponderhit` as protocol primitives, although the
+current search is synchronous and only uses the depth constraint (clamped to
+the supported range of 1–5 plies).
+
+See [docs/sprt.md](docs/sprt.md) for an initial local SPRT workflow.
 
 ## Testing
 
