@@ -1,6 +1,7 @@
-use crate::fen::{FENError, FENParser, Parser};
+use crate::fen::{FENError, Fen};
 use crate::{EvalState, History, Position, PositionFromFEN, PositionState, State};
 use chess_kit_attack_table::AttackTable;
+use chess_kit_eval::NoOpEvalState;
 use chess_kit_primitives::{Bitboard, Black, Pieces, Side, Sides, Square, White, ZobristTable};
 use std::marker::PhantomData;
 
@@ -153,6 +154,48 @@ where
         self.state_mut().set_checkers(checkers);
         self.update_check_info::<SideT>();
     }
+
+    /// load_validated_fen loads a new position as defined by the fen string.
+    ///
+    /// @params: fen - the FEN string position to load
+    /// @return: the current evaluation state from the given position
+    /// @side-effect: modifies the position
+    fn load_validated_fen<EvalStateT: EvalState>(&mut self, fen: &Fen) -> EvalStateT {
+        self.history.clear();
+        self.history.push(StateT::default());
+        self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
+
+        for (square, piece) in Square::ALL.into_iter().zip(fen.pieces()) {
+            if let Some((side, piece)) = piece {
+                self.bitboards[*side][*piece] |= Bitboard::square(square);
+            }
+        }
+
+        {
+            let state = self.state_mut();
+            state.set_turn(fen.side_to_move());
+            state.set_castling(fen.castling());
+            state.set_en_passant(fen.en_passant());
+            state.set_halfmoves(fen.halfmoves());
+            state.set_fullmoves(fen.fullmoves());
+        }
+
+        let mut eval_state = EvalStateT::new();
+        self.init(&mut eval_state);
+        eval_state
+    }
+}
+
+impl<AT, StateT> From<Fen> for DefaultPosition<AT, StateT>
+where
+    AT: AttackTable,
+    StateT: State,
+{
+    fn from(fen: Fen) -> Self {
+        let mut position = Self::new();
+        position.load_validated_fen::<NoOpEvalState>(&fen);
+        position
+    }
 }
 
 impl<AT, StateT> PositionFromFEN for DefaultPosition<AT, StateT>
@@ -164,27 +207,7 @@ where
     ///
     /// @impl: PositionFromFEN::load_fen
     fn load_fen<EvalStateT: EvalState>(&mut self, fen: &str) -> Result<EvalStateT, FENError> {
-        let fen_parser = FENParser::parse(fen);
-        if fen_parser.is_err() {
-            return Err(fen_parser.err().unwrap());
-        }
-
-        let parsed = fen_parser.unwrap();
-        self.history.clear();
-        self.history.push(StateT::default());
-        self.bitboards = parsed.pieces.bitboards;
-        {
-            let state = self.state_mut();
-            state.set_turn(parsed.turn.turn);
-            state.set_castling(parsed.castling.castling);
-            state.set_en_passant(parsed.en_passant.square);
-            state.set_halfmoves(parsed.halfmove_parser.clock);
-            state.set_fullmoves(parsed.fullmove_parser.clock);
-        }
-
-        // TODO: move the board initialization elsewhere
-        let mut eval_state = EvalStateT::new();
-        self.init(&mut eval_state);
-        Ok(eval_state)
+        let fen = Fen::try_from(fen)?;
+        Ok(self.load_validated_fen::<EvalStateT>(&fen))
     }
 }

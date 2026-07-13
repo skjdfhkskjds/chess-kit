@@ -10,7 +10,7 @@ mod rules;
 mod sides;
 mod state;
 
-pub use fen::{FENError, FENParser, Parser};
+pub use fen::{FENError, Fen};
 pub use gamestate::*;
 pub use position::DefaultPosition;
 
