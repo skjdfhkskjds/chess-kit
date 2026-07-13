@@ -42,6 +42,19 @@ the supported range of 1–5 plies).
 
 See [docs/sprt.md](docs/sprt.md) for an initial local SPRT workflow.
 
+### Play in the terminal
+
+An interactive façade keeps the move history, displays the current position,
+and searches to depth 4 automatically:
+
+```sh
+cargo run --release -- play
+```
+
+You play White. Enter one move at a time in UCI notation, such as `e2e4` or
+`e7e8q`; enter `quit` to stop. Running the binary without `play` continues to
+start the unchanged stdin/stdout UCI protocol.
+
 ## Testing
 
 Run the workspace's normal unit and integration tests with:

@@ -1,3 +1,4 @@
+use std::fmt::{self, Display};
 use std::str::FromStr;
 use std::time::Instant;
 
@@ -139,6 +140,12 @@ impl UciEngine for ChessKitEngine {
     }
 }
 
+impl Display for ChessKitEngine {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.position.fmt(f)
+    }
+}
+
 fn format_move(mv: Move) -> String {
     // Piece display uses uppercase letters, while UCI promotions are lowercase.
     mv.to_string().to_ascii_lowercase()
@@ -152,9 +159,33 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let mut engine = ChessKitEngine::new()?;
-    chess_kit::comm::uci::run(&mut engine)?;
-    Ok(())
+    let mut args = std::env::args().skip(1);
+    let mode = args.next();
+    if args.next().is_some() {
+        return Err("expected at most one argument; use `play`, `--play`, or `--help`".into());
+    }
+
+    match mode.as_deref() {
+        None => {
+            let mut engine = ChessKitEngine::new()?;
+            chess_kit::comm::uci::run(&mut engine)?;
+            Ok(())
+        }
+        Some("play" | "--play") => {
+            let engine = ChessKitEngine::new()?;
+            chess_kit::comm::uci::InteractiveGame::new(engine).run()?;
+            Ok(())
+        }
+        Some("help" | "--help" | "-h") => {
+            println!(
+                "Usage: chess-kit [play]\n\nRun without arguments for UCI mode.\nRun with `play` for an interactive game as White."
+            );
+            Ok(())
+        }
+        Some(argument) => {
+            Err(format!("unknown argument `{argument}`; use `play` or `--help`").into())
+        }
+    }
 }
 
 #[cfg(test)]

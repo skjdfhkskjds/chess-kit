@@ -6,8 +6,10 @@
 
 mod command;
 mod engine;
+mod game;
 mod protocol;
 
 pub use command::*;
 pub use engine::*;
+pub use game::*;
 pub use protocol::{run, run_with_io};
