@@ -1,4 +1,5 @@
-use chess_kit_perft::{Depth, NodeCount};
+use chess_kit_perft::NodeCount;
+use chess_kit_primitives::Depth;
 use std::fmt::{self, Display};
 
 #[derive(Debug, Clone)]

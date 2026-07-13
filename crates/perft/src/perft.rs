@@ -1,8 +1,8 @@
-use crate::perft_data::{Depth, NodeCount, PerftData};
+use crate::perft_data::{NodeCount, PerftData};
 use chess_kit_eval::{Accumulator, EvalState};
 use chess_kit_movegen::MoveGenerator;
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionState};
-use chess_kit_primitives::{Move, MoveList};
+use chess_kit_primitives::{Depth, Move, MoveList};
 use chess_kit_transposition::TranspositionTable;
 
 /// `perft` calculates the number of leaf nodes at the given depth from the current
