@@ -2,7 +2,7 @@ use crate::State;
 use crate::position::DefaultPosition;
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{File, Pieces, Rank, Sides};
-use std::fmt;
+use std::{fmt, iter::once};
 
 impl<AT, StateT> fmt::Display for DefaultPosition<AT, StateT>
 where
@@ -27,7 +27,7 @@ where
                 };
 
                 for square in bitboard.iter() {
-                    board[square.file()][square.rank()] = piece_char;
+                    board[square.rank()][square.file()] = piece_char;
                 }
             }
         }
@@ -39,10 +39,11 @@ where
                 f,
                 "{} {}",
                 rank_idx + 1,
-                board[rank_idx].iter().collect::<String>()
+                board[rank_idx].into_iter().flat_map(|c| once(' ').chain(once(c)))
+                    .skip(1).collect::<String>()
             )?;
         }
-        writeln!(f, "  ABCDEFGH")?;
+        writeln!(f, "  A B C D E F G H")?;
 
         // print the game state metadata
         writeln!(f, "{}", self.state())?;
