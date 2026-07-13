@@ -48,12 +48,12 @@ An interactive façade keeps the move history, displays the current position,
 and searches to depth 4 automatically:
 
 ```sh
-cargo run --release -- play
+cargo run --release -p chess-kit-comm --example game
 ```
 
 You play White. Enter one move at a time in UCI notation, such as `e2e4` or
-`e7e8q`; enter `quit` to stop. Running the binary without `play` continues to
-start the unchanged stdin/stdout UCI protocol.
+`e7e8q`; enter `quit` to stop. This interactive façade is an example target and
+is not included in the `chess-kit-comm` library or the top-level UCI binary.
 
 ## Testing
 

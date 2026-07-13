@@ -1,12 +1,156 @@
-use std::fmt::Display;
+use std::fmt::{self, Display};
 use std::io::{self, BufRead, Write};
 use std::str::FromStr;
+use std::time::Instant;
 
-use super::{BasePosition, PositionCommand, SearchLimits, SearchResult, UciEngine, UciMove};
+use chess_kit_attack_table::DefaultAttackTable;
+use chess_kit_comm::uci::{
+    BasePosition, PositionCommand, SearchInfo, SearchLimits, SearchResult, UciEngine, UciMove,
+};
+use chess_kit_eval::{Accumulator, DefaultAccumulator, PSQTEvalState};
+use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
+use chess_kit_position::{DefaultPosition, DefaultState, Position, PositionFromFEN, PositionMoves};
+use chess_kit_primitives::{Depth, Move, MoveList};
+use chess_kit_search::Negamax;
+
+const START_POSITION_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const DEFAULT_SEARCH_DEPTH: u8 = 3;
+const MAX_SEARCH_DEPTH: u8 = 5;
 
 /// INTERACTIVE_SEARCH_DEPTH is the fixed search depth used by the interactive
 /// command-line game
 pub const INTERACTIVE_SEARCH_DEPTH: u8 = 4;
+
+type EnginePosition = DefaultPosition<DefaultAttackTable, DefaultState>;
+type EngineMoveGenerator = DefaultMoveGenerator<DefaultAttackTable>;
+type EngineAccumulator = DefaultAccumulator<PSQTEvalState>;
+
+/// Concrete engine adapter used only by this example.
+struct ChessKitEngine {
+    position: EnginePosition,
+    move_generator: EngineMoveGenerator,
+    accumulator: EngineAccumulator,
+    search: Negamax,
+}
+
+impl ChessKitEngine {
+    fn new() -> Result<Self, String> {
+        let command = PositionCommand {
+            base: BasePosition::StartPos,
+            moves: Vec::new(),
+        };
+        let (position, accumulator) = Self::build_position(&command)?;
+
+        Ok(Self {
+            position,
+            move_generator: EngineMoveGenerator::new(),
+            accumulator,
+            search: Negamax::new(),
+        })
+    }
+
+    fn build_position(
+        command: &PositionCommand,
+    ) -> Result<(EnginePosition, EngineAccumulator), String> {
+        let fen = match &command.base {
+            BasePosition::StartPos => START_POSITION_FEN,
+            BasePosition::Fen(fen) => fen,
+        };
+
+        let mut position = EnginePosition::new();
+        let eval = position
+            .load_fen::<PSQTEvalState>(fen)
+            .map_err(|error| format!("invalid FEN: {error}"))?;
+        let mut accumulator = EngineAccumulator::new();
+        accumulator.push(eval);
+        let move_generator = EngineMoveGenerator::new();
+
+        for uci_move in &command.moves {
+            let mut legal_moves = MoveList::new();
+            move_generator.generate_legal_moves(&position, &mut legal_moves);
+            let mv = legal_moves
+                .as_slice()
+                .iter()
+                .copied()
+                .find(|mv| format_move(*mv) == uci_move.as_str())
+                .ok_or_else(|| format!("illegal move in position command: {uci_move}"))?;
+
+            let eval = accumulator.push_next();
+            position.make_move(mv, eval);
+        }
+
+        Ok((position, accumulator))
+    }
+
+    fn search_depth(limits: &SearchLimits) -> u8 {
+        limits
+            .depth
+            .unwrap_or(DEFAULT_SEARCH_DEPTH)
+            .clamp(1, MAX_SEARCH_DEPTH)
+    }
+}
+
+impl UciEngine for ChessKitEngine {
+    type Error = String;
+
+    fn name(&self) -> &str {
+        concat!("chess-kit ", env!("CARGO_PKG_VERSION"))
+    }
+
+    fn author(&self) -> &str {
+        "chess-kit contributors"
+    }
+
+    fn new_game(&mut self) -> Result<(), Self::Error> {
+        let command = PositionCommand {
+            base: BasePosition::StartPos,
+            moves: Vec::new(),
+        };
+        (self.position, self.accumulator) = Self::build_position(&command)?;
+        self.search = Negamax::new();
+        Ok(())
+    }
+
+    fn set_position(&mut self, command: &PositionCommand) -> Result<(), Self::Error> {
+        (self.position, self.accumulator) = Self::build_position(command)?;
+        Ok(())
+    }
+
+    fn search(&mut self, limits: &SearchLimits) -> Result<SearchResult, Self::Error> {
+        let depth = Self::search_depth(limits);
+        let started = Instant::now();
+        let result = self.search.search(
+            &mut self.position,
+            &self.move_generator,
+            &mut self.accumulator,
+            Depth::try_from(depth).expect("supported UCI depth fits the engine depth type"),
+        );
+
+        let mut uci_result = SearchResult::new(
+            result
+                .best_move
+                .map(format_move)
+                .map(|mv| UciMove::from_str(&mv).expect("engine moves have valid UCI notation")),
+        );
+        uci_result.info = SearchInfo {
+            depth: Some(depth),
+            score_cp: Some(result.score),
+            nodes: Some(result.nodes),
+            elapsed: Some(started.elapsed()),
+        };
+        Ok(uci_result)
+    }
+}
+
+impl Display for ChessKitEngine {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.position.fmt(f)
+    }
+}
+
+fn format_move(mv: Move) -> String {
+    mv.to_string().to_ascii_lowercase()
+}
 
 /// `InteractiveGame` is a human-friendly command-line façade over a [`UciEngine`]
 ///
@@ -232,14 +376,23 @@ fn engine_error(error: impl Display) -> io::Error {
     io::Error::other(error.to_string())
 }
 
+fn main() {
+    if let Err(error) = ChessKitEngine::new().and_then(|engine| {
+        InteractiveGame::new(engine)
+            .run()
+            .map_err(|error| error.to_string())
+    }) {
+        eprintln!("chess-kit game example: {error}");
+        std::process::exit(1);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::convert::Infallible;
-    use std::fmt;
     use std::io::Cursor;
 
     use super::*;
-    use crate::uci::SearchInfo;
 
     #[derive(Default)]
     struct TestEngine {
