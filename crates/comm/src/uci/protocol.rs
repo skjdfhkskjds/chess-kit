@@ -4,17 +4,31 @@ use std::str::FromStr;
 
 use super::{Command, SearchInfo, SearchResult, UciEngine};
 
-/// Runs a UCI engine over standard input and standard output.
+/// run runs a UCI engine over standard input and standard output
+///
+/// @param: engine - mutable reference to the engine handling UCI commands
+/// @return: Ok when the protocol loop exits, or an I/O error
+/// @side-effects: reads standard input, writes standard output, and modifies
+///                engine state
 pub fn run<EngineT: UciEngine>(engine: &mut EngineT) -> io::Result<()> {
     let stdin = io::stdin();
     let stdout = io::stdout();
     run_with_io(engine, stdin.lock(), stdout.lock())
 }
 
-/// Runs a UCI engine over caller-provided streams.
+/// run_with_io runs a UCI engine over caller-provided streams
 ///
-/// Supplying streams makes complete protocol sessions testable without spawning
-/// a child process.
+/// note: caller-provided streams make complete protocol sessions testable
+///       without spawning a child process
+///
+/// @marker: EngineT - UCI engine implementation
+/// @marker: ReaderT - buffered command input stream type
+/// @marker: WriterT - protocol output stream type
+/// @param: engine - mutable reference to the engine handling UCI commands
+/// @param: reader - stream containing newline-delimited UCI commands
+/// @param: writer - stream that receives UCI responses
+/// @return: Ok when the protocol loop exits, or an I/O error
+/// @side-effects: reads input, writes output, and modifies engine state
 pub fn run_with_io<EngineT, ReaderT, WriterT>(
     engine: &mut EngineT,
     mut reader: ReaderT,
@@ -27,11 +41,14 @@ where
 {
     let mut line = String::new();
     loop {
+        // read exactly one newline-delimited command from the GUI
         line.clear();
         if reader.read_line(&mut line)? == 0 {
             break;
         }
 
+        // report malformed known commands as UCI info while keeping the
+        // protocol session alive for subsequent commands
         let command = match Command::from_str(&line) {
             Ok(command) => command,
             Err(error) => {
@@ -41,6 +58,7 @@ where
             }
         };
 
+        // dispatch protocol commands to the engine and serialize any response
         match command {
             Command::Uci => {
                 writeln!(writer, "id name {}", sanitize(engine.name()))?;
@@ -76,15 +94,25 @@ where
             Command::Unknown => {}
         }
 
+        // flush after every command so synchronous GUIs receive responses
+        // without waiting for another input line
         writer.flush()?;
     }
 
     Ok(())
 }
 
+/// write_search_result writes search information followed by the required
+/// `bestmove` response
+///
+/// @param: writer - stream that receives the UCI response
+/// @param: result - completed search result to serialize
+/// @return: Ok on success, or an I/O error
+/// @side-effects: writes to the output stream
 fn write_search_result(writer: &mut impl Write, result: &SearchResult) -> io::Result<()> {
     write_search_info(writer, &result.info)?;
 
+    // UCI represents the absence of a legal best move with the null move
     let best_move = result
         .best_move
         .as_ref()
@@ -96,7 +124,14 @@ fn write_search_result(writer: &mut impl Write, result: &SearchResult) -> io::Re
     writeln!(writer)
 }
 
+/// write_search_info writes the available fields of a UCI `info` response
+///
+/// @param: writer - stream that receives the UCI response
+/// @param: info - optional search information to serialize
+/// @return: Ok on success, or an I/O error
+/// @side-effects: writes to the output stream when information is available
 fn write_search_info(writer: &mut impl Write, info: &SearchInfo) -> io::Result<()> {
+    // omit the info line when the engine did not report any search details
     if info == &SearchInfo::default() {
         return Ok(());
     }
@@ -117,6 +152,12 @@ fn write_search_info(writer: &mut impl Write, info: &SearchInfo) -> io::Result<(
     writeln!(writer)
 }
 
+/// write_error writes a displayable error as a sanitized UCI `info string`
+///
+/// @param: writer - stream that receives the UCI response
+/// @param: error - error to report to the GUI
+/// @return: Ok on success, or an I/O error
+/// @side-effects: writes to the output stream
 fn write_error(writer: &mut impl Write, error: impl Display) -> io::Result<()> {
     writeln!(
         writer,
@@ -125,6 +166,10 @@ fn write_error(writer: &mut impl Write, error: impl Display) -> io::Result<()> {
     )
 }
 
+/// sanitize removes line breaks that could inject additional protocol responses
+///
+/// @param: value - engine-provided text to sanitize
+/// @return: text with carriage returns and newlines replaced by spaces
 fn sanitize(value: &str) -> String {
     value.replace(['\r', '\n'], " ")
 }
