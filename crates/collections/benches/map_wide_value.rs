@@ -1,7 +1,7 @@
 mod fixtures;
 mod utils;
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use fixtures::WideValue;
 
 fn layout_benches(c: &mut Criterion) {
