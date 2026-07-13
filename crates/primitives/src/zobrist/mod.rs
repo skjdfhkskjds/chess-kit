@@ -1,8 +1,9 @@
 mod constants;
 mod table;
 
-pub use constants::{CASTLING_RANDOMS, EN_PASSANT_RANDOMS, PIECE_RANDOMS, SIDE_RANDOMS};
 pub use table::ZobristTable;
+
+use constants::{CASTLING_RANDOMS, EN_PASSANT_RANDOMS, PIECE_RANDOMS, SIDE_RANDOMS};
 
 use chess_kit_derive::BitOps;
 use std::fmt::{self, Display};

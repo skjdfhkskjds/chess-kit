@@ -24,7 +24,7 @@ impl Bitboard {
     /// @return: first square in the bitboard
     #[inline]
     pub fn first_unchecked(&self) -> Square {
-        debug_assert!(self.not_empty(), "bitboard is empty");
+        assert!(self.not_empty(), "bitboard is empty");
         Square::from_idx(self.0.trailing_zeros() as usize)
     }
 

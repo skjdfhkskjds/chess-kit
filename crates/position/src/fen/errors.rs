@@ -3,7 +3,7 @@ use std::fmt::{self, Display};
 /// `FENError` is an enum that represents the errors that can occur when parsing a FEN string
 ///
 /// @type
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FENError {
     InvalidFormat,        // the FEN string must be composed of 6 segments
     InvalidPieces,        // the first segment must contain the pieces and squares
@@ -13,6 +13,8 @@ pub enum FENError {
     InvalidHalfmoveCount, // the fifth segment must contain the halfmove count
     InvalidFullmoveCount, // the sixth segment must contain the fullmove count
 }
+
+impl std::error::Error for FENError {}
 
 impl Display for FENError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

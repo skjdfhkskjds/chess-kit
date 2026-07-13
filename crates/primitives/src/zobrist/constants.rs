@@ -5,7 +5,7 @@ use crate::{Castling, File, Pieces, Sides, Square, ZobristKey};
 ///
 /// note: this table is simply a formatted version of the values in the
 ///       POLYGLOT_RANDOMS array for arithmetic-free access
-pub static PIECE_RANDOMS: [[[ZobristKey; Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL] = {
+pub(super) static PIECE_RANDOMS: [[[ZobristKey; Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL] = {
     let mut randoms = [[[ZobristKey::default(); Square::TOTAL]; Pieces::TOTAL]; Sides::TOTAL];
 
     let mut raw_piece_idx = 0;
@@ -48,7 +48,7 @@ const CASTLING_OFFSET: usize = 768;
 /// note: this table extends the definition of the POLYGLOT_RANDOMS array by
 ///       providing precomputed random values for each permutation of castling
 ///       rights in addition to the individual castling rights
-pub const CASTLING_RANDOMS: [ZobristKey; Castling::TOTAL] = {
+pub(super) const CASTLING_RANDOMS: [ZobristKey; Castling::TOTAL] = {
     let mut randoms = [ZobristKey::default(); Castling::TOTAL];
 
     let white_king_random = POLYGLOT_RANDOMS[CASTLING_OFFSET];
@@ -86,7 +86,7 @@ const EN_PASSANT_OFFSET: usize = 772;
 
 /// EN_PASSANT_RANDOMS is a constant array of polyglot-compatible random values used
 /// to fetch the zobrist random value for a given en passant square by file
-pub const EN_PASSANT_RANDOMS: [ZobristKey; File::TOTAL] = {
+pub(super) const EN_PASSANT_RANDOMS: [ZobristKey; File::TOTAL] = {
     let mut randoms = [ZobristKey::default(); File::TOTAL];
 
     let mut i = 0;
@@ -106,7 +106,7 @@ const SIDE_OFFSET: usize = 780;
 ///
 /// note: this table extends the definition of the POLYGLOT_RANDOMS array by
 ///       providing a zobrist random for black set to 0 for branchless access
-pub const SIDE_RANDOMS: [ZobristKey; Sides::TOTAL] = [
+pub(super) const SIDE_RANDOMS: [ZobristKey; Sides::TOTAL] = [
     ZobristKey::new(POLYGLOT_RANDOMS[SIDE_OFFSET]),
     ZobristKey::new(0),
 ];
