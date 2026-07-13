@@ -14,6 +14,7 @@
 
 - [attack_table](crates/attack_table): attack table generation and lookup
 - [collections](crates/collections): custom collection types
+- [comm](crates/comm): communication protocols for chess engines
 - [eval](crates/eval): position evaluation algorithms
 - [macros](crates/macros): derive macros used by other crates
 - [movegen](crates/movegen): move generation logic

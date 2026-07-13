@@ -2,6 +2,7 @@
 members = [
     "crates/macros",
     "crates/collections",
+    "crates/comm",
     "crates/primitives",
     "crates/attack_table",
     "crates/position",
@@ -21,6 +22,7 @@ lto = true
 [dependencies]
 chess-kit-derive = { path = "crates/macros" }
 chess-kit-collections = { path = "crates/collections" }
+chess-kit-comm = { path = "crates/comm" }
 chess-kit-primitives = { path = "crates/primitives" }
 chess-kit-attack-table = { path = "crates/attack_table" }
 chess-kit-position = { path = "crates/position" }
