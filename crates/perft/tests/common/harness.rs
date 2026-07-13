@@ -83,7 +83,9 @@ where
 
         for (case_index, test) in tests.iter().enumerate() {
             let index = case_index + 1;
-            println!("================================================================================");
+            println!(
+                "================================================================================"
+            );
             println!();
             println!("perft {index}/{total}");
             println!("{test}");

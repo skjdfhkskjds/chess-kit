@@ -150,17 +150,20 @@ impl Magic {
 ///               the given rook square
 const fn new_rook_square_magics(offset: &mut u64, square: Square, table: &mut [Bitboard]) -> Magic {
     let mask = rook_mask(square).const_unwrap();
+    let square_bitboard = Bitboard::square(square);
+    let file = Bitboard::file(square.file());
+    let rank = Bitboard::rank(square.rank());
 
-    let bits = mask.count_ones();
     // number of set bits in the mask
-    let permutations = 1u64 << bits;
+    let bits = mask.count_ones();
+
     // number of blocker boards to be indexed
+    let permutations = 1u64 << bits;
 
     // create the magic for the given square
     let magic = Magic::new(
         mask,
-        (64 - bits) as u8,
-        // shift
+        (64 - bits) as u8, // shift
         *offset,
         ROOK_MAGIC_NUMS[square.idx()],
     );
@@ -172,12 +175,12 @@ const fn new_rook_square_magics(offset: &mut u64, square: Square, table: &mut [B
     let mut next = 0;
     let mut n: u64 = 0;
     while next < permutations {
-        let blocker_board = Bitboard::new(n);
-        let index = magic.idx(blocker_board);
+        let occupancy = Bitboard::new(n);
+        let index = magic.idx(occupancy);
 
         // get the respective attack board for the given square and blocker
         // board
-        table[index] = rook_attack_board(square, blocker_board);
+        table[index] = rook_attack_board(square_bitboard, file, rank, occupancy);
 
         next += 1;
         n = n.wrapping_sub(mask) & mask;
@@ -206,17 +209,20 @@ const fn new_bishop_square_magics(
     table: &mut [Bitboard],
 ) -> Magic {
     let mask = bishop_mask(square).const_unwrap();
+    let square_bitboard = Bitboard::square(square);
+    let diagonal = Bitboard::diagonal(square);
+    let anti_diagonal = Bitboard::anti_diagonal(square);
 
-    let bits = mask.count_ones();
     // number of set bits in the mask
-    let permutations = 1u64 << bits;
+    let bits = mask.count_ones();
+
     // number of blocker boards to be indexed
+    let permutations = 1u64 << bits;
 
     // create the magic for the given square
     let magic = Magic::new(
         mask,
-        (64 - bits) as u8,
-        // shift
+        (64 - bits) as u8, // shift
         *offset,
         BISHOP_MAGIC_NUMS[square.idx()],
     );
@@ -228,12 +234,12 @@ const fn new_bishop_square_magics(
     let mut next = 0;
     let mut n: u64 = 0;
     while next < permutations {
-        let blocker_board = Bitboard::new(n);
-        let index = magic.idx(blocker_board);
+        let occupancy = Bitboard::new(n);
+        let index = magic.idx(occupancy);
 
         // get the respective attack board for the given square and blocker
         // board
-        table[index] = bishop_attack_board(square, blocker_board);
+        table[index] = bishop_attack_board(square_bitboard, diagonal, anti_diagonal, occupancy);
 
         next += 1;
         n = n.wrapping_sub(mask) & mask;

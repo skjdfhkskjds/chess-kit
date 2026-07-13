@@ -80,30 +80,54 @@ pub(crate) const fn bishop_mask(square: Square) -> Bitboard {
 /// rook_attack_board returns the attack board associated with the given
 /// square and blocker board
 ///
-/// @param: square - square to get the attack board for
-/// @param: blocker - blocker to use to generate the attack board
-/// @return: attack board for the given square and blocker
-pub(crate) const fn rook_attack_board(square: Square, blocker: Bitboard) -> Bitboard {
-    let sq = Bitboard::square(square).const_unwrap();
-    let occ = blocker.const_unwrap();
-    let file_mask = Bitboard::file(square.file()).const_unwrap();
-    let rank_mask = Bitboard::rank(square.rank()).const_unwrap();
-    Bitboard::new(fast_attack_ray(occ, sq, file_mask) | fast_attack_ray(occ, sq, rank_mask))
+/// @param: square - square bitboard to get the attack board for
+/// @param: file - precomputed file mask for the given square
+/// @param: rank - precomputed rank mask for the given square
+/// @param: occupancy - occupancy to use to generate the attack board
+/// @return: attack board for the given square and occupancy
+pub(crate) const fn rook_attack_board(
+    square: Bitboard,
+    file: Bitboard,
+    rank: Bitboard,
+    occupancy: Bitboard,
+) -> Bitboard {
+    let square_unwrapped = square.const_unwrap();
+    let occupancy_unwrapped = occupancy.const_unwrap();
+
+    Bitboard::new(
+        fast_attack_ray(occupancy_unwrapped, square_unwrapped, file.const_unwrap())
+            | fast_attack_ray(occupancy_unwrapped, square_unwrapped, rank.const_unwrap()),
+    )
 }
 
 /// bishop_attack_board returns the attack board associated with the given
 /// square and blocker board.
 ///
-/// @param: square - square to get the attack board for
-/// @param: blocker - blocker to use to generate the attack board
-/// @return: attack board for the given square and blocker
-pub(crate) const fn bishop_attack_board(square: Square, blocker: Bitboard) -> Bitboard {
-    let sq = Bitboard::square(square).const_unwrap();
-    let occ = blocker.const_unwrap();
-    let diagonal = Bitboard::diagonal(square).const_unwrap();
-    let anti_diagonal = Bitboard::anti_diagonal(square).const_unwrap();
+/// @param: square - square bitboard to get the attack board for
+/// @param: diagonal - precomputed diagonal mask for the given square
+/// @param: anti_diagonal - precomputed anti-diagonal mask for the given square
+/// @param: occupancy - occupancy to use to generate the attack board
+/// @return: attack board for the given square and occupancy
+pub(crate) const fn bishop_attack_board(
+    square: Bitboard,
+    diagonal: Bitboard,
+    anti_diagonal: Bitboard,
+    occupancy: Bitboard,
+) -> Bitboard {
+    let square_unwrapped = square.const_unwrap();
+    let occupancy_unwrapped = occupancy.const_unwrap();
 
-    Bitboard::new(fast_attack_ray(occ, sq, diagonal) | fast_attack_ray(occ, sq, anti_diagonal))
+    Bitboard::new(
+        fast_attack_ray(
+            occupancy_unwrapped,
+            square_unwrapped,
+            diagonal.const_unwrap(),
+        ) | fast_attack_ray(
+            occupancy_unwrapped,
+            square_unwrapped,
+            anti_diagonal.const_unwrap(),
+        ),
+    )
 }
 
 /// get_edges generates a bitboard of all the edges of the board excluding
