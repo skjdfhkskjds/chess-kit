@@ -6,6 +6,7 @@
 
 mod command;
 mod engine;
+mod handler;
 mod protocol;
 mod types;
 

@@ -1,8 +1,8 @@
-use std::fmt::Display;
 use std::io::{self, BufRead, Write};
 use std::str::FromStr;
 
-use super::{Command, SearchInfo, SearchResult, UciEngine};
+use super::handler::{CommandFlow, UciHandler};
+use super::{Command, UciEngine};
 
 /// run runs a UCI engine over standard input and standard output
 ///
@@ -10,7 +10,10 @@ use super::{Command, SearchInfo, SearchResult, UciEngine};
 /// @return: Ok when the protocol loop exits, or an I/O error
 /// @side-effects: reads standard input, writes standard output, and modifies
 ///                engine state
-pub fn run<EngineT: UciEngine>(engine: &mut EngineT) -> io::Result<()> {
+pub fn run<EngineT>(engine: &mut EngineT) -> io::Result<()>
+where
+    EngineT: UciEngine + ?Sized,
+{
     let stdin = io::stdin();
     let stdout = io::stdout();
     run_with_io(engine, stdin.lock(), stdout.lock())
@@ -35,11 +38,12 @@ pub fn run_with_io<EngineT, ReaderT, WriterT>(
     mut writer: WriterT,
 ) -> io::Result<()>
 where
-    EngineT: UciEngine,
+    EngineT: UciEngine + ?Sized,
     ReaderT: BufRead,
     WriterT: Write,
 {
     let mut line = String::new();
+    let mut handler = UciHandler::new(engine, &mut writer);
     loop {
         // read exactly one newline-delimited command from the GUI
         line.clear();
@@ -52,126 +56,23 @@ where
         let command = match Command::from_str(&line) {
             Ok(command) => command,
             Err(error) => {
-                write_error(&mut writer, error)?;
-                writer.flush()?;
+                handler.write_error(error)?;
+                handler.flush()?;
                 continue;
             }
         };
 
-        // dispatch protocol commands to the engine and serialize any response
-        match command {
-            Command::Uci => {
-                writeln!(writer, "id name {}", sanitize(engine.name()))?;
-                writeln!(writer, "id author {}", sanitize(engine.author()))?;
-                writeln!(writer, "uciok")?;
-            }
-            Command::Debug(enabled) => engine.set_debug(enabled),
-            Command::IsReady => writeln!(writer, "readyok")?,
-            Command::UciNewGame => {
-                if let Err(error) = engine.new_game() {
-                    write_error(&mut writer, error)?;
-                }
-            }
-            Command::Position(position) => {
-                if let Err(error) = engine.set_position(&position) {
-                    write_error(&mut writer, error)?;
-                }
-            }
-            Command::Go(limits) => match engine.search(&limits) {
-                Ok(result) => write_search_result(&mut writer, &result)?,
-                Err(error) => {
-                    write_error(&mut writer, error)?;
-                    writeln!(writer, "bestmove 0000")?;
-                }
-            },
-            Command::Stop => match engine.stop() {
-                Ok(Some(result)) => write_search_result(&mut writer, &result)?,
-                Ok(None) => {}
-                Err(error) => write_error(&mut writer, error)?,
-            },
-            Command::PonderHit => engine.ponder_hit(),
-            Command::Quit => break,
-            Command::Unknown => {}
+        // consume the parsed command through the protocol-to-engine adapter
+        if handler.handle(command)? == CommandFlow::Quit {
+            break;
         }
 
         // flush after every command so synchronous GUIs receive responses
         // without waiting for another input line
-        writer.flush()?;
+        handler.flush()?;
     }
 
     Ok(())
-}
-
-/// write_search_result writes search information followed by the required
-/// `bestmove` response
-///
-/// @param: writer - stream that receives the UCI response
-/// @param: result - completed search result to serialize
-/// @return: Ok on success, or an I/O error
-/// @side-effects: writes to the output stream
-fn write_search_result(writer: &mut impl Write, result: &SearchResult) -> io::Result<()> {
-    write_search_info(writer, &result.info)?;
-
-    // UCI represents the absence of a legal best move with the null move
-    let best_move = result
-        .best_move
-        .as_ref()
-        .map_or_else(|| "0000".to_owned(), ToString::to_string);
-    write!(writer, "bestmove {best_move}")?;
-    if let Some(ponder) = &result.ponder {
-        write!(writer, " ponder {ponder}")?;
-    }
-    writeln!(writer)
-}
-
-/// write_search_info writes the available fields of a UCI `info` response
-///
-/// @param: writer - stream that receives the UCI response
-/// @param: info - optional search information to serialize
-/// @return: Ok on success, or an I/O error
-/// @side-effects: writes to the output stream when information is available
-fn write_search_info(writer: &mut impl Write, info: &SearchInfo) -> io::Result<()> {
-    // omit the info line when the engine did not report any search details
-    if info == &SearchInfo::default() {
-        return Ok(());
-    }
-
-    write!(writer, "info")?;
-    if let Some(depth) = info.depth {
-        write!(writer, " depth {depth}")?;
-    }
-    if let Some(score) = info.score_cp {
-        write!(writer, " score cp {score}")?;
-    }
-    if let Some(nodes) = info.nodes {
-        write!(writer, " nodes {nodes}")?;
-    }
-    if let Some(elapsed) = info.elapsed {
-        write!(writer, " time {}", elapsed.as_millis())?;
-    }
-    writeln!(writer)
-}
-
-/// write_error writes a displayable error as a sanitized UCI `info string`
-///
-/// @param: writer - stream that receives the UCI response
-/// @param: error - error to report to the GUI
-/// @return: Ok on success, or an I/O error
-/// @side-effects: writes to the output stream
-fn write_error(writer: &mut impl Write, error: impl Display) -> io::Result<()> {
-    writeln!(
-        writer,
-        "info string error: {}",
-        sanitize(&error.to_string())
-    )
-}
-
-/// sanitize removes line breaks that could inject additional protocol responses
-///
-/// @param: value - engine-provided text to sanitize
-/// @return: text with carriage returns and newlines replaced by spaces
-fn sanitize(value: &str) -> String {
-    value.replace(['\r', '\n'], " ")
 }
 
 #[cfg(test)]
@@ -180,12 +81,15 @@ mod tests {
     use std::io::Cursor;
 
     use super::*;
-    use crate::uci::{PositionCommand, SearchLimits, UciMove};
+    use crate::uci::{PositionCommand, SearchInfo, SearchLimits, SearchResult, UciMove};
 
     #[derive(Default)]
     struct TestEngine {
         positions: Vec<PositionCommand>,
         new_games: usize,
+        debug: Option<bool>,
+        stops: usize,
+        ponder_hits: usize,
     }
 
     impl UciEngine for TestEngine {
@@ -219,6 +123,19 @@ mod tests {
             };
             Ok(result)
         }
+
+        fn stop(&mut self) -> Result<Option<SearchResult>, Self::Error> {
+            self.stops += 1;
+            Ok(None)
+        }
+
+        fn ponder_hit(&mut self) {
+            self.ponder_hits += 1;
+        }
+
+        fn set_debug(&mut self, enabled: bool) {
+            self.debug = Some(enabled);
+        }
     }
 
     #[test]
@@ -244,5 +161,22 @@ mod tests {
                 "bestmove e2e4\n",
             )
         );
+    }
+
+    #[test]
+    fn routes_commands_through_a_uci_engine_trait_object() {
+        let input = Cursor::new(b"debug on\nstop\nponderhit\nunsupported\nquit\nisready\n");
+        let mut output = Vec::new();
+        let mut engine = TestEngine::default();
+
+        {
+            let engine: &mut dyn UciEngine<Error = Infallible> = &mut engine;
+            run_with_io(engine, input, &mut output).unwrap();
+        }
+
+        assert_eq!(engine.debug, Some(true));
+        assert_eq!(engine.stops, 1);
+        assert_eq!(engine.ponder_hits, 1);
+        assert!(output.is_empty());
     }
 }
