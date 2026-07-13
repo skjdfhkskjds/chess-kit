@@ -13,7 +13,7 @@ use chess_kit_derive::BitOps;
 ///
 /// @type
 #[repr(transparent)]
-#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, BitOps)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, BitOps)]
 pub struct Castling(u8);
 
 impl Castling {
