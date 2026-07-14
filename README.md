@@ -45,10 +45,16 @@ See [docs/sprt.md](docs/sprt.md) for an initial local SPRT workflow.
 ### Play in the terminal
 
 An interactive façade keeps the move history, displays the current position,
-and searches to depth 4 automatically:
+and searches to depth 6 by default:
 
 ```sh
 cargo run --release -p chess-kit-comm --example game
+```
+
+Use `--depth` to choose a search depth from 1 through 8 plies:
+
+```sh
+cargo run --release -p chess-kit-comm --example game -- --depth 4
 ```
 
 You play White. Enter one move at a time in UCI notation, such as `e2e4` or
