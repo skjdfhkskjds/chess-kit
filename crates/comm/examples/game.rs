@@ -9,7 +9,7 @@ use chess_kit_comm::uci::{
 };
 use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, PSQTEvalState};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
-use chess_kit_position::{DefaultPosition, PositionMoves};
+use chess_kit_position::{DefaultPosition, Fen, PositionMoves, Setup};
 use chess_kit_primitives::{Depth, Move, MoveList};
 use chess_kit_search::Negamax;
 
@@ -57,9 +57,8 @@ impl ChessKitEngine {
             BasePosition::Fen(fen) => fen,
         };
 
-        let mut position = fen
-            .parse::<EnginePosition>()
-            .map_err(|error| format!("invalid FEN: {error}"))?;
+        let fen = Fen::try_from(fen).map_err(|error| format!("invalid FEN: {error}"))?;
+        let mut position = EnginePosition::from(Setup::from(fen));
         let eval = PSQTEvalState::from_position(&position);
         let mut accumulator = EngineAccumulator::new();
         accumulator.push(eval);

@@ -1,5 +1,5 @@
 use chess_kit_attack_table::DefaultAttackTable;
-use chess_kit_position::{DefaultPosition, PositionMoves, PositionView};
+use chess_kit_position::{DefaultPosition, Fen, PositionMoves, PositionView, Setup};
 use chess_kit_primitives::{Move, MoveDelta, PieceDelta, Pieces, Sides, Square};
 
 type TestPosition = DefaultPosition<DefaultAttackTable>;
@@ -7,7 +7,7 @@ type TestPosition = DefaultPosition<DefaultAttackTable>;
 const START_POSITION: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 fn load(fen: &str) -> TestPosition {
-    fen.parse().unwrap()
+    Setup::from(Fen::try_from(fen).unwrap()).into()
 }
 
 fn changes(delta: MoveDelta) -> Vec<PieceDelta> {

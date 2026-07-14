@@ -3,10 +3,10 @@ use crate::common::{PerftCase, PerftRunError, PerftRunReport};
 use chess_kit_eval::{Accumulator, EvalState};
 use chess_kit_movegen::MoveGenerator;
 use chess_kit_perft::{PerftData, perft, perft_divide_print};
-use chess_kit_position::{FENError, Position};
+use chess_kit_position::{Fen, Position, Setup};
 use chess_kit_transposition::TranspositionTable;
+use std::marker::PhantomData;
 use std::time::Instant;
-use std::{marker::PhantomData, str::FromStr};
 
 const DEFAULT_TT_SIZE: usize = 0;
 
@@ -20,7 +20,7 @@ pub enum PerftHarnessMode {
 pub struct PerftHarness<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
 where
     MoveGeneratorT: MoveGenerator,
-    PositionT: Position + FromStr<Err = FENError>,
+    PositionT: Position + From<Setup>,
     AccumulatorT: Accumulator<EvalStateT>,
     EvalStateT: EvalState,
     TranspositionTableT: TranspositionTable<PerftData>,
@@ -39,7 +39,7 @@ impl<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
     PerftHarness<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
 where
     MoveGeneratorT: MoveGenerator,
-    PositionT: Position + FromStr<Err = FENError>,
+    PositionT: Position + From<Setup>,
     AccumulatorT: Accumulator<EvalStateT>,
     EvalStateT: EvalState,
     TranspositionTableT: TranspositionTable<PerftData>,
@@ -70,7 +70,7 @@ impl<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
     PerftHarness<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
 where
     MoveGeneratorT: MoveGenerator,
-    PositionT: Position + FromStr<Err = FENError>,
+    PositionT: Position + From<Setup>,
     AccumulatorT: Accumulator<EvalStateT>,
     EvalStateT: EvalState,
     TranspositionTableT: TranspositionTable<PerftData>,
@@ -134,13 +134,11 @@ where
         self.accumulator.reset();
         self.tt.clear();
 
-        self.position = test
-            .fen
-            .parse::<PositionT>()
-            .map_err(|err| PerftRunError::LoadFen {
-                fen: test.fen.clone(),
-                source: err.to_string(),
-            })?;
+        let fen = Fen::try_from(test.fen.as_str()).map_err(|err| PerftRunError::LoadFen {
+            fen: test.fen.clone(),
+            source: err.to_string(),
+        })?;
+        self.position = Setup::from(fen).into();
         let eval = EvalStateT::from_position(&self.position);
         self.accumulator.push(eval);
 

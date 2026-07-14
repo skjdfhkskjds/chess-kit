@@ -2,7 +2,7 @@ use chess_kit_attack_table::DefaultAttackTable;
 use chess_kit_collections::Copyable;
 use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, Score};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
-use chess_kit_position::{DefaultPosition, PositionView};
+use chess_kit_position::{DefaultPosition, Fen, PositionView, Setup};
 use chess_kit_primitives::{Move, MoveDelta, PieceDeltaKind, Pieces, Sides, Square};
 use chess_kit_search::Negamax;
 
@@ -69,7 +69,7 @@ impl Copyable for MaterialEvalState {
 }
 
 fn load(fen: &str) -> (TestPosition, TestMoveGenerator, TestAccumulator) {
-    let position = fen.parse::<TestPosition>().unwrap();
+    let position = TestPosition::from(Setup::from(Fen::try_from(fen).unwrap()));
     let eval = MaterialEvalState::from_position(&position);
     let mut accumulator = TestAccumulator::new();
     accumulator.push(eval);

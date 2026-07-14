@@ -2,20 +2,20 @@ mod attacks;
 mod castling;
 mod display;
 mod errors;
-mod fen;
 mod gamestate;
 mod moves;
 mod pieces;
 mod position;
 mod rules;
+mod setup;
 mod sides;
 mod state;
 
 pub use errors::PlayError;
-pub use fen::{FENError, Fen, Setup};
 pub use gamestate::DrawState;
 pub(crate) use gamestate::{History, PositionState};
 pub use position::DefaultPosition;
+pub use setup::{FENError, Fen, Setup};
 
 use chess_kit_primitives::{
     Bitboard, Castling, Move, MoveDelta, Pieces, Side, Sides, Square, ZobristKey,

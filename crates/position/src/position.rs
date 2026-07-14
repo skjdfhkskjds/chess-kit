@@ -1,10 +1,8 @@
-use crate::fen::{FENError, Setup};
+use crate::setup::Setup;
 use crate::{History, PositionState, PositionView};
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Bitboard, Black, Pieces, Side, Sides, Square, White, ZobristTable};
-use std::{marker::PhantomData, str::FromStr};
-
-const START_POSITION: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+use std::marker::PhantomData;
 
 /// DefaultPosition is the default position implementation
 ///
@@ -135,26 +133,20 @@ impl<AT: AttackTable> DefaultPosition<AT> {
 }
 
 impl<AT: AttackTable> Default for DefaultPosition<AT> {
+    /// default creates the standard starting position
+    ///
+    /// @return: standard starting position
     fn default() -> Self {
-        START_POSITION
-            .parse()
-            .expect("the built-in start position must be valid")
+        Setup::default().into()
     }
 }
 
-impl<AT: AttackTable> FromStr for DefaultPosition<AT> {
-    type Err = FENError;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let setup = value.parse::<Setup>()?;
-        Ok(Self::from_setup(setup))
-    }
-}
-
-impl<AT: AttackTable> TryFrom<Setup> for DefaultPosition<AT> {
-    type Error = FENError;
-
-    fn try_from(setup: Setup) -> Result<Self, Self::Error> {
-        Ok(Self::from_setup(setup))
+impl<AT: AttackTable> From<Setup> for DefaultPosition<AT> {
+    /// from creates a position from a validated setup
+    ///
+    /// @param: setup - validated setup to load
+    /// @return: initialized position
+    fn from(setup: Setup) -> Self {
+        Self::from_setup(setup)
     }
 }
