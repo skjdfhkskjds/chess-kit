@@ -4,9 +4,14 @@ use std::str::FromStr;
 
 type PieceOnSquare = Option<(Sides, Pieces)>;
 
-/// A validated Forsyth-Edwards Notation position.
+/// Setup is a validated position decoded from Forsyth-Edwards Notation
+///
+/// Setup separates FEN parsing and validation from construction of a concrete position
+/// implementation
+///
+/// @type
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Fen {
+pub struct Setup {
     pieces: [PieceOnSquare; Square::TOTAL],
     side_to_move: Sides,
     castling: Castling,
@@ -15,7 +20,7 @@ pub struct Fen {
     fullmoves: Clock,
 }
 
-impl Fen {
+impl Setup {
     pub fn pieces(&self) -> &[Option<(Sides, Pieces)>; Square::TOTAL] {
         &self.pieces
     }
@@ -181,7 +186,7 @@ impl Fen {
     }
 }
 
-impl FromStr for Fen {
+impl FromStr for Setup {
     type Err = FENError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
@@ -215,7 +220,7 @@ impl FromStr for Fen {
     }
 }
 
-impl TryFrom<&str> for Fen {
+impl TryFrom<&str> for Setup {
     type Error = FENError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -223,13 +228,21 @@ impl TryFrom<&str> for Fen {
     }
 }
 
-impl TryFrom<String> for Fen {
+impl TryFrom<String> for Setup {
     type Error = FENError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.parse()
     }
 }
+
+/// Fen is the backwards-compatible name for a validated [`Setup`]
+///
+/// Fen allows existing callers to use the previous public name while position construction
+/// transitions to the more general setup terminology
+///
+/// @type
+pub type Fen = Setup;
 
 #[cfg(test)]
 mod tests {

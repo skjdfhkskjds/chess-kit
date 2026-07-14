@@ -1,6 +1,6 @@
 use chess_kit_eval::{Accumulator, EvalState, Score};
 use chess_kit_movegen::MoveGenerator;
-use chess_kit_position::{PositionAttacks, PositionMoves, PositionState};
+use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 use chess_kit_primitives::{Depth, Move, MoveList, Sides};
 
 use crate::SearchResult;
@@ -34,7 +34,7 @@ impl Negamax {
     ) -> SearchResult
     where
         MoveGeneratorT: MoveGenerator,
-        PositionT: PositionState + PositionAttacks + PositionMoves,
+        PositionT: PositionView + PositionAttacks + PositionMoves,
         AccumulatorT: Accumulator<EvalStateT>,
         EvalStateT: EvalState,
     {
@@ -66,7 +66,7 @@ impl Negamax {
     ) -> (Score, Option<Move>)
     where
         MoveGeneratorT: MoveGenerator,
-        PositionT: PositionState + PositionAttacks + PositionMoves,
+        PositionT: PositionView + PositionAttacks + PositionMoves,
         AccumulatorT: Accumulator<EvalStateT>,
         EvalStateT: EvalState,
     {
@@ -93,7 +93,8 @@ impl Negamax {
 
         for &mv in &moves {
             let eval = accumulator.push_next();
-            position.make_move(mv, eval);
+            let delta = position.play_unchecked(mv);
+            eval.apply(delta);
 
             let (child_score, _) = self.negamax(
                 position,
@@ -106,7 +107,7 @@ impl Negamax {
             );
             let score = -child_score;
 
-            position.unmake_move(mv);
+            position.undo(mv);
             accumulator.pop();
 
             if score > best_score {
@@ -128,7 +129,7 @@ impl Negamax {
         accumulator: &mut AccumulatorT,
     ) -> Score
     where
-        PositionT: PositionState,
+        PositionT: PositionView,
         AccumulatorT: Accumulator<EvalStateT>,
         EvalStateT: EvalState,
     {

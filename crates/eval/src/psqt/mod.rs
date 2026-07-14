@@ -7,7 +7,8 @@ use piece_values::PieceValue;
 
 use crate::{EvalState, Score};
 use chess_kit_collections::Copyable;
-use chess_kit_primitives::{Pieces, Side, Sides, Square};
+use chess_kit_position::PositionView;
+use chess_kit_primitives::{MoveDelta, PieceDeltaKind, Pieces, Sides, Square};
 
 pub type GamePhase = i16;
 pub type PSQTable = [PieceValue; Square::TOTAL];
@@ -25,15 +26,36 @@ pub struct PSQTEvalState {
 }
 
 impl EvalState for PSQTEvalState {
-    /// new creates a new, empty eval state
-    ///
-    /// @impl: EvalState::new
+    /// Initializes the PSQT accumulator from a position.
     #[inline]
-    fn new() -> Self {
-        Self {
+    fn from_position<P: PositionView>(position: &P) -> Self {
+        let mut state = Self {
             phase: 0,
             scores: [PieceValue::default(); Sides::TOTAL],
             score: 0,
+        };
+
+        for piece in Pieces::ALL {
+            for square in position.get_piece::<chess_kit_primitives::White>(piece) {
+                state.add(Sides::White, piece, square);
+            }
+            for square in position.get_piece::<chess_kit_primitives::Black>(piece) {
+                state.add(Sides::Black, piece, square);
+            }
+        }
+
+        state
+    }
+
+    #[inline]
+    fn apply(&mut self, delta: MoveDelta) {
+        for change in delta.iter() {
+            match change.kind() {
+                PieceDeltaKind::Added => self.add(change.side(), change.piece(), change.square()),
+                PieceDeltaKind::Removed => {
+                    self.remove(change.side(), change.piece(), change.square())
+                }
+            }
         }
     }
 
@@ -48,25 +70,19 @@ impl EvalState for PSQTEvalState {
 
         self.score
     }
+}
 
-    /// on_set_piece is the incremental update callback that fires when a piece
-    /// is set on the board for the given side
-    ///
-    /// @impl: EvalState::on_set_piece
+impl PSQTEvalState {
     #[inline]
-    fn on_set_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
+    fn add(&mut self, side: Sides, piece: Pieces, square: Square) {
         self.phase += PHASE_VALUES[piece];
-        self.scores[SideT::SIDE] += PIECE_TABLES[SideT::SIDE][piece][square];
+        self.scores[side] += PIECE_TABLES[side][piece][square];
     }
 
-    /// on_remove_piece is the incremental update callback that fires when a piece
-    /// is removed from the board for the given side
-    ///
-    /// @impl: EvalState::on_remove_piece
     #[inline]
-    fn on_remove_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
+    fn remove(&mut self, side: Sides, piece: Pieces, square: Square) {
         self.phase -= PHASE_VALUES[piece];
-        self.scores[SideT::SIDE] -= PIECE_TABLES[SideT::SIDE][piece][square];
+        self.scores[side] -= PIECE_TABLES[side][piece][square];
     }
 }
 
@@ -83,6 +99,45 @@ impl Copyable for PSQTEvalState {
 impl Default for PSQTEvalState {
     #[inline]
     fn default() -> Self {
-        Self::new()
+        Self {
+            phase: 0,
+            scores: [PieceValue::default(); Sides::TOTAL],
+            score: 0,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chess_kit_attack_table::DefaultAttackTable;
+    use chess_kit_position::{DefaultPosition, PositionMoves};
+    use chess_kit_primitives::{Move, Square};
+
+    #[test]
+    fn incremental_deltas_match_fresh_position_initialization() {
+        let mut position = DefaultPosition::<DefaultAttackTable>::default();
+        let mut incremental = PSQTEvalState::from_position(&position);
+
+        for mv in [
+            Move::new(Square::E2, Square::E4),
+            Move::new(Square::D7, Square::D5),
+            Move::new(Square::E4, Square::D5),
+        ] {
+            incremental.apply(position.play_unchecked(mv));
+            let fresh = PSQTEvalState::from_position(&position);
+
+            assert_eq!(incremental.phase, fresh.phase);
+            for side in [Sides::White, Sides::Black] {
+                assert_eq!(
+                    incremental.scores[side].middlegame(),
+                    fresh.scores[side].middlegame()
+                );
+                assert_eq!(
+                    incremental.scores[side].endgame(),
+                    fresh.scores[side].endgame()
+                );
+            }
+        }
     }
 }

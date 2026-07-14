@@ -5,11 +5,9 @@ use chess_kit::attack_table::DefaultAttackTable;
 use chess_kit::comm::uci::{
     BasePosition, PositionCommand, SearchInfo, SearchLimits, SearchResult, UciEngine, UciMove,
 };
-use chess_kit::eval::{Accumulator, DefaultAccumulator, PSQTEvalState};
+use chess_kit::eval::{Accumulator, DefaultAccumulator, EvalState, PSQTEvalState};
 use chess_kit::movegen::{DefaultMoveGenerator, MoveGenerator};
-use chess_kit::position::{
-    DefaultPosition, DefaultState, Position, PositionFromFEN, PositionMoves,
-};
+use chess_kit::position::{DefaultPosition, PositionMoves};
 use chess_kit::primitives::{Depth, Move, MoveList};
 use chess_kit::search::Negamax;
 
@@ -17,7 +15,7 @@ const START_POSITION_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w 
 const DEFAULT_SEARCH_DEPTH: u8 = 3;
 const MAX_SEARCH_DEPTH: u8 = 5;
 
-type EnginePosition = DefaultPosition<DefaultAttackTable, DefaultState>;
+type EnginePosition = DefaultPosition<DefaultAttackTable>;
 type EngineMoveGenerator = DefaultMoveGenerator<DefaultAttackTable>;
 type EngineAccumulator = DefaultAccumulator<PSQTEvalState>;
 
@@ -54,10 +52,10 @@ impl ChessKitEngine {
             BasePosition::Fen(fen) => fen,
         };
 
-        let mut position = EnginePosition::new();
-        let eval = position
-            .load_fen::<PSQTEvalState>(fen)
+        let mut position = fen
+            .parse::<EnginePosition>()
             .map_err(|error| format!("invalid FEN: {error}"))?;
+        let eval = PSQTEvalState::from_position(&position);
         let mut accumulator = EngineAccumulator::new();
         accumulator.push(eval);
         let move_generator = EngineMoveGenerator::new();
@@ -73,7 +71,8 @@ impl ChessKitEngine {
                 .ok_or_else(|| format!("illegal move in position command: {uci_move}"))?;
 
             let eval = accumulator.push_next();
-            position.make_move(mv, eval);
+            let delta = position.play_unchecked(mv);
+            eval.apply(delta);
         }
 
         Ok((position, accumulator))
@@ -159,7 +158,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg(test)]
 mod tests {
-    use chess_kit::position::PositionState;
+    use chess_kit::position::PositionView;
     use chess_kit::primitives::{Pieces, Sides, Square};
 
     use super::*;

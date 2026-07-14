@@ -1,6 +1,5 @@
 use chess_kit_attack_table::DefaultAttackTable;
-use chess_kit_eval::NoOpEvalState;
-use chess_kit_position::{DefaultPosition, DefaultState, Position, PositionFromFEN, StateReader};
+use chess_kit_position::{DefaultPosition, PositionView};
 use chess_kit_primitives::ZobristKey;
 
 #[test]
@@ -23,12 +22,11 @@ fn zobrist_keys_match_known_positions() {
         let key = ZobristKey::try_from(parts[1])
             .unwrap_or_else(|_| panic!("invalid Zobrist key {}", parts[1]));
 
-        let mut position = DefaultPosition::<DefaultAttackTable, DefaultState>::new();
-        position
-            .load_fen::<NoOpEvalState>(fen)
+        let position = fen
+            .parse::<DefaultPosition<DefaultAttackTable>>()
             .unwrap_or_else(|err| panic!("error loading FEN '{fen}': {err}"));
 
-        let zobrist_key = position.state().key();
+        let zobrist_key = position.key();
         assert_eq!(
             zobrist_key,
             key,

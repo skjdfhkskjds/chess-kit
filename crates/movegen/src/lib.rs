@@ -6,7 +6,7 @@ pub use movegen::DefaultMoveGenerator;
 
 use chess_kit_primitives::{MoveList, Rank};
 
-use chess_kit_position::{PositionAttacks, PositionMoves, PositionState};
+use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 
 /// `MoveType` is a type that represents the variation of moves that can be generated
 ///
@@ -37,7 +37,7 @@ pub trait MoveGenerator {
     /// @param: move_type - move type to generate moves for
     /// @return: void
     /// @side-effects: modifies the `move list`
-    fn generate_moves<PositionT: PositionState + PositionAttacks>(
+    fn generate_moves<PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -51,7 +51,7 @@ pub trait MoveGenerator {
     /// @param: list - mutable reference to the move list
     /// @return: void
     /// @side-effects: modifies the `move list`
-    fn generate_legal_moves<PositionT: PositionState + PositionAttacks + PositionMoves>(
+    fn generate_legal_moves<PositionT: PositionView + PositionAttacks + PositionMoves>(
         &self,
         position: &PositionT,
         list: &mut MoveList,

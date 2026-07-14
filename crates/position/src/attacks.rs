@@ -1,12 +1,11 @@
 use crate::position::DefaultPosition;
-use crate::{PositionAttacks, PositionState, State};
+use crate::{PositionAttacks, PositionView};
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Bitboard, Pieces, Side, Square};
 
-impl<AT, StateT> PositionAttacks for DefaultPosition<AT, StateT>
+impl<AT> PositionAttacks for DefaultPosition<AT>
 where
     AT: AttackTable,
-    StateT: State,
 {
     /// is_attacked_by returns a bitboard containing the squares occupied by
     /// SideT::Other's pieces that are attacking the given SideT at the given
@@ -107,14 +106,13 @@ where
     /// @impl: PositionAttacks::check_squares
     #[inline]
     fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
-        self.state().check_squares::<SideT>(piece)
+        self.state().check_squares(piece)
     }
 }
 
-impl<AT, StateT> DefaultPosition<AT, StateT>
+impl<AT> DefaultPosition<AT>
 where
     AT: AttackTable,
-    StateT: State,
 {
     /// is_attacked_by_sliders returns true if the given square is attacked by
     /// SideT::Other's sliding pieces

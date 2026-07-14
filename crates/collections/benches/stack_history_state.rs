@@ -26,12 +26,12 @@ fn performance_benches(c: &mut Criterion) {
     utils::stack::bench_push_next::<HistoryState, 255>(
         c,
         "stack/history_state/push_next",
-        HistoryState::update_header,
+        HistoryState::update_metadata,
     );
     utils::stack::bench_push_next_pop_pair::<HistoryState, 255>(
         c,
         "stack/history_state/push_next_pop_pair",
-        HistoryState::update_header,
+        HistoryState::update_metadata,
     );
     utils::stack::bench_top_access::<HistoryState, 255>(c, "stack/history_state/top_access");
 }

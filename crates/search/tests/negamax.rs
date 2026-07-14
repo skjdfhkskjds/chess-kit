@@ -2,11 +2,11 @@ use chess_kit_attack_table::DefaultAttackTable;
 use chess_kit_collections::Copyable;
 use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, Score};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
-use chess_kit_position::{DefaultPosition, DefaultState, Position, PositionFromFEN, PositionState};
-use chess_kit_primitives::{Move, Pieces, Side, Sides, Square};
+use chess_kit_position::{DefaultPosition, PositionView};
+use chess_kit_primitives::{Move, MoveDelta, PieceDeltaKind, Pieces, Sides, Square};
 use chess_kit_search::Negamax;
 
-type TestPosition = DefaultPosition<DefaultAttackTable, DefaultState>;
+type TestPosition = DefaultPosition<DefaultAttackTable>;
 type TestMoveGenerator = DefaultMoveGenerator<DefaultAttackTable>;
 type TestAccumulator = DefaultAccumulator<MaterialEvalState>;
 
@@ -28,28 +28,37 @@ impl MaterialEvalState {
 }
 
 impl EvalState for MaterialEvalState {
-    fn new() -> Self {
-        Self::default()
+    fn from_position<P: PositionView>(position: &P) -> Self {
+        let mut state = Self::default();
+        for piece in Pieces::ALL {
+            state.score += position
+                .get_piece::<chess_kit_primitives::White>(piece)
+                .count_ones() as Score
+                * Self::piece_value(piece);
+            state.score -= position
+                .get_piece::<chess_kit_primitives::Black>(piece)
+                .count_ones() as Score
+                * Self::piece_value(piece);
+        }
+        state
+    }
+
+    fn apply(&mut self, delta: MoveDelta) {
+        for change in delta.iter() {
+            let value = Self::piece_value(change.piece());
+            let sign =
+                match (change.side(), change.kind()) {
+                    (Sides::White, PieceDeltaKind::Added)
+                    | (Sides::Black, PieceDeltaKind::Removed) => 1,
+                    (Sides::White, PieceDeltaKind::Removed)
+                    | (Sides::Black, PieceDeltaKind::Added) => -1,
+                };
+            self.score += sign * value;
+        }
     }
 
     fn score(&mut self) -> Score {
         self.score
-    }
-
-    fn on_set_piece<SideT: Side>(&mut self, piece: Pieces, _: Square) {
-        let value = Self::piece_value(piece);
-        match SideT::SIDE {
-            Sides::White => self.score += value,
-            Sides::Black => self.score -= value,
-        }
-    }
-
-    fn on_remove_piece<SideT: Side>(&mut self, piece: Pieces, _: Square) {
-        let value = Self::piece_value(piece);
-        match SideT::SIDE {
-            Sides::White => self.score -= value,
-            Sides::Black => self.score += value,
-        }
     }
 }
 
@@ -60,8 +69,8 @@ impl Copyable for MaterialEvalState {
 }
 
 fn load(fen: &str) -> (TestPosition, TestMoveGenerator, TestAccumulator) {
-    let mut position = TestPosition::new();
-    let eval = position.load_fen::<MaterialEvalState>(fen).unwrap();
+    let position = fen.parse::<TestPosition>().unwrap();
+    let eval = MaterialEvalState::from_position(&position);
     let mut accumulator = TestAccumulator::new();
     accumulator.push(eval);
 

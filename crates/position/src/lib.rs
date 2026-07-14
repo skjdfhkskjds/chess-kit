@@ -1,6 +1,7 @@
 mod attacks;
 mod castling;
 mod display;
+mod errors;
 mod fen;
 mod gamestate;
 mod moves;
@@ -10,58 +11,30 @@ mod rules;
 mod sides;
 mod state;
 
-pub use fen::{FENError, Fen};
-pub use gamestate::*;
+pub use errors::PlayError;
+pub use fen::{FENError, Fen, Setup};
+pub use gamestate::DrawState;
+pub(crate) use gamestate::{History, PositionState};
 pub use position::DefaultPosition;
 
-use chess_kit_eval::EvalState;
-use chess_kit_primitives::{Bitboard, Castling, Move, Pieces, Side, Sides, Square, ZobristKey};
+use chess_kit_primitives::{
+    Bitboard, Castling, Move, MoveDelta, Pieces, Side, Sides, Square, ZobristKey,
+};
 use std::fmt::Display;
 
 /// `Position` is the full composed trait of all operations that must be supported
 /// by a position
 ///
 /// @trait
-pub trait Position:
-    PositionState + PositionAttacks + PositionMoves + PositionFromFEN + Display
-{
-    /// new creates a new, uninitialized position with zero occupancy, state, and
-    /// piece information
-    ///
-    /// @return: new, uninitialized position
-    fn new() -> Self;
+pub trait Position: Default + PositionView + PositionAttacks + PositionMoves + Display {}
 
-    /// reset resets the position to a new initial state
-    ///
-    /// @return: void
-    /// @side-effect: resets the position and internal state
-    fn reset(&mut self);
-}
+impl<T> Position for T where T: Default + PositionView + PositionAttacks + PositionMoves + Display {}
 
-/// `PositionFromFEN` is a trait that defines the ability to load a position from a
-/// FEN string
-///
-/// @trait
-pub trait PositionFromFEN {
-    /// load_fen loads and initializes a new position from the given FEN string
-    ///
-    /// @param: fen - FEN string to create the position from
-    /// @return: the loaded eval state, or an error if the FEN string is invalid
-    /// @side-effect: initializes the position and internal state
-    fn load_fen<EvalStateT: EvalState>(&mut self, fen: &str) -> Result<EvalStateT, FENError>;
-}
-
-/// `PositionState` is a trait that defines all state-related readonly queries on a
+/// `PositionView` is a trait that defines all state-related readonly queries on a
 /// given position
 ///
 /// @trait
-pub trait PositionState {
-    /// draw_state gets the incrementally maintained draw information for the
-    /// current position
-    ///
-    /// @return: draw information for the current position
-    fn draw_state(&self) -> DrawState;
-
+pub trait PositionView {
     /// total_occupancy gets the occupancy bitboard of all pieces on the board
     ///
     /// @return: full occupancy bitboard of both sides
@@ -189,24 +162,28 @@ pub trait PositionAttacks {
 ///
 /// @trait
 pub trait PositionMoves {
-    /// make_move makes the given move from the current position and updates the
-    /// evaluation state with the incremental changes to the position
+    /// play plays a legal move and returns its deterministic piece delta
     ///
     /// @param: mv - move to make
-    /// @param: eval_state - mutable reference to the evaluation state to update
-    /// @return: void
-    /// @side-effect: modifies the position and internal state
-    /// @side-effect: modifies the evaluation state
-    /// @requires: the given move must be legal for the current position
-    fn make_move<EvalStateT: EvalState>(&mut self, mv: Move, eval_state: &mut EvalStateT);
+    /// @return: deterministic piece delta, or an error if the move is illegal
+    /// @side-effects: modifies the position and internal state on success
+    fn play(&mut self, mv: Move) -> Result<MoveDelta, PlayError>;
 
-    /// unmake_move undoes the given move from the current position
+    /// play_unchecked plays a move without checking its legality
+    ///
+    /// @param: mv - move to make
+    /// @return: deterministic piece delta
+    /// @side-effects: modifies the position and internal state
+    /// @requires: the given move must be legal for the current position
+    fn play_unchecked(&mut self, mv: Move) -> MoveDelta;
+
+    /// undo undoes the given move from the current position
     ///
     /// @param: mv - move to undo
     /// @return: void
-    /// @side-effect: modifies the position and internal state
+    /// @side-effects: modifies the position and internal state
     /// @requires: the move must have been made last turn
-    fn unmake_move(&mut self, mv: Move);
+    fn undo(&mut self, mv: Move);
 
     /// is_legal_move checks if the given move is legal from the current position
     /// when played by SideT

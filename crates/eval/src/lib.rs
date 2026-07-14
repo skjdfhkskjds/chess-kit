@@ -7,40 +7,22 @@ pub use noop_eval::NoOpEvalState;
 pub use psqt::PSQTEvalState;
 
 use chess_kit_collections::Copyable;
-use chess_kit_primitives::{Pieces, Side, Square};
+use chess_kit_position::PositionView;
+use chess_kit_primitives::MoveDelta;
 
 pub type Score = i32;
 
 pub trait EvalState: Copyable {
-    /// new creates a new, empty eval state
-    ///
-    /// @return: new, empty eval state
-    fn new() -> Self;
+    /// Initializes evaluation state from a complete position view.
+    fn from_position<P: PositionView>(position: &P) -> Self;
+
+    /// Applies the piece changes made by one move.
+    fn apply(&mut self, delta: MoveDelta);
 
     /// score returns the evaluation score of this state
     ///
     /// @return: evaluation score of this state
     fn score(&mut self) -> Score;
-
-    /// on_set_piece is the incremental update callback that fires when a piece
-    /// is set on the board for the given side
-    ///
-    /// @marker: SideT - the side that the piece was set for
-    /// @param: piece - piece that was set
-    /// @param: square - square that the piece was set on
-    /// @return: void
-    /// @side-effects: modifies the eval state
-    fn on_set_piece<SideT: Side>(&mut self, piece: Pieces, square: Square);
-
-    /// on_remove_piece is the incremental update callback that fires when a piece
-    /// is removed from the board for the given side
-    ///
-    /// @marker: SideT - the side that the piece was removed from
-    /// @param: piece - piece that was removed
-    /// @param: square - square that the piece was removed from
-    /// @return: void
-    /// @side-effects: modifies the eval state
-    fn on_remove_piece<SideT: Side>(&mut self, piece: Pieces, square: Square);
 }
 
 /// `Accumulator` is a trait that defines a type that provides operations to

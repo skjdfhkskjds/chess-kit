@@ -1,6 +1,6 @@
 use crate::{DefaultMoveGenerator, MoveType, PawnOffsets, PawnRanks};
 use chess_kit_attack_table::{AttackTable, PawnDirections};
-use chess_kit_position::{CastlingSquares, PositionAttacks, PositionState};
+use chess_kit_position::{CastlingSquares, PositionAttacks, PositionView};
 use chess_kit_primitives::{Bitboard, MoveList, Pieces, Side};
 
 impl<AT: AttackTable> DefaultMoveGenerator<AT> {
@@ -16,7 +16,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     #[inline]
     pub(crate) fn generate_moves_for_side<
         SideT: Side,
-        PositionT: PositionState + PositionAttacks,
+        PositionT: PositionView + PositionAttacks,
     >(
         &self,
         position: &PositionT,
@@ -72,7 +72,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @return: void
     /// @side-effects: modifies the `move list`
     #[inline]
-    fn generate_queen_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
+    fn generate_queen_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -98,7 +98,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: move_type - move type to generate moves of
     /// @return: void
     #[inline]
-    fn generate_rook_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
+    fn generate_rook_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -124,7 +124,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: move_type - move type to generate moves of
     /// @return: void
     #[inline]
-    fn generate_bishop_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
+    fn generate_bishop_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -150,7 +150,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @param: move_type - move type to generate moves of
     /// @return: void
     #[inline]
-    fn generate_knight_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
+    fn generate_knight_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -175,7 +175,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @return: void
     /// @side-effects: modifies the `move list`
     #[inline]
-    fn generate_pawn_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
+    fn generate_pawn_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -323,7 +323,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// @return: void
     /// @side-effects: modifies the `move list`
     #[inline]
-    fn generate_king_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
+    fn generate_king_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -360,7 +360,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// TODO: current implementation does not support chess960, as it assumes the
     ///       squares along the path from the king and rook
     #[inline]
-    fn generate_castle_moves<SideT: Side, PositionT: PositionState + PositionAttacks>(
+    fn generate_castle_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,

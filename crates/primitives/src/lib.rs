@@ -17,7 +17,7 @@ pub use clock::Clock;
 pub use direction::Direction;
 pub use depth::Depth;
 pub use files::File;
-pub use moves::{Move, MoveList, MoveType};
+pub use moves::{Move, MoveDelta, MoveList, MoveType, PieceDelta, PieceDeltaKind};
 pub use pieces::Pieces;
 pub use ranks::Rank;
 pub use sides::{Black, Side, SideTable, Sides, White};

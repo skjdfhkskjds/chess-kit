@@ -6,3 +6,7 @@ edition = "2024"
 [dependencies]
 chess-kit-collections = { path = "../collections" }
 chess-kit-primitives = { path = "../primitives" }
+chess-kit-position = { path = "../position" }
+
+[dev-dependencies]
+chess-kit-attack-table = { path = "../attack_table" }
