@@ -35,6 +35,7 @@ pub fn expand_indexable_enum(input: &DeriveInput) -> Result<TokenStream> {
 
             #[inline]
             pub const fn from_idx(idx: usize) -> Self {
+                assert!(idx < #variant_count, "enum index out of range");
                 unsafe { ::core::mem::transmute::<#repr_ty, Self>(idx as #repr_ty) }
             }
 

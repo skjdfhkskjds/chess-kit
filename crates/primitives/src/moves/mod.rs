@@ -32,7 +32,7 @@ pub enum MoveType {
 ///
 /// The data is stored in a u16 with the following schema:
 ///
-///         | from |   to |  promoted_to |    move_type |
+/// |       | from |   to |  promoted_to |    move_type |
 /// | ----- | ---- | ---- | ------------ | ------------ |
 /// |  bits |  0-5 | 6-11 |       12-14  |        14-16 |
 /// |  mask | 0x3f | 0x3f | 0x3 + Knight |          0x3 |

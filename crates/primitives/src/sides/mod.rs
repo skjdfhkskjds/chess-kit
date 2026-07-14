@@ -10,22 +10,30 @@ pub use table::SideTable;
 ///
 /// Usage:
 ///
-/// ``` rust
+/// ```
+/// use chess_kit_primitives::{Castling, Sides, define_sides};
+///
 /// define_sides! {
 ///     SideCastling: Castling {
 ///         ALL => (Castling::WHITE, Castling::BLACK),
 ///         KINGSIDE => (Castling::WHITE_KING, Castling::BLACK_KING),
 ///     }
 /// }
+///
+/// assert_eq!(SideCastling::ALL[Sides::White], Castling::WHITE);
 /// ```
 ///
 /// Expands to:
 ///
-/// ``` rust
+/// ```
+/// use chess_kit_primitives::{Castling, SideTable};
+///
 /// pub struct SideCastling;
 /// impl SideCastling {
-///    pub const ALL: SideTable<Castling> = SideTable::new(Castling::WHITE, Castling::BLACK);
-///    pub const KINGSIDE: SideTable<Castling> = SideTable::new(Castling::WHITE_KING, Castling::BLACK_KING);
+///     pub const ALL: SideTable<Castling> =
+///         SideTable::new(Castling::WHITE, Castling::BLACK);
+///     pub const KINGSIDE: SideTable<Castling> =
+///         SideTable::new(Castling::WHITE_KING, Castling::BLACK_KING);
 /// }
 /// ```
 #[macro_export]
