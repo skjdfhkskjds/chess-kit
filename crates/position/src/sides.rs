@@ -1,12 +1,10 @@
-use crate::State;
 use crate::position::DefaultPosition;
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Side, ZobristTable};
 
-impl<AT, StateT> DefaultPosition<AT, StateT>
+impl<AT> DefaultPosition<AT>
 where
     AT: AttackTable,
-    StateT: State,
 {
     /// swap_sides swaps the turn to move from SideT to SideT::Other
     ///

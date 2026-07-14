@@ -1,10 +1,12 @@
-use crate::fen::FENError;
+use super::{FENError, PieceOnSquare, Setup};
 use chess_kit_primitives::{Black, Castling, Clock, Pieces, Sides, Square, White};
 use std::str::FromStr;
 
-type PieceOnSquare = Option<(Sides, Pieces)>;
+const START_POSITION: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-/// A validated Forsyth-Edwards Notation position.
+/// Fen is a position encoded in Forsyth-Edwards Notation
+///
+/// @type
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Fen {
     pieces: [PieceOnSquare; Square::TOTAL],
@@ -16,30 +18,10 @@ pub struct Fen {
 }
 
 impl Fen {
-    pub fn pieces(&self) -> &[Option<(Sides, Pieces)>; Square::TOTAL] {
-        &self.pieces
-    }
-
-    pub const fn side_to_move(&self) -> Sides {
-        self.side_to_move
-    }
-
-    pub const fn castling(&self) -> Castling {
-        self.castling
-    }
-
-    pub const fn en_passant(&self) -> Option<Square> {
-        self.en_passant
-    }
-
-    pub const fn halfmoves(&self) -> Clock {
-        self.halfmoves
-    }
-
-    pub const fn fullmoves(&self) -> Clock {
-        self.fullmoves
-    }
-
+    /// parse_pieces parses the FEN piece-placement segment
+    ///
+    /// @param: segment - piece-placement segment to parse
+    /// @return: piece and side occupying each square
     fn parse_pieces(segment: &str) -> Result<[PieceOnSquare; Square::TOTAL], FENError> {
         let ranks = segment.split('/').collect::<Vec<_>>();
         if ranks.len() != 8 {
@@ -97,7 +79,6 @@ impl Fen {
             }
         }
 
-        // Position initialization assumes exactly one king for each side.
         if king_counts != [1, 1] {
             return Err(FENError::InvalidPieces);
         }
@@ -105,6 +86,10 @@ impl Fen {
         Ok(pieces)
     }
 
+    /// parse_side_to_move parses the FEN active-color segment
+    ///
+    /// @param: segment - active-color segment to parse
+    /// @return: side to move
     fn parse_side_to_move(segment: &str) -> Result<Sides, FENError> {
         match segment {
             "w" => Ok(Sides::White),
@@ -113,6 +98,10 @@ impl Fen {
         }
     }
 
+    /// parse_castling parses the FEN castling-availability segment
+    ///
+    /// @param: segment - castling-availability segment to parse
+    /// @return: available castling rights
     fn parse_castling(segment: &str) -> Result<Castling, FENError> {
         if segment == "-" {
             return Ok(Castling::none());
@@ -152,6 +141,10 @@ impl Fen {
         Ok(castling)
     }
 
+    /// parse_en_passant parses the FEN en passant target-square segment
+    ///
+    /// @param: segment - en passant segment to parse
+    /// @return: en passant target square, if any
     #[rustfmt::skip]
     fn parse_en_passant(segment: &str) -> Result<Option<Square>, FENError> {
         if segment == "-" {
@@ -184,6 +177,10 @@ impl Fen {
 impl FromStr for Fen {
     type Err = FENError;
 
+    /// from_str parses and validates a Forsyth-Edwards Notation string
+    ///
+    /// @param: value - FEN string to parse
+    /// @return: validated FEN data
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let segments = value.split_whitespace().collect::<Vec<_>>();
         if segments.len() != 6 {
@@ -215,9 +212,22 @@ impl FromStr for Fen {
     }
 }
 
+impl Default for Fen {
+    /// default returns the standard starting position in Forsyth-Edwards Notation
+    ///
+    /// @return: validated FEN data for the standard starting position
+    fn default() -> Self {
+        Self::try_from(START_POSITION).expect("the built-in start position must be valid")
+    }
+}
+
 impl TryFrom<&str> for Fen {
     type Error = FENError;
 
+    /// try_from parses and validates a borrowed Forsyth-Edwards Notation string
+    ///
+    /// @param: value - FEN string to parse
+    /// @return: validated FEN data
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         value.parse()
     }
@@ -226,8 +236,29 @@ impl TryFrom<&str> for Fen {
 impl TryFrom<String> for Fen {
     type Error = FENError;
 
+    /// try_from parses and validates an owned Forsyth-Edwards Notation string
+    ///
+    /// @param: value - FEN string to parse
+    /// @return: validated FEN data
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.parse()
+    }
+}
+
+impl From<Fen> for Setup {
+    /// from converts validated FEN data into a format-independent setup
+    ///
+    /// @param: fen - validated FEN data to convert
+    /// @return: format-independent position setup
+    fn from(fen: Fen) -> Self {
+        Self {
+            pieces: fen.pieces,
+            side_to_move: fen.side_to_move,
+            castling: fen.castling,
+            en_passant: fen.en_passant,
+            halfmoves: fen.halfmoves,
+            fullmoves: fen.fullmoves,
+        }
     }
 }
 
@@ -235,16 +266,25 @@ impl TryFrom<String> for Fen {
 mod tests {
     use super::*;
 
-    const START_POSITION: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    #[test]
+    fn parses_a_valid_fen_into_a_setup() {
+        let setup = Setup::from(Fen::try_from(START_POSITION).unwrap());
+
+        assert_eq!(setup.side_to_move(), Sides::White);
+        assert_eq!(
+            setup.pieces()[Square::A1],
+            Some((Sides::White, Pieces::Rook))
+        );
+        assert_eq!(
+            setup.pieces()[Square::E8],
+            Some((Sides::Black, Pieces::King))
+        );
+        assert_eq!(setup.fullmoves(), 1);
+    }
 
     #[test]
-    fn parses_a_valid_fen() {
-        let fen = Fen::try_from(START_POSITION).unwrap();
-
-        assert_eq!(fen.side_to_move(), Sides::White);
-        assert_eq!(fen.pieces()[Square::A1], Some((Sides::White, Pieces::Rook)));
-        assert_eq!(fen.pieces()[Square::E8], Some((Sides::Black, Pieces::King)));
-        assert_eq!(fen.fullmoves(), 1);
+    fn defaults_to_the_start_position() {
+        assert_eq!(Fen::default(), Fen::try_from(START_POSITION).unwrap());
     }
 
     #[test]
@@ -274,9 +314,10 @@ mod tests {
 
     #[test]
     fn clocks_use_the_u32_primitive() {
-        let fen = Fen::try_from(START_POSITION.replace("0 1", "65536 65537")).unwrap();
+        let setup =
+            Setup::from(Fen::try_from(START_POSITION.replace("0 1", "65536 65537")).unwrap());
 
-        assert_eq!(fen.halfmoves(), 65_536);
-        assert_eq!(fen.fullmoves(), 65_537);
+        assert_eq!(setup.halfmoves(), 65_536);
+        assert_eq!(setup.fullmoves(), 65_537);
     }
 }

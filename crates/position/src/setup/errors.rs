@@ -17,6 +17,10 @@ pub enum FENError {
 impl std::error::Error for FENError {}
 
 impl Display for FENError {
+    /// fmt writes a human-readable description of the FEN parsing error
+    ///
+    /// @param: f - formatter to write the error into
+    /// @return: formatting result
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let error = match self {
             Self::InvalidFormat => "Must be 6 segments",

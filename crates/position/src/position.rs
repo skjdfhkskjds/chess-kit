@@ -1,34 +1,32 @@
-use crate::fen::{FENError, Fen};
-use crate::{EvalState, History, Position, PositionFromFEN, PositionState, State};
+use crate::setup::Setup;
+use crate::{History, PositionState, PositionView};
 use chess_kit_attack_table::AttackTable;
-use chess_kit_eval::NoOpEvalState;
 use chess_kit_primitives::{Bitboard, Black, Pieces, Side, Sides, Square, White, ZobristTable};
 use std::marker::PhantomData;
 
-/// `DefaultPosition` is a default implementation of the `Position` trait
+/// DefaultPosition is the default position implementation
+///
+/// DefaultPosition owns the board representation and private history while using `AT` to
+/// derive attacks and tactical state
 ///
 /// @type
-pub struct DefaultPosition<AT: AttackTable, StateT: State> {
-    pub(crate) history: History<StateT>, // history of the position state
-    pub(crate) sides: [Bitboard; Sides::TOTAL + 1], // occupancy bitboard per side
-    pub(crate) bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL], // bitboard per piece per side
-    pub(crate) pieces: [Pieces; Square::TOTAL], // piece type on each square
-
+pub struct DefaultPosition<AT: AttackTable> {
+    pub(crate) history: History,
+    pub(crate) sides: [Bitboard; Sides::TOTAL + 1],
+    pub(crate) bitboards: [[Bitboard; Pieces::TOTAL]; Sides::TOTAL],
+    pub(crate) pieces: [Pieces; Square::TOTAL],
     _attack_table: PhantomData<AT>,
 }
 
-impl<AT, StateT> Position for DefaultPosition<AT, StateT>
-where
-    AT: AttackTable,
-    StateT: State,
-{
-    /// new creates a new position with all bitboards and pieces initialized to 0
-    /// and the zobrist random values set to 0
+impl<AT: AttackTable> DefaultPosition<AT> {
+    /// empty creates a position with an empty board and initialized history
     ///
-    /// @impl: Position::new
-    fn new() -> Self {
+    /// @return: empty position
+    fn empty() -> Self {
+        let mut history = History::default();
+        history.push(PositionState::default());
         Self {
-            history: History::default(),
+            history,
             sides: [Bitboard::empty(); Sides::TOTAL + 1],
             bitboards: [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL],
             pieces: [Pieces::None; Square::TOTAL],
@@ -36,182 +34,119 @@ where
         }
     }
 
-    /// reset resets the position to a new initial state
+    /// from_setup creates a position from a validated setup
     ///
-    /// @impl: Position::reset
-    fn reset(&mut self) {
-        self.history.clear();
-        self.history.push(StateT::default());
-        self.state_mut().reset();
-        self.sides = [Bitboard::empty(); Sides::TOTAL + 1];
-        self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
-        self.pieces = [Pieces::None; Square::TOTAL];
+    /// @param: setup - validated setup to load
+    /// @return: initialized position
+    fn from_setup(setup: Setup) -> Self {
+        let mut position = Self::empty();
+
+        for (square, piece) in Square::ALL.into_iter().zip(setup.pieces()) {
+            if let Some((side, piece)) = piece {
+                position.bitboards[*side][*piece] |= Bitboard::square(square);
+            }
+        }
+
+        {
+            let state = position.state_mut();
+            state.set_turn(setup.side_to_move());
+            state.set_castling(setup.castling());
+            state.set_en_passant(setup.en_passant());
+            state.set_halfmoves(setup.halfmoves());
+            state.set_fullmoves(setup.fullmoves());
+        }
+
+        position.initialize();
+        position
     }
-}
 
-impl<AT, StateT> DefaultPosition<AT, StateT>
-where
-    AT: AttackTable,
-    StateT: State,
-{
-    /// init initializes the position
+    /// initialize derives the position's board and incremental caches
     ///
-    /// @param: eval_state - mutable reference to the evaluation state to initialize
     /// @return: void
-    /// @side-effects: modifies the `position` and the evaluation state
-    fn init<EvalStateT: EvalState>(&mut self, eval_state: &mut EvalStateT) {
-        self.init_sides();
-        self.init_pieces(eval_state);
-
+    /// @side-effects: initializes the position caches
+    fn initialize(&mut self) {
+        self.initialize_sides();
+        self.initialize_pieces();
         match self.turn() {
-            Sides::White => self.init_state::<White>(),
-            Sides::Black => self.init_state::<Black>(),
+            Sides::White => self.initialize_state::<White>(),
+            Sides::Black => self.initialize_state::<Black>(),
         }
     }
 
-    /// init_sides initializes the `sides` bitboards by ORing the bitboards of
-    /// each side
+    /// initialize_sides derives the per-side and total occupancy bitboards
     ///
     /// @return: void
-    /// @side-effects: modifies the `sides` bitboards
-    /// @requires: `bitboards` is initialized
-    fn init_sides(&mut self) {
-        let white = self.bitboards[Sides::White];
-        let black = self.bitboards[Sides::Black];
-
-        for (w, b) in white.iter().zip(black.iter()) {
-            self.sides[Sides::White] |= *w;
-            self.sides[Sides::Black] |= *b;
+    /// @side-effects: initializes the position occupancy
+    fn initialize_sides(&mut self) {
+        self.sides = [Bitboard::empty(); Sides::TOTAL + 1];
+        for piece in Pieces::ALL {
+            self.sides[Sides::White] |= self.bitboards[Sides::White][piece];
+            self.sides[Sides::Black] |= self.bitboards[Sides::Black][piece];
         }
-
-        self.sides[Sides::TOTAL] = self.occupancy::<White>() | self.occupancy::<Black>();
+        self.sides[Sides::TOTAL] = self.sides[Sides::White] | self.sides[Sides::Black];
     }
 
-    /// init_pieces initializes the `pieces` array by iterating through the
-    /// bitboards of each side and setting the piece type on each square
+    /// initialize_pieces derives the piece type occupying each square
     ///
     /// @return: void
-    /// @requires: `bitboards` is initialized
-    /// @side-effects: modifies the `pieces` array and the evaluation state
-    fn init_pieces<EvalStateT: EvalState>(&mut self, eval_state: &mut EvalStateT) {
-        let white = self.bitboards[Sides::White];
-        let black = self.bitboards[Sides::Black];
-
-        // set the piece type on each square
+    /// @side-effects: initializes the position piece map
+    fn initialize_pieces(&mut self) {
+        self.pieces = [Pieces::None; Square::TOTAL];
         for square in Square::ALL {
-            let mut on_square: Pieces = Pieces::None;
-
             let mask = Bitboard::square(square);
-            for (piece, (w, b)) in white.iter().zip(black.iter()).enumerate() {
-                if (w & mask).not_empty() {
-                    on_square = Pieces::from_idx(piece);
-                    eval_state.on_set_piece::<White>(on_square, square);
-                    break; // enforce exclusivity
-                }
-                if (b & mask).not_empty() {
-                    on_square = Pieces::from_idx(piece);
-                    eval_state.on_set_piece::<Black>(on_square, square);
-                    break; // enforce exclusivity
+            for side in [Sides::White, Sides::Black] {
+                for piece in Pieces::ALL {
+                    if self.bitboards[side][piece].intersects(mask) {
+                        self.pieces[square] = piece;
+                    }
                 }
             }
-
-            self.pieces[square] = on_square;
         }
     }
 
-    /// init_state initializes the state for the given position
+    /// initialize_state derives incremental state for SideT to move
     ///
+    /// @marker: SideT - side to move in the initialized position
     /// @return: void
-    /// @side-effects: modifies the `state`
-    fn init_state<SideT: Side>(&mut self) {
-        // in our position definition, we define the state's en passant square
-        // to be present if the previous move was a double pawn push AND the
-        // opponent has a pawn next to the destination square of the double pawn
-        // push
-        //
-        // TODO: move this hack elsewhere
+    /// @side-effects: initializes the position state
+    fn initialize_state<SideT: Side>(&mut self) {
         if let Some(en_passant_square) = self.state().en_passant() {
             let attacking_pawns = self.get_piece::<SideT>(Pieces::Pawn)
                 & AT::pawn_targets::<SideT::Other>(en_passant_square);
-
-            // if there are no pawns that can attack the en passant square, then
-            // no en passant capture is possible
             if attacking_pawns.is_empty() {
                 self.state_mut().set_en_passant(None);
             }
         }
 
-        // set the state key
         let key = ZobristTable::new_key::<SideT>(
             self.state().castling(),
             self.state().en_passant(),
             self.bitboards,
         );
         self.state_mut().set_key(key);
-
-        // initialize the cached material draw information. repetition begins at
-        // zero since a FEN contains no position history
         self.update_material_draw_state();
 
-        // update the check info and checkers in the state
         let checkers = self.is_checked_by::<SideT>();
         self.state_mut().set_checkers(checkers);
         self.update_check_info::<SideT>();
     }
+}
 
-    /// load_validated_fen loads a new position as defined by the fen string.
+impl<AT: AttackTable> Default for DefaultPosition<AT> {
+    /// default creates the standard starting position
     ///
-    /// @params: fen - the FEN string position to load
-    /// @return: the current evaluation state from the given position
-    /// @side-effect: modifies the position
-    fn load_validated_fen<EvalStateT: EvalState>(&mut self, fen: &Fen) -> EvalStateT {
-        self.history.clear();
-        self.history.push(StateT::default());
-        self.bitboards = [[Bitboard::empty(); Pieces::TOTAL]; Sides::TOTAL];
-
-        for (square, piece) in Square::ALL.into_iter().zip(fen.pieces()) {
-            if let Some((side, piece)) = piece {
-                self.bitboards[*side][*piece] |= Bitboard::square(square);
-            }
-        }
-
-        {
-            let state = self.state_mut();
-            state.set_turn(fen.side_to_move());
-            state.set_castling(fen.castling());
-            state.set_en_passant(fen.en_passant());
-            state.set_halfmoves(fen.halfmoves());
-            state.set_fullmoves(fen.fullmoves());
-        }
-
-        let mut eval_state = EvalStateT::new();
-        self.init(&mut eval_state);
-        eval_state
+    /// @return: standard starting position
+    fn default() -> Self {
+        Setup::default().into()
     }
 }
 
-impl<AT, StateT> From<Fen> for DefaultPosition<AT, StateT>
-where
-    AT: AttackTable,
-    StateT: State,
-{
-    fn from(fen: Fen) -> Self {
-        let mut position = Self::new();
-        position.load_validated_fen::<NoOpEvalState>(&fen);
-        position
-    }
-}
-
-impl<AT, StateT> PositionFromFEN for DefaultPosition<AT, StateT>
-where
-    AT: AttackTable,
-    StateT: State,
-{
-    /// load_fen loads a new position from the given FEN string
+impl<AT: AttackTable> From<Setup> for DefaultPosition<AT> {
+    /// from creates a position from a validated setup
     ///
-    /// @impl: PositionFromFEN::load_fen
-    fn load_fen<EvalStateT: EvalState>(&mut self, fen: &str) -> Result<EvalStateT, FENError> {
-        let fen = Fen::try_from(fen)?;
-        Ok(self.load_validated_fen::<EvalStateT>(&fen))
+    /// @param: setup - validated setup to load
+    /// @return: initialized position
+    fn from(setup: Setup) -> Self {
+        Self::from_setup(setup)
     }
 }

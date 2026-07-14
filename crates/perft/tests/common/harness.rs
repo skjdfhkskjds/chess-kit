@@ -3,7 +3,7 @@ use crate::common::{PerftCase, PerftRunError, PerftRunReport};
 use chess_kit_eval::{Accumulator, EvalState};
 use chess_kit_movegen::MoveGenerator;
 use chess_kit_perft::{PerftData, perft, perft_divide_print};
-use chess_kit_position::Position;
+use chess_kit_position::{Fen, Position, Setup};
 use chess_kit_transposition::TranspositionTable;
 use std::marker::PhantomData;
 use std::time::Instant;
@@ -20,7 +20,7 @@ pub enum PerftHarnessMode {
 pub struct PerftHarness<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
 where
     MoveGeneratorT: MoveGenerator,
-    PositionT: Position,
+    PositionT: Position + From<Setup>,
     AccumulatorT: Accumulator<EvalStateT>,
     EvalStateT: EvalState,
     TranspositionTableT: TranspositionTable<PerftData>,
@@ -39,7 +39,7 @@ impl<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
     PerftHarness<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
 where
     MoveGeneratorT: MoveGenerator,
-    PositionT: Position,
+    PositionT: Position + From<Setup>,
     AccumulatorT: Accumulator<EvalStateT>,
     EvalStateT: EvalState,
     TranspositionTableT: TranspositionTable<PerftData>,
@@ -54,7 +54,7 @@ where
             move_generator: MoveGeneratorT::new(),
             accumulator: AccumulatorT::new(),
             tt: TranspositionTableT::new(tt_size),
-            position: PositionT::new(),
+            position: PositionT::default(),
             _eval_state: PhantomData,
         }
     }
@@ -70,7 +70,7 @@ impl<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
     PerftHarness<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT, TranspositionTableT>
 where
     MoveGeneratorT: MoveGenerator,
-    PositionT: Position,
+    PositionT: Position + From<Setup>,
     AccumulatorT: Accumulator<EvalStateT>,
     EvalStateT: EvalState,
     TranspositionTableT: TranspositionTable<PerftData>,
@@ -131,17 +131,15 @@ where
     }
 
     fn run_test(&mut self, test: &PerftCase) -> PerftRunResult {
-        self.position.reset();
         self.accumulator.reset();
         self.tt.clear();
 
-        let eval = self
-            .position
-            .load_fen::<EvalStateT>(&test.fen)
-            .map_err(|err| PerftRunError::LoadFen {
-                fen: test.fen.clone(),
-                source: err.to_string(),
-            })?;
+        let fen = Fen::try_from(test.fen.as_str()).map_err(|err| PerftRunError::LoadFen {
+            fen: test.fen.clone(),
+            source: err.to_string(),
+        })?;
+        self.position = Setup::from(fen).into();
+        let eval = EvalStateT::from_position(&self.position);
         self.accumulator.push(eval);
 
         let started_at = Instant::now();

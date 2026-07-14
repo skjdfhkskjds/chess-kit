@@ -1,6 +1,6 @@
 use crate::{MoveGenerator, MoveType};
 use chess_kit_attack_table::AttackTable;
-use chess_kit_position::{PositionAttacks, PositionMoves, PositionState};
+use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 use chess_kit_primitives::{Black, MoveList, Sides, White, moves::MoveType::EnPassant};
 use std::marker::PhantomData;
 
@@ -26,7 +26,7 @@ impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
     /// from the current position and pushes them to the move list
     ///
     /// @impl: MoveGenerator::generate_moves
-    fn generate_moves<PositionT: PositionState + PositionAttacks>(
+    fn generate_moves<PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
@@ -46,7 +46,7 @@ impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
     /// and pushes them to the move list
     ///
     /// @impl: MoveGenerator::generate_legal_moves
-    fn generate_legal_moves<PositionT: PositionState + PositionAttacks + PositionMoves>(
+    fn generate_legal_moves<PositionT: PositionView + PositionAttacks + PositionMoves>(
         &self,
         position: &PositionT,
         list: &mut MoveList,

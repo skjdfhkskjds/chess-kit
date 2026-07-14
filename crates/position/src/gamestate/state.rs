@@ -1,374 +1,313 @@
-use super::{DrawState, State, StateReader, StateWriter};
+use super::{
+    DrawState, capture_info::CaptureInfo, check_info::CheckInfo,
+    position_metadata::PositionMetadata,
+};
 use chess_kit_collections::Copyable;
 use chess_kit_primitives::{Bitboard, Castling, Clock, Pieces, Side, Sides, Square, ZobristKey};
 
-/// `StateHeader` is a header for a state that contains the parts of the state
-/// copied when deriving a new state entry from the current state
+/// PositionState is the complete private state for one history ply
 ///
-/// note: this is the struct that is copied when deriving a new state entry from
-///       the current state in the history
+/// PositionState composes persistent metadata with per-move capture information and derived
+/// tactical caches so undo can restore the previous ply directly from history
 ///
 /// @type
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct StateHeader {
-    pub(super) turn: Sides,                // side to move
-    pub(super) captured_piece: Pieces,     // piece that was captured to arrive at this state
-    pub(super) castling: Castling,         // castling rights
-    pub(super) en_passant: Option<Square>, // active en passant square, if any
-    pub(super) halfmoves: Clock,           // halfmove clock
-    pub(super) fullmoves: Clock,           // fullmove clock
-    pub(super) key: ZobristKey,            // key for the current state
-    pub(super) draw_state: DrawState,      // incrementally maintained draw information
+#[derive(Clone, Copy, Default)]
+pub(crate) struct PositionState {
+    pub(crate) metadata: PositionMetadata,
+    pub(crate) capture_info: CaptureInfo,
+    pub(crate) check_info: CheckInfo,
 }
 
-impl StateHeader {
-    /// new creates a new, empty state header
+impl PositionState {
+    /// initialize_from initializes a spare history entry without copying its tactical arrays
     ///
-    /// @return: new, empty state header
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            turn: Sides::White,
-            captured_piece: Pieces::None,
-            castling: Castling::all(),
-            en_passant: None,
-            halfmoves: 0,
-            fullmoves: 0,
-            key: ZobristKey::default(),
-            draw_state: DrawState::new(),
-        }
-    }
-
-    /// reset resets the state header to a new initial state
-    ///
+    /// @param: previous - state whose metadata should be copied
     /// @return: void
-    /// @side-effects: modifies the `state header`
-    #[inline]
-    pub fn reset(&mut self) {
-        self.turn = Sides::White;
-        self.captured_piece = Pieces::None;
-        self.castling = Castling::all();
-        self.en_passant = None;
-        self.halfmoves = 0;
-        self.fullmoves = 0;
-        self.key = ZobristKey::default();
-        self.draw_state = DrawState::new();
-    }
-}
-
-/// DefaultState is the default implementation of the State trait
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct DefaultState {
-    pub(super) header: StateHeader, // header of the state
-
-    // ==============================
-    //           NOT COPIED
-    // ==============================
-    checkers: Bitboard, // pieces that are checking the opponent's king
-    king_blockers: [Bitboard; Sides::TOTAL], // side's king's blockers
-    pinners: [Bitboard; Sides::TOTAL], // pieces that are pinning the opponent's king
-    check_squares: [Bitboard; Pieces::TOTAL], // squares that each piece would deliver check
-}
-
-impl State for DefaultState {
-    /// new creates a new, empty state
-    ///
-    /// @impl: State::new
-    #[inline]
-    fn new() -> Self {
-        Self {
-            header: StateHeader::new(),
-            checkers: Bitboard::empty(),
-            king_blockers: [Bitboard::empty(); Sides::TOTAL],
-            pinners: [Bitboard::empty(); Sides::TOTAL],
-            check_squares: [Bitboard::empty(); Pieces::TOTAL],
-        }
+    /// @side-effects: replaces the current metadata
+    #[inline(always)]
+    fn initialize_from(&mut self, previous: &Self) {
+        self.metadata = previous.metadata;
     }
 
-    /// reset resets the state to a new initial state
+    /// draw_state returns the incrementally maintained draw information
     ///
-    /// @impl: State::reset
+    /// @return: draw information for the current position
     #[inline]
-    fn reset(&mut self) {
-        self.header.reset();
-        self.checkers = Bitboard::empty();
-        self.king_blockers = [Bitboard::empty(); Sides::TOTAL];
-        self.pinners = [Bitboard::empty(); Sides::TOTAL];
-        self.check_squares = [Bitboard::empty(); Pieces::TOTAL];
-    }
-}
-
-impl StateReader for DefaultState {
-    /// draw_state returns the incrementally maintained draw information for the
-    /// current position
-    ///
-    /// @impl: StateReader::draw_state
-    #[inline]
-    fn draw_state(&self) -> DrawState {
-        self.header.draw_state
+    pub(crate) fn draw_state(&self) -> DrawState {
+        self.metadata.draw_state
     }
 
     /// turn returns the side to move
     ///
-    /// @impl: StateReader::turn
+    /// @return: side to move
     #[inline]
-    fn turn(&self) -> Sides {
-        self.header.turn
+    pub(crate) fn turn(&self) -> Sides {
+        self.metadata.turn
     }
 
     /// castling returns the current castling rights
     ///
-    /// @impl: StateReader::castling
+    /// @return: current castling rights
     #[inline]
-    fn castling(&self) -> Castling {
-        self.header.castling
+    pub(crate) fn castling(&self) -> Castling {
+        self.metadata.castling
     }
 
     /// en_passant returns the current en passant square, if any
     ///
-    /// @impl: StateReader::en_passant
+    /// @return: current en passant square, if any
     #[inline]
-    fn en_passant(&self) -> Option<Square> {
-        self.header.en_passant
+    pub(crate) fn en_passant(&self) -> Option<Square> {
+        self.metadata.en_passant
     }
 
-    /// captured_piece returns the piece that was captured to arrive at this state
+    /// captured_piece returns the piece captured to enter the current state
     ///
-    /// @impl: StateReader::captured_piece
+    /// @return: captured piece, or `Pieces::None` if no capture occurred
     #[inline]
-    fn captured_piece(&self) -> Pieces {
-        self.header.captured_piece
+    pub(crate) fn captured_piece(&self) -> Pieces {
+        self.capture_info.captured_piece
     }
 
-    /// halfmoves returns the value of the current halfmove clock
+    /// halfmoves returns the current halfmove clock
     ///
-    /// @impl: StateReader::halfmoves
+    /// @return: current halfmove clock
     #[inline]
-    fn halfmoves(&self) -> Clock {
-        self.header.halfmoves
+    pub(crate) fn halfmoves(&self) -> Clock {
+        self.metadata.halfmoves
     }
 
-    /// fullmoves returns the value of the current fullmove clock
+    /// fullmoves returns the current fullmove clock
     ///
-    /// @impl: StateReader::fullmoves
+    /// @return: current fullmove clock
     #[inline]
-    fn fullmoves(&self) -> Clock {
-        self.header.fullmoves
+    pub(crate) fn fullmoves(&self) -> Clock {
+        self.metadata.fullmoves
     }
 
-    /// key returns a key representing a unique identifier of the state
+    /// key returns the incremental position key
     ///
-    /// @impl: StateReader::key
+    /// @return: unique key for the current position
     #[inline]
-    fn key(&self) -> ZobristKey {
-        self.header.key
+    pub(crate) fn key(&self) -> ZobristKey {
+        self.metadata.key
     }
 
-    /// checkers returns the bitboard of pieces that are checking the opponent's king
+    /// checkers returns the pieces checking the side-to-move's king
     ///
-    /// @impl: StateReader::checkers
+    /// @return: bitboard of checking pieces
     #[inline]
-    fn checkers(&self) -> Bitboard {
-        self.checkers
+    pub(crate) fn checkers(&self) -> Bitboard {
+        self.check_info.checkers
     }
 
-    /// king_blocker_pieces returns the bitboard of the side's king's blocker
-    /// pieces
+    /// king_blocker_pieces returns the pieces blocking SideT's king
     ///
-    /// @impl: StateReader::king_blocker_pieces
+    /// @marker: SideT - side whose king blockers should be returned
+    /// @return: bitboard of SideT's king blockers
     #[inline]
-    fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
-        self.king_blockers[SideT::SIDE]
+    pub(crate) fn king_blocker_pieces<SideT: Side>(&self) -> Bitboard {
+        self.check_info.king_blockers[SideT::SIDE]
     }
 
-    /// pinning_pieces returns the bitboard of the pieces that are pinning the
-    /// opponent's king
+    /// pinning_pieces returns SideT's pieces pinning the opposing side
     ///
-    /// @impl: StateReader::pinning_pieces
+    /// @marker: SideT - side whose pinning pieces should be returned
+    /// @return: bitboard of SideT's pinning pieces
     #[inline]
-    fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
-        self.pinners[SideT::SIDE]
+    pub(crate) fn pinning_pieces<SideT: Side>(&self) -> Bitboard {
+        self.check_info.pinners[SideT::SIDE]
     }
 
-    /// check_squares returns the bitboard of squares that a given piece would
-    /// have to be on to deliver check to SideT::Other's king
+    /// check_squares returns the squares where a piece would deliver check
     ///
-    /// @impl: StateReader::check_squares
+    /// @param: piece - piece type whose checking squares should be returned
+    /// @return: bitboard of squares that would deliver check
     #[inline]
-    fn check_squares<SideT: Side>(&self, piece: Pieces) -> Bitboard {
-        self.check_squares[piece]
+    pub(crate) fn check_squares(&self, piece: Pieces) -> Bitboard {
+        self.check_info.check_squares[piece]
+    }
+
+    /// set_draw_state replaces the incrementally maintained draw information
+    ///
+    /// @param: draw_state - draw information to set
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_draw_state(&mut self, draw_state: DrawState) {
+        self.metadata.draw_state = draw_state;
+    }
+
+    /// set_turn replaces the side to move
+    ///
+    /// @param: turn - side to move
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_turn(&mut self, turn: Sides) {
+        self.metadata.turn = turn;
+    }
+
+    /// set_castling replaces the current castling rights
+    ///
+    /// @param: castling - castling rights to set
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_castling(&mut self, castling: Castling) {
+        self.metadata.castling = castling;
+    }
+
+    /// set_en_passant replaces the current en passant square
+    ///
+    /// @param: en_passant - en passant square to set, if any
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_en_passant(&mut self, en_passant: Option<Square>) {
+        self.metadata.en_passant = en_passant;
+    }
+
+    /// set_captured_piece records the piece captured to enter this state
+    ///
+    /// @param: piece - captured piece to record
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_captured_piece(&mut self, piece: Pieces) {
+        self.capture_info = CaptureInfo {
+            captured_piece: piece,
+        };
+    }
+
+    /// set_halfmoves replaces the current halfmove clock
+    ///
+    /// @param: halfmoves - halfmove clock to set
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_halfmoves(&mut self, halfmoves: Clock) {
+        self.metadata.halfmoves = halfmoves;
+    }
+
+    /// inc_halfmoves increments the halfmove clock
+    ///
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn inc_halfmoves(&mut self) {
+        self.metadata.halfmoves += 1;
+    }
+
+    /// set_fullmoves replaces the current fullmove clock
+    ///
+    /// @param: fullmoves - fullmove clock to set
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_fullmoves(&mut self, fullmoves: Clock) {
+        self.metadata.fullmoves = fullmoves;
+    }
+
+    /// inc_fullmoves increments the fullmove clock
+    ///
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn inc_fullmoves(&mut self) {
+        self.metadata.fullmoves += 1;
+    }
+
+    /// set_key replaces the incremental position key
+    ///
+    /// @param: key - position key to set
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_key(&mut self, key: ZobristKey) {
+        self.metadata.key = key;
+    }
+
+    /// update_key applies a Zobrist delta to the current position key
+    ///
+    /// @param: key - Zobrist delta to apply
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn update_key(&mut self, key: ZobristKey) {
+        self.metadata.key ^= key;
+    }
+
+    /// set_checkers replaces the pieces checking the side-to-move's king
+    ///
+    /// @param: checkers - bitboard of checking pieces
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_checkers(&mut self, checkers: Bitboard) {
+        self.check_info.checkers = checkers;
+    }
+
+    /// set_king_blocker_pieces replaces the pieces blocking SideT's king
+    ///
+    /// @marker: SideT - side whose king blockers should be set
+    /// @param: pieces - bitboard of king blockers
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_king_blocker_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
+        self.check_info.king_blockers[SideT::SIDE] = pieces;
+    }
+
+    /// set_pinning_pieces replaces SideT's pinning pieces
+    ///
+    /// @marker: SideT - side whose pinning pieces should be set
+    /// @param: pieces - bitboard of pinning pieces
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
+        self.check_info.pinners[SideT::SIDE] = pieces;
+    }
+
+    /// set_check_squares replaces the checking squares for a piece type
+    ///
+    /// @param: piece - piece type whose checking squares should be set
+    /// @param: squares - bitboard of checking squares
+    /// @return: void
+    /// @side-effects: modifies the current state
+    #[inline]
+    pub(crate) fn set_check_squares(&mut self, piece: Pieces, squares: Bitboard) {
+        self.check_info.check_squares[piece] = squares;
     }
 }
 
-impl StateWriter for DefaultState {
-    /// set_draw_state sets the incrementally maintained draw information for the
-    /// current position
-    ///
-    /// @impl: StateWriter::set_draw_state
-    #[inline]
-    fn set_draw_state(&mut self, draw_state: DrawState) {
-        self.header.draw_state = draw_state;
-    }
-
-    /// set_turn sets the side to move
-    ///
-    /// @impl: StateWriter::set_turn
-    #[inline]
-    fn set_turn(&mut self, turn: Sides) {
-        self.header.turn = turn;
-    }
-
-    /// set_castling sets the castling rights
-    ///
-    /// @impl: StateWriter::set_castling
-    #[inline]
-    fn set_castling(&mut self, castling: Castling) {
-        self.header.castling = castling;
-    }
-
-    /// set_en_passant sets the en passant square, if any
-    ///
-    /// @impl: StateWriter::set_en_passant
-    #[inline]
-    fn set_en_passant(&mut self, en_passant: Option<Square>) {
-        self.header.en_passant = en_passant;
-    }
-
-    /// set_captured_piece sets the piece that was captured to arrive at this state
-    ///
-    /// @impl: StateWriter::set_captured_piece
-    #[inline]
-    fn set_captured_piece(&mut self, piece: Pieces) {
-        self.header.captured_piece = piece;
-    }
-
-    /// set_halfmoves sets the value of the current halfmove clock
-    ///
-    /// @impl: StateWriter::set_halfmoves
-    #[inline]
-    fn set_halfmoves(&mut self, halfmoves: Clock) {
-        self.header.halfmoves = halfmoves;
-    }
-
-    /// inc_halfmoves increments the value of the current halfmove clock by one
-    ///
-    /// @impl: StateWriter::inc_halfmoves
-    #[inline]
-    fn inc_halfmoves(&mut self) {
-        self.header.halfmoves += 1;
-    }
-
-    /// dec_halfmoves decrements the value of the current halfmove clock by one
-    ///
-    /// @impl: StateWriter::dec_halfmoves
-    #[inline]
-    fn dec_halfmoves(&mut self) {
-        self.header.halfmoves -= 1;
-    }
-
-    /// set_fullmoves sets the value of the current fullmove clock
-    ///
-    /// @impl: StateWriter::set_fullmoves
-    #[inline]
-    fn set_fullmoves(&mut self, fullmoves: Clock) {
-        self.header.fullmoves = fullmoves;
-    }
-
-    /// inc_fullmoves increments the value of the current fullmove clock by one
-    ///
-    /// @impl: StateWriter::inc_fullmoves
-    #[inline]
-    fn inc_fullmoves(&mut self) {
-        self.header.fullmoves += 1;
-    }
-
-    /// dec_fullmoves decrements the value of the current fullmove clock by one
-    ///
-    /// @impl: StateWriter::dec_fullmoves
-    #[inline]
-    fn dec_fullmoves(&mut self) {
-        self.header.fullmoves -= 1;
-    }
-
-    /// set_key sets the key for the current state
-    ///
-    /// @impl: StateWriter::set_key
-    #[inline]
-    fn set_key(&mut self, key: ZobristKey) {
-        self.header.key = key;
-    }
-
-    /// update_key updates the key for the current state
-    ///
-    /// note: XOR's the current key with the given key, not a `set`
-    ///
-    /// @impl: StateWriter::update_key
-    #[inline]
-    fn update_key(&mut self, key: ZobristKey) {
-        self.header.key ^= key;
-    }
-
-    /// set_checkers sets the bitboard of pieces that are checking the opponent's king
-    ///
-    /// @impl: StateWriter::set_checkers
-    #[inline]
-    fn set_checkers(&mut self, checkers: Bitboard) {
-        self.checkers = checkers;
-    }
-
-    /// set_king_blocker_pieces sets the bitboard of the side's king's blocker
-    /// pieces
-    ///
-    /// @impl: StateWriter::set_king_blocker_pieces
-    #[inline]
-    fn set_king_blocker_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
-        self.king_blockers[SideT::SIDE] = pieces;
-    }
-
-    /// set_pinning_pieces sets the bitboard of the pieces that are pinning the
-    /// opponent's king
-    ///
-    /// @impl: StateWriter::set_pinning_pieces
-    #[inline]
-    fn set_pinning_pieces<SideT: Side>(&mut self, pieces: Bitboard) {
-        self.pinners[SideT::SIDE] = pieces;
-    }
-
-    /// set_check_squares sets the bitboard of squares that a given piece would
-    /// have to be on to deliver check to SideT::Other's king
-    ///
-    /// @impl: StateWriter::set_check_squares
-    #[inline]
-    fn set_check_squares<SideT: Side>(&mut self, piece: Pieces, squares: Bitboard) {
-        self.check_squares[piece] = squares;
-    }
-}
-
-impl Copyable for DefaultState {
-    /// copy_from copies the header of another state into this state
+impl Copyable for PositionState {
+    /// copy_from initializes this history entry from another state
     ///
     /// @impl: Copyable::copy_from
-    #[inline]
+    #[inline(always)]
     fn copy_from(&mut self, other: &Self) {
-        self.header = other.header;
-    }
-}
-
-impl Default for DefaultState {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
+        self.initialize_from(other);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::mem::size_of;
 
     #[test]
-    fn draw_state_uses_existing_state_header_padding() {
-        assert_eq!(size_of::<StateHeader>(), 24);
-        assert_eq!(size_of::<DefaultState>(), 120);
+    fn history_initialization_only_copies_metadata() {
+        let mut previous = PositionState::default();
+        previous.metadata.halfmoves = 12;
+        previous.capture_info.captured_piece = Pieces::Queen;
+        previous.check_info.checkers = Bitboard::square(Square::E4);
+
+        let mut next = PositionState::default();
+        next.initialize_from(&previous);
+
+        assert_eq!(next.metadata.halfmoves, 12);
+        assert_eq!(next.capture_info.captured_piece, Pieces::None);
+        assert!(next.check_info.checkers.is_empty());
     }
 }

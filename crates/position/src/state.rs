@@ -1,18 +1,17 @@
 use crate::position::DefaultPosition;
-use crate::{DrawState, PositionState, State};
+use crate::{DrawState, PositionState, PositionView};
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
 
-impl<AT, StateT> DefaultPosition<AT, StateT>
+impl<AT> DefaultPosition<AT>
 where
     AT: AttackTable,
-    StateT: State,
 {
     /// state returns a reference to the current state
     ///
     /// @return: reference to the current state
     #[inline]
-    pub fn state(&self) -> &StateT {
+    pub(crate) fn state(&self) -> &PositionState {
         self.history.top()
     }
 
@@ -20,28 +19,26 @@ where
     ///
     /// @return: mutable reference to the current state
     #[inline]
-    pub fn state_mut(&mut self) -> &mut StateT {
+    pub(crate) fn state_mut(&mut self) -> &mut PositionState {
         self.history.top_mut()
+    }
+
+    /// draw_state returns the incrementally maintained draw information
+    ///
+    /// @return: draw information for the current position
+    #[inline]
+    pub fn draw_state(&self) -> DrawState {
+        self.state().draw_state()
     }
 }
 
-impl<AT, StateT> PositionState for DefaultPosition<AT, StateT>
+impl<AT> PositionView for DefaultPosition<AT>
 where
     AT: AttackTable,
-    StateT: State,
 {
-    /// draw_state gets the incrementally maintained draw information for the
-    /// current position
-    ///
-    /// @impl: PositionState::draw_state
-    #[inline]
-    fn draw_state(&self) -> DrawState {
-        self.state().draw_state()
-    }
-
     /// total_occupancy gets the full occupancy bitboard of both sides
     ///
-    /// @impl: PositionState::total_occupancy
+    /// @impl: PositionView::total_occupancy
     #[inline]
     fn total_occupancy(&self) -> Bitboard {
         self.sides[Sides::TOTAL]
@@ -49,7 +46,7 @@ where
 
     /// empty_squares gets the bitboard of all empty squares
     ///
-    /// @impl: PositionState::empty_squares
+    /// @impl: PositionView::empty_squares
     #[inline]
     fn empty_squares(&self) -> Bitboard {
         !self.total_occupancy()
@@ -57,7 +54,7 @@ where
 
     /// occupancy gets the occupancy bitboard of SideT
     ///
-    /// @impl: PositionState::occupancy
+    /// @impl: PositionView::occupancy
     #[inline]
     fn occupancy<SideT: Side>(&self) -> Bitboard {
         self.sides[SideT::SIDE]
@@ -65,7 +62,7 @@ where
 
     /// piece_at gets the piece type at the given square
     ///
-    /// @impl: PositionState::piece_at
+    /// @impl: PositionView::piece_at
     #[inline]
     fn piece_at(&self, square: Square) -> Pieces {
         self.pieces[square]
@@ -73,7 +70,7 @@ where
 
     /// turn gets the side to move
     ///
-    /// @impl: PositionState::turn
+    /// @impl: PositionView::turn
     #[inline]
     fn turn(&self) -> Sides {
         self.state().turn()
@@ -81,7 +78,7 @@ where
 
     /// king_square gets the square that the king of SideT is currently occupying
     ///
-    /// @impl: PositionState::king_square
+    /// @impl: PositionView::king_square
     #[inline]
     fn king_square<SideT: Side>(&self) -> Square {
         debug_assert!(
@@ -96,7 +93,7 @@ where
     /// get_piece gets a bitboard representing all the squares that are occupied
     /// by all of SideT's `piece` pieces
     ///
-    /// @impl: PositionState::get_piece
+    /// @impl: PositionView::get_piece
     #[inline]
     fn get_piece<SideT: Side>(&self, piece: Pieces) -> Bitboard {
         self.bitboards[SideT::SIDE][piece]
@@ -104,7 +101,7 @@ where
 
     /// en_passant gets the current en passant square, if it exists
     ///
-    /// @impl: PositionState::en_passant
+    /// @impl: PositionView::en_passant
     #[inline]
     fn en_passant(&self) -> Option<Square> {
         self.state().en_passant()
@@ -113,7 +110,7 @@ where
     /// castling gets the representation of the current castling rights in the
     /// position
     ///
-    /// @impl: PositionState::castling
+    /// @impl: PositionView::castling
     #[inline]
     fn castling(&self) -> Castling {
         self.state().castling()
@@ -121,7 +118,7 @@ where
 
     /// key gets the unique key identifier for the current position
     ///
-    /// @impl: PositionState::key
+    /// @impl: PositionView::key
     #[inline]
     fn key(&self) -> ZobristKey {
         self.state().key()

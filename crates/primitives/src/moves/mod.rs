@@ -1,5 +1,7 @@
+mod move_delta;
 mod move_list;
 
+pub use move_delta::*;
 pub use move_list::*;
 
 use crate::{Pieces, Square};

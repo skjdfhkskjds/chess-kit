@@ -1,34 +1,54 @@
 use super::{
-    CastlingSquares, DefaultPosition, PositionAttacks, PositionMoves, PositionState, State,
+    CastlingSquares, DefaultPosition, PlayError, PositionAttacks, PositionMoves, PositionView,
 };
 use chess_kit_attack_table::AttackTable;
-use chess_kit_eval::EvalState;
 use chess_kit_primitives::{
-    Bitboard, Black, Move, MoveType, Pieces, Side, Sides, Square, White, ZobristTable,
+    Bitboard, Black, Move, MoveDelta, MoveType, PieceDelta, Pieces, Side, Sides, Square, White,
+    ZobristTable,
 };
 
-impl<AT, StateT> PositionMoves for DefaultPosition<AT, StateT>
+impl<AT> PositionMoves for DefaultPosition<AT>
 where
     AT: AttackTable,
-    StateT: State,
 {
-    /// make_move makes the given move from the current position
+    /// play validates and plays a move
     ///
-    /// @impl: PositionMoves::make_move
-    fn make_move<EvalStateT: EvalState>(&mut self, mv: Move, eval: &mut EvalStateT) {
+    /// @impl: PositionMoves::play
+    #[inline]
+    fn play(&mut self, mv: Move) -> Result<MoveDelta, PlayError> {
+        let legal = match self.turn() {
+            Sides::White => {
+                self.occupancy::<White>().has_square(mv.from()) && self.is_legal_move::<White>(mv)
+            }
+            Sides::Black => {
+                self.occupancy::<Black>().has_square(mv.from()) && self.is_legal_move::<Black>(mv)
+            }
+        };
+        if !legal {
+            return Err(PlayError::IllegalMove(mv));
+        }
+        Ok(self.play_unchecked(mv))
+    }
+
+    /// play_unchecked plays a move without checking its legality
+    ///
+    /// @impl: PositionMoves::play_unchecked
+    #[inline]
+    fn play_unchecked(&mut self, mv: Move) -> MoveDelta {
         match self.turn() {
-            Sides::White => self.make_move_for_side::<White, EvalStateT>(mv, eval),
-            Sides::Black => self.make_move_for_side::<Black, EvalStateT>(mv, eval),
+            Sides::White => self.play_unchecked_for_side::<White>(mv),
+            Sides::Black => self.play_unchecked_for_side::<Black>(mv),
         }
     }
 
-    /// unmake_move unmakes the last move on the board
+    /// undo reverses the last move on the board
     ///
-    /// @impl: PositionMoves::unmake_move
-    fn unmake_move(&mut self, mv: Move) {
+    /// @impl: PositionMoves::undo
+    #[inline]
+    fn undo(&mut self, mv: Move) {
         match self.turn() {
-            Sides::White => self.unmake_move_for_side::<Black>(mv),
-            Sides::Black => self.unmake_move_for_side::<White>(mv),
+            Sides::White => self.undo_for_side::<Black>(mv),
+            Sides::Black => self.undo_for_side::<White>(mv),
         }
     }
 
@@ -91,9 +111,7 @@ where
         //
         // see `Position::update_check_info` for more details on the precomputed
         // check squares
-        if !matches!(piece, Pieces::King)
-            && self.state().check_squares::<SideT>(piece).has_square(to)
-        {
+        if !matches!(piece, Pieces::King) && self.state().check_squares(piece).has_square(to) {
             return true;
         }
 
@@ -177,17 +195,16 @@ where
                 // check if the opponent's king is being attacked by the rook
                 // after the castle
                 self.state()
-                    .check_squares::<SideT>(Pieces::Rook)
+                    .check_squares(Pieces::Rook)
                     .has_square(rook_square)
             }
         }
     }
 }
 
-impl<AT, StateT> DefaultPosition<AT, StateT>
+impl<AT> DefaultPosition<AT>
 where
     AT: AttackTable,
-    StateT: State,
 {
     /// move_piece_no_incrementals moves SideT's piece from the given square to
     /// the given square without updating the zobrist key or any incremental game
@@ -217,44 +234,27 @@ where
     /// @return: void
     /// @side-effects: modifies the `position`
     #[inline]
-    fn move_piece<SideT: Side, EvalStateT: EvalState>(
-        &mut self,
-        piece: Pieces,
-        from: Square,
-        to: Square,
-        eval: &mut EvalStateT,
-    ) {
+    fn move_piece<SideT: Side>(&mut self, piece: Pieces, from: Square, to: Square) {
         self.move_piece_no_incrementals::<SideT>(piece, from, to);
 
         // update the zobrist key
         let key =
             ZobristTable::piece::<SideT>(piece, from) ^ ZobristTable::piece::<SideT>(piece, to);
         self.state_mut().update_key(key);
-
-        // fire the incremental evaluation callbacks
-        eval.on_remove_piece::<SideT>(piece, from);
-        eval.on_set_piece::<SideT>(piece, to);
     }
 
     /// capture_piece captures SideT's piece at the given square
     ///
     /// @param: piece - piece to capture
     /// @param: square - square that the captured piece is on
-    /// @param: eval - mutable reference to the evaluation state to update
     /// @return: void
     /// @side-effects: modifies the `position`
-    /// @side-effects: modifies the evaluation state
     /// @side-effects: resets the halfmove clock
     /// @side-effects: updates castling permissions (if applicable)
     #[inline]
-    fn capture_piece<SideT: Side, EvalStateT: EvalState>(
-        &mut self,
-        piece: Pieces,
-        square: Square,
-        eval: &mut EvalStateT,
-    ) {
+    fn capture_piece<SideT: Side>(&mut self, piece: Pieces, square: Square) {
         // remove the piece from the board
-        self.remove_piece::<SideT, EvalStateT>(piece, square, eval);
+        self.remove_piece::<SideT>(piece, square);
 
         // reset the halfmove clock since a capture has occurred
         self.state_mut().set_halfmoves(0);
@@ -370,33 +370,83 @@ where
         // note: the king can never deliver check to SideT::Other, so pass an
         //       empty bitboard for the king
         self.state_mut()
-            .set_check_squares::<SideT>(Pieces::Pawn, pawn_targets);
+            .set_check_squares(Pieces::Pawn, pawn_targets);
         self.state_mut()
-            .set_check_squares::<SideT>(Pieces::Knight, knight_targets);
+            .set_check_squares(Pieces::Knight, knight_targets);
         self.state_mut()
-            .set_check_squares::<SideT>(Pieces::Rook, rook_targets);
+            .set_check_squares(Pieces::Rook, rook_targets);
         self.state_mut()
-            .set_check_squares::<SideT>(Pieces::Bishop, bishop_targets);
+            .set_check_squares(Pieces::Bishop, bishop_targets);
         self.state_mut()
-            .set_check_squares::<SideT>(Pieces::Queen, queen_targets);
+            .set_check_squares(Pieces::Queen, queen_targets);
         self.state_mut()
-            .set_check_squares::<SideT>(Pieces::King, Bitboard::empty());
+            .set_check_squares(Pieces::King, Bitboard::empty());
     }
 
-    /// make_move_for_side makes the given move from the current position as SideT
+    /// move_delta_for_side derives the deterministic piece delta for a move
     ///
-    /// @param: mv - move to make
-    /// @param: eval - mutable reference to the evaluation state to update
-    /// @return: void
-    /// @side-effects: modifies the `position`
-    /// @side-effects: modifies incremental game state
-    /// @side-effects: modifies the evaluation state
+    /// @marker: SideT - side making the move
+    /// @param: mv - move whose piece changes should be derived
+    /// @return: deterministic piece delta
     #[inline]
-    fn make_move_for_side<SideT, EvalStateT>(&mut self, mv: Move, eval: &mut EvalStateT)
-    where
-        SideT: Side,
-        EvalStateT: EvalState,
-    {
+    fn move_delta_for_side<SideT: Side>(&self, mv: Move) -> MoveDelta {
+        let from = mv.from();
+        let to = mv.to();
+        let piece = self.piece_at(from);
+        let mut delta = MoveDelta::default();
+
+        match mv.type_of() {
+            MoveType::EnPassant => delta.push(PieceDelta::removed(
+                SideT::Other::SIDE,
+                Pieces::Pawn,
+                to ^ 8,
+            )),
+            _ => {
+                let captured = self.piece_at(to);
+                if captured != Pieces::None {
+                    delta.push(PieceDelta::removed(SideT::Other::SIDE, captured, to));
+                }
+            }
+        }
+
+        delta.push(PieceDelta::removed(SideT::SIDE, piece, from));
+        if mv.type_of() == MoveType::Castle {
+            let kingside = to == CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE];
+            let rook_from = if kingside {
+                CastlingSquares::KINGSIDE_ROOK[SideT::SIDE]
+            } else {
+                CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE]
+            };
+            let rook_to = if kingside {
+                CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE]
+            } else {
+                CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE]
+            };
+            delta.push(PieceDelta::removed(SideT::SIDE, Pieces::Rook, rook_from));
+            delta.push(PieceDelta::added(SideT::SIDE, Pieces::King, to));
+            delta.push(PieceDelta::added(SideT::SIDE, Pieces::Rook, rook_to));
+        } else {
+            let destination_piece = if mv.type_of() == MoveType::Promotion {
+                mv.promoted_to()
+            } else {
+                piece
+            };
+            delta.push(PieceDelta::added(SideT::SIDE, destination_piece, to));
+        }
+
+        delta
+    }
+
+    /// play_unchecked_for_side plays a move for SideT without checking legality
+    ///
+    /// @marker: SideT - side making the move
+    /// @param: mv - move to make
+    /// @return: deterministic piece delta
+    /// @side-effects: modifies the position and internal state
+    /// @requires: the given move must be legal for the current position
+    #[inline]
+    fn play_unchecked_for_side<SideT: Side>(&mut self, mv: Move) -> MoveDelta {
+        let delta = self.move_delta_for_side::<SideT>(mv);
         // TODO: move the delivers check logic outside of the make move logic
         let delivers_check = self.delivers_check::<SideT>(mv);
 
@@ -418,37 +468,40 @@ where
         }
 
         // handle a piece capture
-        let captured = self.piece_at(to);
-        let material_changed = !matches!(captured, Pieces::None)
+        let captured_on_destination = self.piece_at(to);
+        let material_changed = !matches!(captured_on_destination, Pieces::None)
             || matches!(mv.type_of(), MoveType::Promotion | MoveType::EnPassant);
-        if !matches!(captured, Pieces::None) {
-            self.capture_piece::<SideT::Other, EvalStateT>(captured, to, eval);
+        if !matches!(captured_on_destination, Pieces::None) {
+            self.capture_piece::<SideT::Other>(captured_on_destination, to);
         }
         // set the captured piece for the state
+        let captured = if mv.type_of() == MoveType::EnPassant {
+            Pieces::Pawn
+        } else {
+            captured_on_destination
+        };
         self.state_mut().set_captured_piece(captured);
 
         // move the piece
         match piece {
             Pieces::King => {
-                self.move_piece::<SideT, EvalStateT>(Pieces::King, from, to, eval);
+                self.move_piece::<SideT>(Pieces::King, from, to);
 
                 // if the move is a castle, move the appropriate rook as well
                 if matches!(mv.type_of(), MoveType::Castle) {
                     if to == CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE] {
                         // kingside castle
-                        self.move_piece::<SideT, EvalStateT>(
+                        self.move_piece::<SideT>(
                             Pieces::Rook,
                             CastlingSquares::KINGSIDE_ROOK[SideT::SIDE],
                             CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE],
-                            eval,
                         );
                     } else {
                         // queenside castle
-                        self.move_piece::<SideT, EvalStateT>(
+                        self.move_piece::<SideT>(
                             Pieces::Rook,
                             CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE],
                             CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE],
-                            eval,
                         );
                     }
 
@@ -461,7 +514,7 @@ where
                 }
             }
             Pieces::Rook => {
-                self.move_piece::<SideT, EvalStateT>(Pieces::Rook, from, to, eval);
+                self.move_piece::<SideT>(Pieces::Rook, from, to);
 
                 // if the moving piece is a rook and that side can still castle,
                 // revoke the appropriate castling permissions if the rook is
@@ -478,17 +531,17 @@ where
                 match mv.type_of() {
                     MoveType::Promotion => {
                         // remove the pawn from the board and set the promoted piece
-                        self.remove_piece::<SideT, EvalStateT>(Pieces::Pawn, from, eval);
-                        self.set_piece::<SideT, EvalStateT>(mv.promoted_to(), to, eval);
+                        self.remove_piece::<SideT>(Pieces::Pawn, from);
+                        self.set_piece::<SideT>(mv.promoted_to(), to);
                     }
                     MoveType::EnPassant => {
-                        self.move_piece::<SideT, EvalStateT>(Pieces::Pawn, from, to, eval);
+                        self.move_piece::<SideT>(Pieces::Pawn, from, to);
 
                         // if the move is an en passant capture, remove the opponent's pawn
-                        self.remove_piece::<SideT::Other, EvalStateT>(Pieces::Pawn, to ^ 8, eval);
+                        self.remove_piece::<SideT::Other>(Pieces::Pawn, to ^ 8);
                     }
                     _ => {
-                        self.move_piece::<SideT, EvalStateT>(Pieces::Pawn, from, to, eval);
+                        self.move_piece::<SideT>(Pieces::Pawn, from, to);
 
                         // if the move is a double step, then an en passant capture may
                         // be possible, and we should check for it later
@@ -500,7 +553,7 @@ where
                 self.state_mut().set_halfmoves(0);
             }
             _ => {
-                self.move_piece::<SideT, EvalStateT>(piece, from, to, eval);
+                self.move_piece::<SideT>(piece, from, to);
             }
         }
 
@@ -649,18 +702,21 @@ where
 
         // update the new check info for the new side to move
         self.update_check_info::<SideT::Other>();
+
+        delta
     }
 
-    /// unmake_move_for_side unmakes the last move from the current position as
-    /// SideT
+    /// undo_for_side reverses the last move made by SideT
     ///
     /// note: since unmake pops from the history, we don't need to recompute
     ///       any incremental game state since those are retrieved directly
     ///
+    /// @marker: SideT - side that made the move
+    /// @param: mv - move to undo
     /// @return: void
     /// @side-effects: modifies the `position`
     #[inline]
-    fn unmake_move_for_side<SideT: Side>(&mut self, mv: Move) {
+    fn undo_for_side<SideT: Side>(&mut self, mv: Move) {
         // extract key move data
         let from = mv.from();
         let to = mv.to();
@@ -703,7 +759,7 @@ where
 
         // if the move was a capture, restore the captured piece
         let captured = self.state().captured_piece();
-        if !matches!(captured, Pieces::None) {
+        if mv.type_of() != MoveType::EnPassant && !matches!(captured, Pieces::None) {
             self.set_piece_no_incrementals::<SideT::Other>(captured, to);
         }
 

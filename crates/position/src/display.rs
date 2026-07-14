@@ -1,13 +1,11 @@
-use crate::State;
 use crate::position::DefaultPosition;
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{File, Pieces, Rank, Sides};
 use std::{fmt, iter::once};
 
-impl<AT, StateT> fmt::Display for DefaultPosition<AT, StateT>
+impl<AT> fmt::Display for DefaultPosition<AT>
 where
     AT: AttackTable,
-    StateT: State,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut board = [['.'; File::TOTAL]; Rank::TOTAL];
@@ -39,14 +37,34 @@ where
                 f,
                 "{} {}",
                 rank_idx + 1,
-                board[rank_idx].into_iter().flat_map(|c| once(' ').chain(once(c)))
-                    .skip(1).collect::<String>()
+                board[rank_idx]
+                    .into_iter()
+                    .flat_map(|c| once(' ').chain(once(c)))
+                    .skip(1)
+                    .collect::<String>()
             )?;
         }
         writeln!(f, "  A B C D E F G H")?;
 
-        // print the game state metadata
-        writeln!(f, "{}", self.state())?;
+        let state = self.state();
+        writeln!(f, "{} to move", state.turn())?;
+        writeln!(f, "Castling rights: {}", state.castling())?;
+        match state.en_passant() {
+            Some(square) => writeln!(f, "En passant square: {square}")?,
+            None => writeln!(f, "En passant square: None")?,
+        }
+        writeln!(f, "Halfmove clock: {}", state.halfmoves())?;
+        writeln!(f, "Fullmove clock: {}", state.fullmoves())?;
+        writeln!(
+            f,
+            "Repetition distance: {}",
+            state.draw_state().repetition()
+        )?;
+        writeln!(
+            f,
+            "Material draw: {}",
+            state.draw_state().is_material_draw()
+        )?;
 
         Ok(())
     }

@@ -1,12 +1,10 @@
-use crate::State;
 use crate::position::DefaultPosition;
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Castling, ZobristTable};
 
-impl<AT, StateT> DefaultPosition<AT, StateT>
+impl<AT> DefaultPosition<AT>
 where
     AT: AttackTable,
-    StateT: State,
 {
     /// set_castling sets the castling rights for SideT
     ///
