@@ -21,7 +21,7 @@ const DEFAULT_TRANSPOSITION_TABLE_SIZE_MB: usize = 1024;
 
 /// INTERACTIVE_SEARCH_DEPTH is the fixed search depth used by the interactive
 /// command-line game
-pub const INTERACTIVE_SEARCH_DEPTH: u8 = 7;
+pub const INTERACTIVE_SEARCH_DEPTH: u8 = 6;
 
 type EnginePosition = DefaultPosition<DefaultAttackTable>;
 type EngineMoveGenerator = DefaultMoveGenerator<DefaultAttackTable>;
