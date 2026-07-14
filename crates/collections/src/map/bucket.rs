@@ -166,11 +166,13 @@ mod tests {
         bucket.set(1, TestValue(9));
         bucket.set(2, TestValue(1));
         bucket.set(3, TestValue(5));
-        assert_eq!(bucket.set(4, TestValue(7)), SetResult::Evicted);
+        bucket.set(4, TestValue(3));
+        assert_eq!(bucket.set(5, TestValue(7)), SetResult::Evicted);
 
         assert_eq!(bucket.get(1), Some(&TestValue(9)));
         assert_eq!(bucket.get(2), None);
         assert_eq!(bucket.get(3), Some(&TestValue(5)));
-        assert_eq!(bucket.get(4), Some(&TestValue(7)));
+        assert_eq!(bucket.get(4), Some(&TestValue(3)));
+        assert_eq!(bucket.get(5), Some(&TestValue(7)));
     }
 }

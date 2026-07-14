@@ -56,6 +56,12 @@ pub trait PositionFromFEN {
 ///
 /// @trait
 pub trait PositionState {
+    /// draw_state gets the incrementally maintained draw information for the
+    /// current position
+    ///
+    /// @return: draw information for the current position
+    fn draw_state(&self) -> DrawState;
+
     /// total_occupancy gets the occupancy bitboard of all pieces on the board
     ///
     /// @return: full occupancy bitboard of both sides

@@ -13,9 +13,9 @@ pub mod zobrist;
 
 pub use bitboard::Bitboard;
 pub use castling::{Castling, SideCastling};
-pub use depth::Depth;
 pub use clock::Clock;
 pub use direction::Direction;
+pub use depth::Depth;
 pub use files::File;
 pub use moves::{Move, MoveList, MoveType};
 pub use pieces::Pieces;

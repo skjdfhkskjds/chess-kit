@@ -287,13 +287,14 @@ mod tests {
         map.set(&1, TestValue(1));
         map.set(&2, TestValue(2));
         map.set(&3, TestValue(3));
-        assert_eq!(map.len(), 3);
+        map.set(&4, TestValue(4));
+        assert_eq!(map.len(), 4);
 
         map.set(&1, TestValue(9));
-        assert_eq!(map.len(), 3);
+        assert_eq!(map.len(), 4);
         assert_eq!(map.get(&1), Some(&TestValue(9)));
 
-        map.set(&4, TestValue(4));
-        assert_eq!(map.len(), 3);
+        map.set(&5, TestValue(5));
+        assert_eq!(map.len(), 4);
     }
 }
