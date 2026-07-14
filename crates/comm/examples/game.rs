@@ -11,25 +11,29 @@ use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, PSQTEvalState};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
 use chess_kit_position::{DefaultPosition, Fen, PositionMoves, Setup};
 use chess_kit_primitives::{Depth, Move, MoveList};
-use chess_kit_search::Negamax;
+use chess_kit_search::{Negamax, SearchNode};
+use chess_kit_transposition::{DefaultTranspositionTable, TranspositionTable};
 
 const START_POSITION_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const DEFAULT_SEARCH_DEPTH: u8 = 3;
-const MAX_SEARCH_DEPTH: u8 = 5;
+const DEFAULT_SEARCH_DEPTH: u8 = 4;
+const MAX_SEARCH_DEPTH: u8 = 8;
+const DEFAULT_TRANSPOSITION_TABLE_SIZE_MB: usize = 1024;
 
 /// INTERACTIVE_SEARCH_DEPTH is the fixed search depth used by the interactive
 /// command-line game
-pub const INTERACTIVE_SEARCH_DEPTH: u8 = 4;
+pub const INTERACTIVE_SEARCH_DEPTH: u8 = 6;
 
 type EnginePosition = DefaultPosition<DefaultAttackTable>;
 type EngineMoveGenerator = DefaultMoveGenerator<DefaultAttackTable>;
 type EngineAccumulator = DefaultAccumulator<PSQTEvalState>;
+type EngineTranspositionTable = DefaultTranspositionTable<SearchNode>;
 
 /// Concrete engine adapter used only by this example.
 struct ChessKitEngine {
     position: EnginePosition,
     move_generator: EngineMoveGenerator,
     accumulator: EngineAccumulator,
+    transposition_table: EngineTranspositionTable,
     search: Negamax,
 }
 
@@ -45,6 +49,7 @@ impl ChessKitEngine {
             position,
             move_generator: EngineMoveGenerator::new(),
             accumulator,
+            transposition_table: EngineTranspositionTable::new(DEFAULT_TRANSPOSITION_TABLE_SIZE_MB),
             search: Negamax::new(),
         })
     }
@@ -107,6 +112,7 @@ impl UciEngine for ChessKitEngine {
             moves: Vec::new(),
         };
         (self.position, self.accumulator) = Self::build_position(&command)?;
+        self.transposition_table.clear();
         self.search = Negamax::new();
         Ok(())
     }
@@ -122,6 +128,7 @@ impl UciEngine for ChessKitEngine {
         let result = self.search.search(
             &mut self.position,
             &self.move_generator,
+            &mut self.transposition_table,
             &mut self.accumulator,
             Depth::try_from(depth).expect("supported UCI depth fits the engine depth type"),
         );
