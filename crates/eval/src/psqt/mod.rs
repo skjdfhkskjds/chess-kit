@@ -111,8 +111,32 @@ impl Default for PSQTEvalState {
 mod tests {
     use super::*;
     use chess_kit_attack_table::DefaultAttackTable;
-    use chess_kit_position::{DefaultPosition, PositionMoves};
+    use chess_kit_position::{DefaultPosition, Fen, PositionMoves, Setup};
     use chess_kit_primitives::{Move, Square};
+
+    type TestPosition = DefaultPosition<DefaultAttackTable>;
+
+    fn score(fen: &str) -> Score {
+        let position = TestPosition::from(Setup::from(Fen::try_from(fen).unwrap()));
+        PSQTEvalState::from_position(&position).score()
+    }
+
+    #[test]
+    fn symmetric_positions_are_neutral() {
+        let mut starting_position = PSQTEvalState::from_position(&TestPosition::default());
+
+        assert_eq!(starting_position.score(), 0);
+        assert_eq!(score("4k3/8/8/8/8/8/8/4K3 w - - 0 1"), 0);
+    }
+
+    #[test]
+    fn color_swapped_material_advantages_negate_the_score() {
+        let white_advantage = score("4k3/8/8/8/8/8/8/3QK3 w - - 0 1");
+        let black_advantage = score("3qk3/8/8/8/8/8/8/4K3 w - - 0 1");
+
+        assert!(white_advantage > 0);
+        assert_eq!(black_advantage, -white_advantage);
+    }
 
     #[test]
     fn incremental_deltas_match_fresh_position_initialization() {
@@ -125,7 +149,7 @@ mod tests {
             Move::new(Square::E4, Square::D5),
         ] {
             incremental.apply(position.play_unchecked(mv));
-            let fresh = PSQTEvalState::from_position(&position);
+            let mut fresh = PSQTEvalState::from_position(&position);
 
             assert_eq!(incremental.phase, fresh.phase);
             for side in [Sides::White, Sides::Black] {
@@ -138,6 +162,7 @@ mod tests {
                     fresh.scores[side].endgame()
                 );
             }
+            assert_eq!(incremental.score(), fresh.score());
         }
     }
 }

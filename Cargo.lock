@@ -107,6 +107,7 @@ dependencies = [
  "chess-kit-position",
  "chess-kit-primitives",
  "chess-kit-search",
+ "chess-kit-transposition",
 ]
 
 [[package]]
