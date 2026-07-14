@@ -18,7 +18,7 @@ pub use direction::Direction;
 pub use depth::Depth;
 pub use files::File;
 pub use moves::{Move, MoveDelta, MoveList, MoveType, PieceDelta, PieceDeltaKind};
-pub use pieces::Pieces;
+pub use pieces::{PieceDisplay, Pieces};
 pub use ranks::Rank;
 pub use sides::{Black, Side, SideTable, Sides, White};
 pub use squares::Square;

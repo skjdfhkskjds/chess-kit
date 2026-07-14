@@ -4,7 +4,7 @@ use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 use chess_kit_primitives::{Depth, Move, MoveList, Sides, ZobristKey};
 use chess_kit_transposition::TranspositionTable;
 
-use crate::{Bound, SearchNode, SearchResult};
+use crate::{Bound, SearchNode, SearchResult, quiescence};
 
 /// Negamax is a fixed-depth negamax search with alpha-beta pruning
 ///
@@ -27,7 +27,7 @@ impl Negamax {
     /// Score used to represent a checkmate at the root of the search.
     pub const CHECKMATE_SCORE: Score = 100_000;
 
-    const INFINITY: Score = 1_000_000;
+    pub(crate) const INFINITY: Score = 1_000_000;
     const MATE_SCORE_THRESHOLD: Score = Self::CHECKMATE_SCORE - i8::MAX as Score;
 
     /// new creates a new negamax search
@@ -115,6 +115,19 @@ impl Negamax {
         EvalStateT: EvalState,
         TranspositionTableT: TranspositionTable<SearchNode>,
     {
+        if depth == 0 {
+            let score = quiescence::search(
+                position,
+                context.move_generator,
+                context.accumulator,
+                &mut self.nodes,
+                ply,
+                alpha,
+                beta,
+            );
+            return (score, None);
+        }
+
         self.nodes += 1;
         let key = position.key();
         let cached = context.transposition_table.probe(key).copied();
@@ -133,16 +146,6 @@ impl Negamax {
             if cutoff {
                 return (score, node.best_move());
             }
-        }
-
-        if depth == 0 {
-            let score = Self::evaluate(position, context.accumulator);
-            Self::store(
-                context.transposition_table,
-                key,
-                SearchNode::new(depth, Self::score_to_tt(score, ply), Bound::Exact, None),
-            );
-            return (score, None);
         }
 
         let mut moves = MoveList::new();
@@ -275,7 +278,7 @@ impl Negamax {
     /// @param: position - immutable reference to the position to evaluate
     /// @param: accumulator - mutable reference to the evaluation accumulator
     /// @return: static evaluation from the side-to-move's perspective
-    fn evaluate<PositionT, AccumulatorT, EvalStateT>(
+    pub(crate) fn evaluate<PositionT, AccumulatorT, EvalStateT>(
         position: &PositionT,
         accumulator: &mut AccumulatorT,
     ) -> Score

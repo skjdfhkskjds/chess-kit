@@ -2,6 +2,8 @@ mod display;
 
 use chess_kit_derive::IndexableEnum;
 
+pub use display::PieceDisplay;
+
 /// `Pieces` is an enum that represents a piece on the chess board
 ///
 /// @type

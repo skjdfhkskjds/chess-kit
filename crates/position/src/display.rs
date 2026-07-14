@@ -1,6 +1,6 @@
 use crate::position::DefaultPosition;
 use chess_kit_attack_table::AttackTable;
-use chess_kit_primitives::{File, Pieces, Rank, Sides};
+use chess_kit_primitives::{Black, File, Pieces, Rank, Sides, White};
 use std::{fmt, iter::once};
 
 impl<AT> fmt::Display for DefaultPosition<AT>
@@ -10,19 +10,18 @@ where
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut board = [['.'; File::TOTAL]; Rank::TOTAL];
 
-        // construct the ascii representation of the board
+        // construct the Unicode representation of the board
         for (side_idx, bitboards) in self.bitboards.iter().enumerate() {
             let side = Sides::from_idx(side_idx);
             for (piece_idx, bitboard) in bitboards.iter().enumerate() {
-                let base_char = Pieces::from_idx(piece_idx)
-                    .to_string()
-                    .chars()
-                    .next()
-                    .unwrap();
+                let piece = Pieces::from_idx(piece_idx);
                 let piece_char = match side {
-                    Sides::White => base_char,
-                    Sides::Black => base_char.to_ascii_lowercase(),
-                };
+                    Sides::White => piece.display::<White>().to_string(),
+                    Sides::Black => piece.display::<Black>().to_string(),
+                }
+                .chars()
+                .next()
+                .expect("piece displays are never empty");
 
                 for square in bitboard.iter() {
                     board[square.rank()][square.file()] = piece_char;
@@ -67,5 +66,57 @@ where
         )?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chess_kit_attack_table::DefaultAttackTable;
+    use chess_kit_primitives::PieceDisplay;
+
+    #[test]
+    fn displays_position_with_side_appropriate_unicode_pieces() {
+        let position = DefaultPosition::<DefaultAttackTable>::default();
+        let displayed = position.to_string();
+        let board = displayed.lines().take(10).collect::<Vec<_>>();
+        let black_back_rank = [
+            PieceDisplay::<Black>::ROOK,
+            PieceDisplay::<Black>::KNIGHT,
+            PieceDisplay::<Black>::BISHOP,
+            PieceDisplay::<Black>::QUEEN,
+            PieceDisplay::<Black>::KING,
+            PieceDisplay::<Black>::BISHOP,
+            PieceDisplay::<Black>::KNIGHT,
+            PieceDisplay::<Black>::ROOK,
+        ]
+        .join(" ");
+        let white_back_rank = [
+            PieceDisplay::<White>::ROOK,
+            PieceDisplay::<White>::KNIGHT,
+            PieceDisplay::<White>::BISHOP,
+            PieceDisplay::<White>::QUEEN,
+            PieceDisplay::<White>::KING,
+            PieceDisplay::<White>::BISHOP,
+            PieceDisplay::<White>::KNIGHT,
+            PieceDisplay::<White>::ROOK,
+        ]
+        .join(" ");
+
+        assert_eq!(
+            board,
+            [
+                String::new(),
+                format!("8 {black_back_rank}"),
+                format!("7 {}", [PieceDisplay::<Black>::PAWN; 8].join(" ")),
+                "6 . . . . . . . .".to_owned(),
+                "5 . . . . . . . .".to_owned(),
+                "4 . . . . . . . .".to_owned(),
+                "3 . . . . . . . .".to_owned(),
+                format!("2 {}", [PieceDisplay::<White>::PAWN; 8].join(" ")),
+                format!("1 {white_back_rank}"),
+                "  A B C D E F G H".to_owned(),
+            ]
+        );
     }
 }
