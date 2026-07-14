@@ -1,6 +1,8 @@
 mod display;
+mod draw;
 mod state;
 
+pub use draw::DrawState;
 pub use state::DefaultState;
 
 use chess_kit_collections::{Copyable, Stack};
@@ -32,6 +34,12 @@ pub trait State: StateReader + StateWriter + Copyable + Display {
 ///
 /// @trait
 pub trait StateReader {
+    /// draw_state returns the incrementally maintained draw information for the
+    /// current position
+    ///
+    /// @return: draw information for the current position
+    fn draw_state(&self) -> DrawState;
+
     /// turn returns the side to move
     ///
     /// @return: the side to move
@@ -99,6 +107,14 @@ pub trait StateReader {
 ///
 /// @trait
 pub trait StateWriter {
+    /// set_draw_state sets the incrementally maintained draw information for the
+    /// current position
+    ///
+    /// @param: draw_state - draw information to set
+    /// @return: void
+    /// @side-effects: modifies the `state`
+    fn set_draw_state(&mut self, draw_state: DrawState);
+
     /// set_turn sets the turn-to-move of the state
     ///
     /// @param: turn - the turn to set

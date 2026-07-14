@@ -1,5 +1,5 @@
 use crate::position::DefaultPosition;
-use crate::{PositionState, State};
+use crate::{DrawState, PositionState, State};
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
 
@@ -30,6 +30,15 @@ where
     AT: AttackTable,
     StateT: State,
 {
+    /// draw_state gets the incrementally maintained draw information for the
+    /// current position
+    ///
+    /// @impl: PositionState::draw_state
+    #[inline]
+    fn draw_state(&self) -> DrawState {
+        self.state().draw_state()
+    }
+
     /// total_occupancy gets the full occupancy bitboard of both sides
     ///
     /// @impl: PositionState::total_occupancy

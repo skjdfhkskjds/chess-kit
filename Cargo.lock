@@ -100,6 +100,14 @@ dependencies = [
 [[package]]
 name = "chess-kit-comm"
 version = "0.1.0"
+dependencies = [
+ "chess-kit-attack-table",
+ "chess-kit-eval",
+ "chess-kit-movegen",
+ "chess-kit-position",
+ "chess-kit-primitives",
+ "chess-kit-search",
+]
 
 [[package]]
 name = "chess-kit-derive"

@@ -1,132 +1,78 @@
-use std::fmt::Display;
 use std::io::{self, BufRead, Write};
 use std::str::FromStr;
 
-use super::{Command, SearchInfo, SearchResult, UciEngine};
+use super::handler::{CommandFlow, UciHandler};
+use super::{Command, UciEngine};
 
-/// Runs a UCI engine over standard input and standard output.
-pub fn run<EngineT: UciEngine>(engine: &mut EngineT) -> io::Result<()> {
+/// run runs a UCI engine over standard input and standard output
+///
+/// @param: engine - mutable reference to the engine handling UCI commands
+/// @return: Ok when the protocol loop exits, or an I/O error
+/// @side-effects: reads standard input, writes standard output, and modifies
+///                engine state
+pub fn run<EngineT>(engine: &mut EngineT) -> io::Result<()>
+where
+    EngineT: UciEngine + ?Sized,
+{
     let stdin = io::stdin();
     let stdout = io::stdout();
     run_with_io(engine, stdin.lock(), stdout.lock())
 }
 
-/// Runs a UCI engine over caller-provided streams.
+/// run_with_io runs a UCI engine over caller-provided streams
 ///
-/// Supplying streams makes complete protocol sessions testable without spawning
-/// a child process.
+/// note: caller-provided streams make complete protocol sessions testable
+///       without spawning a child process
+///
+/// @marker: EngineT - UCI engine implementation
+/// @marker: ReaderT - buffered command input stream type
+/// @marker: WriterT - protocol output stream type
+/// @param: engine - mutable reference to the engine handling UCI commands
+/// @param: reader - stream containing newline-delimited UCI commands
+/// @param: writer - stream that receives UCI responses
+/// @return: Ok when the protocol loop exits, or an I/O error
+/// @side-effects: reads input, writes output, and modifies engine state
 pub fn run_with_io<EngineT, ReaderT, WriterT>(
     engine: &mut EngineT,
     mut reader: ReaderT,
     mut writer: WriterT,
 ) -> io::Result<()>
 where
-    EngineT: UciEngine,
+    EngineT: UciEngine + ?Sized,
     ReaderT: BufRead,
     WriterT: Write,
 {
     let mut line = String::new();
+    let mut handler = UciHandler::new(engine, &mut writer);
     loop {
+        // read exactly one newline-delimited command from the GUI
         line.clear();
         if reader.read_line(&mut line)? == 0 {
             break;
         }
 
+        // report malformed known commands as UCI info while keeping the
+        // protocol session alive for subsequent commands
         let command = match Command::from_str(&line) {
             Ok(command) => command,
             Err(error) => {
-                write_error(&mut writer, error)?;
-                writer.flush()?;
+                handler.write_error(error)?;
+                handler.flush()?;
                 continue;
             }
         };
 
-        match command {
-            Command::Uci => {
-                writeln!(writer, "id name {}", sanitize(engine.name()))?;
-                writeln!(writer, "id author {}", sanitize(engine.author()))?;
-                writeln!(writer, "uciok")?;
-            }
-            Command::Debug(enabled) => engine.set_debug(enabled),
-            Command::IsReady => writeln!(writer, "readyok")?,
-            Command::UciNewGame => {
-                if let Err(error) = engine.new_game() {
-                    write_error(&mut writer, error)?;
-                }
-            }
-            Command::Position(position) => {
-                if let Err(error) = engine.set_position(&position) {
-                    write_error(&mut writer, error)?;
-                }
-            }
-            Command::Go(limits) => match engine.search(&limits) {
-                Ok(result) => write_search_result(&mut writer, &result)?,
-                Err(error) => {
-                    write_error(&mut writer, error)?;
-                    writeln!(writer, "bestmove 0000")?;
-                }
-            },
-            Command::Stop => match engine.stop() {
-                Ok(Some(result)) => write_search_result(&mut writer, &result)?,
-                Ok(None) => {}
-                Err(error) => write_error(&mut writer, error)?,
-            },
-            Command::PonderHit => engine.ponder_hit(),
-            Command::Quit => break,
-            Command::Unknown => {}
+        // consume the parsed command through the protocol-to-engine adapter
+        if handler.handle(command)? == CommandFlow::Quit {
+            break;
         }
 
-        writer.flush()?;
+        // flush after every command so synchronous GUIs receive responses
+        // without waiting for another input line
+        handler.flush()?;
     }
 
     Ok(())
-}
-
-fn write_search_result(writer: &mut impl Write, result: &SearchResult) -> io::Result<()> {
-    write_search_info(writer, &result.info)?;
-
-    let best_move = result
-        .best_move
-        .as_ref()
-        .map_or_else(|| "0000".to_owned(), ToString::to_string);
-    write!(writer, "bestmove {best_move}")?;
-    if let Some(ponder) = &result.ponder {
-        write!(writer, " ponder {ponder}")?;
-    }
-    writeln!(writer)
-}
-
-fn write_search_info(writer: &mut impl Write, info: &SearchInfo) -> io::Result<()> {
-    if info == &SearchInfo::default() {
-        return Ok(());
-    }
-
-    write!(writer, "info")?;
-    if let Some(depth) = info.depth {
-        write!(writer, " depth {depth}")?;
-    }
-    if let Some(score) = info.score_cp {
-        write!(writer, " score cp {score}")?;
-    }
-    if let Some(nodes) = info.nodes {
-        write!(writer, " nodes {nodes}")?;
-    }
-    if let Some(elapsed) = info.elapsed {
-        write!(writer, " time {}", elapsed.as_millis())?;
-    }
-    writeln!(writer)
-}
-
-fn write_error(writer: &mut impl Write, error: impl Display) -> io::Result<()> {
-    writeln!(
-        writer,
-        "info string error: {}",
-        sanitize(&error.to_string())
-    )
-}
-
-fn sanitize(value: &str) -> String {
-    value.replace(['\r', '\n'], " ")
 }
 
 #[cfg(test)]
@@ -135,12 +81,15 @@ mod tests {
     use std::io::Cursor;
 
     use super::*;
-    use crate::uci::{PositionCommand, SearchLimits, UciMove};
+    use crate::uci::{PositionCommand, SearchInfo, SearchLimits, SearchResult, UciMove};
 
     #[derive(Default)]
     struct TestEngine {
         positions: Vec<PositionCommand>,
         new_games: usize,
+        debug: Option<bool>,
+        stops: usize,
+        ponder_hits: usize,
     }
 
     impl UciEngine for TestEngine {
@@ -174,6 +123,19 @@ mod tests {
             };
             Ok(result)
         }
+
+        fn stop(&mut self) -> Result<Option<SearchResult>, Self::Error> {
+            self.stops += 1;
+            Ok(None)
+        }
+
+        fn ponder_hit(&mut self) {
+            self.ponder_hits += 1;
+        }
+
+        fn set_debug(&mut self, enabled: bool) {
+            self.debug = Some(enabled);
+        }
     }
 
     #[test]
@@ -199,5 +161,22 @@ mod tests {
                 "bestmove e2e4\n",
             )
         );
+    }
+
+    #[test]
+    fn routes_commands_through_a_uci_engine_trait_object() {
+        let input = Cursor::new(b"debug on\nstop\nponderhit\nunsupported\nquit\nisready\n");
+        let mut output = Vec::new();
+        let mut engine = TestEngine::default();
+
+        {
+            let engine: &mut dyn UciEngine<Error = Infallible> = &mut engine;
+            run_with_io(engine, input, &mut output).unwrap();
+        }
+
+        assert_eq!(engine.debug, Some(true));
+        assert_eq!(engine.stops, 1);
+        assert_eq!(engine.ponder_hits, 1);
+        assert!(output.is_empty());
     }
 }

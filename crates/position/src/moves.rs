@@ -419,6 +419,8 @@ where
 
         // handle a piece capture
         let captured = self.piece_at(to);
+        let material_changed = !matches!(captured, Pieces::None)
+            || matches!(mv.type_of(), MoveType::Promotion | MoveType::EnPassant);
         if !matches!(captured, Pieces::None) {
             self.capture_piece::<SideT::Other, EvalStateT>(captured, to, eval);
         }
@@ -500,6 +502,12 @@ where
             _ => {
                 self.move_piece::<SideT, EvalStateT>(piece, from, to, eval);
             }
+        }
+
+        // material draw information is unchanged by quiet moves. recompute it
+        // only after a capture or promotion changes the board material
+        if material_changed {
+            self.update_material_draw_state();
         }
 
         // set the checkers to SideT::Other's king square if the move gives a
@@ -634,6 +642,10 @@ where
 
         // swap the side to move
         self.swap_sides::<SideT>();
+
+        // the final position key is available after en passant, castling, and
+        // side-to-move updates, so the repetition distance can now be derived
+        self.update_repetition_state();
 
         // update the new check info for the new side to move
         self.update_check_info::<SideT::Other>();

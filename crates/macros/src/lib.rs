@@ -48,7 +48,9 @@ pub fn derive_bitops(input: TokenStream) -> TokenStream {
     }
 }
 
-/// Derives the arithmetic operator suite for tuple structs with a single field.
+/// Derives addition, subtraction, and multiplication for tuple structs with a
+/// single field. Each operation takes the wrapped primitive type as its
+/// right-hand operand and returns the tuple struct.
 ///
 /// The struct must have a single field that is a primitive type.
 ///
@@ -59,9 +61,9 @@ pub fn derive_bitops(input: TokenStream) -> TokenStream {
 /// struct Arithmetic(i32);
 ///
 /// let arithmetic = Arithmetic(10);
-/// assert_eq!(arithmetic + Arithmetic(20), Arithmetic(30));
-/// assert_eq!(arithmetic - Arithmetic(5), Arithmetic(5));
-/// assert_eq!(arithmetic * Arithmetic(2), Arithmetic(20));
+/// assert_eq!(arithmetic + 20, Arithmetic(30));
+/// assert_eq!(arithmetic - 5, Arithmetic(5));
+/// assert_eq!(arithmetic * 2, Arithmetic(20));
 /// ```
 #[proc_macro_derive(Arithmetic)]
 pub fn derive_arithmetic(input: TokenStream) -> TokenStream {
@@ -75,7 +77,11 @@ pub fn derive_arithmetic(input: TokenStream) -> TokenStream {
 /// Implements `idx`, `from_idx`, and `from_idx_safe` for fieldless enums whose
 /// implicit discriminants form a contiguous range starting at zero in a const
 /// context. For cases where indexing is possible in non-const contexts, it also
-/// implements `Index` and `IndexMut`.
+/// allows arrays to be indexed and mutated with the enum via `Index` and
+/// `IndexMut`.
+///
+/// `from_idx` panics when the index is outside the enum's range. Use
+/// `from_idx_safe` when an invalid index should return `None` instead.
 ///
 /// ```
 /// use chess_kit_derive::IndexableEnum;
@@ -89,8 +95,11 @@ pub fn derive_arithmetic(input: TokenStream) -> TokenStream {
 /// let idx = File::C.idx();
 /// assert_eq!(idx, 2);
 /// assert_eq!(File::from_idx_safe(idx + 1), Some(File::D));
-/// assert_eq!(File::A[idx], File::A);
-/// assert_eq!(File::A[idx + 1], File::B);
+///
+/// let mut labels = ["a", "b", "c", "d", "e", "f", "g", "h"];
+/// assert_eq!(labels[File::C], "c");
+/// labels[File::C] = "C";
+/// assert_eq!(labels[File::C], "C");
 /// ```
 #[proc_macro_derive(IndexableEnum)]
 pub fn derive_indexable_enum(input: TokenStream) -> TokenStream {

@@ -149,6 +149,10 @@ where
         );
         self.state_mut().set_key(key);
 
+        // initialize the cached material draw information. repetition begins at
+        // zero since a FEN contains no position history
+        self.update_material_draw_state();
+
         // update the check info and checkers in the state
         let checkers = self.is_checked_by::<SideT>();
         self.state_mut().set_checkers(checkers);

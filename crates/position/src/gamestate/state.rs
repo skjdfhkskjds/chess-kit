@@ -1,9 +1,9 @@
-use super::{State, StateReader, StateWriter};
+use super::{DrawState, State, StateReader, StateWriter};
 use chess_kit_collections::Copyable;
 use chess_kit_primitives::{Bitboard, Castling, Clock, Pieces, Side, Sides, Square, ZobristKey};
 
-/// `StateHeader` is a header for a state that contains the parts of the state up
-/// to (and excluding) the state key
+/// `StateHeader` is a header for a state that contains the parts of the state
+/// copied when deriving a new state entry from the current state
 ///
 /// note: this is the struct that is copied when deriving a new state entry from
 ///       the current state in the history
@@ -18,6 +18,7 @@ pub struct StateHeader {
     pub(super) halfmoves: Clock,           // halfmove clock
     pub(super) fullmoves: Clock,           // fullmove clock
     pub(super) key: ZobristKey,            // key for the current state
+    pub(super) draw_state: DrawState,      // incrementally maintained draw information
 }
 
 impl StateHeader {
@@ -34,6 +35,7 @@ impl StateHeader {
             halfmoves: 0,
             fullmoves: 0,
             key: ZobristKey::default(),
+            draw_state: DrawState::new(),
         }
     }
 
@@ -50,6 +52,7 @@ impl StateHeader {
         self.halfmoves = 0;
         self.fullmoves = 0;
         self.key = ZobristKey::default();
+        self.draw_state = DrawState::new();
     }
 }
 
@@ -96,6 +99,15 @@ impl State for DefaultState {
 }
 
 impl StateReader for DefaultState {
+    /// draw_state returns the incrementally maintained draw information for the
+    /// current position
+    ///
+    /// @impl: StateReader::draw_state
+    #[inline]
+    fn draw_state(&self) -> DrawState {
+        self.header.draw_state
+    }
+
     /// turn returns the side to move
     ///
     /// @impl: StateReader::turn
@@ -189,6 +201,15 @@ impl StateReader for DefaultState {
 }
 
 impl StateWriter for DefaultState {
+    /// set_draw_state sets the incrementally maintained draw information for the
+    /// current position
+    ///
+    /// @impl: StateWriter::set_draw_state
+    #[inline]
+    fn set_draw_state(&mut self, draw_state: DrawState) {
+        self.header.draw_state = draw_state;
+    }
+
     /// set_turn sets the side to move
     ///
     /// @impl: StateWriter::set_turn
@@ -337,5 +358,17 @@ impl Default for DefaultState {
     #[inline]
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::size_of;
+
+    #[test]
+    fn draw_state_uses_existing_state_header_padding() {
+        assert_eq!(size_of::<StateHeader>(), 24);
+        assert_eq!(size_of::<DefaultState>(), 120);
     }
 }

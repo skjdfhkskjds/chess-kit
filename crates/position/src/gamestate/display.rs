@@ -11,6 +11,16 @@ impl fmt::Display for DefaultState {
         };
         writeln!(f, "Halfmove clock: {}", self.header.halfmoves)?;
         writeln!(f, "Fullmove clock: {}", self.header.fullmoves)?;
+        writeln!(
+            f,
+            "Repetition distance: {}",
+            self.header.draw_state.repetition()
+        )?;
+        writeln!(
+            f,
+            "Material draw: {}",
+            self.header.draw_state.is_material_draw()
+        )?;
         Ok(())
     }
 }
