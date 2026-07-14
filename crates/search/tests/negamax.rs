@@ -122,6 +122,79 @@ fn depth_zero_returns_side_to_move_evaluation() {
 }
 
 #[test]
+fn quiescence_resolves_captures_beyond_the_main_search_horizon() {
+    let (mut position, move_generator, mut transposition_table, mut accumulator) =
+        load("3q2k1/3Q4/8/8/8/8/8/6K1 b - - 0 1");
+    let original_key = position.key();
+    let original_score = accumulator.latest_mut().score();
+
+    let result = Negamax::new().search(
+        &mut position,
+        &move_generator,
+        &mut transposition_table,
+        &mut accumulator,
+        0,
+    );
+
+    assert_eq!(result.best_move, None);
+    assert_eq!(result.score, 900);
+    assert_eq!(result.nodes, 2);
+    assert_eq!(position.key(), original_key);
+    assert_eq!(accumulator.latest_mut().score(), original_score);
+}
+
+#[test]
+fn quiescence_searches_quiet_check_evasions() {
+    let (mut position, move_generator, mut transposition_table, mut accumulator) =
+        load("4k3/8/8/8/8/8/8/4R1K1 b - - 0 1");
+    let original_key = position.key();
+
+    let result = Negamax::new().search(
+        &mut position,
+        &move_generator,
+        &mut transposition_table,
+        &mut accumulator,
+        0,
+    );
+
+    assert_eq!(result.best_move, None);
+    assert_eq!(result.score, -500);
+    assert!(result.nodes > 1);
+    assert_eq!(position.key(), original_key);
+}
+
+#[test]
+fn quiescence_scores_terminal_positions_at_depth_zero() {
+    let (mut checkmate, move_generator, mut checkmate_table, mut checkmate_accumulator) =
+        load("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1");
+    let mate_result = Negamax::new().search(
+        &mut checkmate,
+        &move_generator,
+        &mut checkmate_table,
+        &mut checkmate_accumulator,
+        0,
+    );
+
+    assert_eq!(mate_result.best_move, None);
+    assert_eq!(mate_result.score, -Negamax::CHECKMATE_SCORE);
+    assert_eq!(mate_result.nodes, 1);
+
+    let (mut stalemate, move_generator, mut stalemate_table, mut stalemate_accumulator) =
+        load("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1");
+    let stalemate_result = Negamax::new().search(
+        &mut stalemate,
+        &move_generator,
+        &mut stalemate_table,
+        &mut stalemate_accumulator,
+        0,
+    );
+
+    assert_eq!(stalemate_result.best_move, None);
+    assert_eq!(stalemate_result.score, 0);
+    assert_eq!(stalemate_result.nodes, 1);
+}
+
+#[test]
 fn selects_an_immediately_winning_capture() {
     let (mut position, move_generator, mut transposition_table, mut accumulator) =
         load("4k3/8/8/8/8/8/4q3/3Q2K1 w - - 0 1");
