@@ -1,3 +1,4 @@
+mod move_ordering;
 mod negamax;
 mod quiescence;
 pub mod types;

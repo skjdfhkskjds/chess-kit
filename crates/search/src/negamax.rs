@@ -4,7 +4,7 @@ use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 use chess_kit_primitives::{Depth, Move, MoveList, Sides, ZobristKey};
 use chess_kit_transposition::TranspositionTable;
 
-use crate::{Bound, SearchNode, SearchResult, quiescence};
+use crate::{Bound, SearchNode, SearchResult, move_ordering, quiescence};
 
 /// Negamax is a fixed-depth negamax search with alpha-beta pruning
 ///
@@ -167,11 +167,7 @@ impl Negamax {
             return (score, None);
         }
 
-        if let Some(hash_move) = hash_move
-            && let Some(index) = moves.as_slice().iter().position(|&mv| mv == hash_move)
-        {
-            moves.as_mut_slice().swap(0, index);
-        }
+        move_ordering::order_moves(position, &mut moves, hash_move);
 
         let original_alpha = alpha;
         let mut best_score = -Self::INFINITY;

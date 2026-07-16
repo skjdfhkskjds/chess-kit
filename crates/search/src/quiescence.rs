@@ -3,7 +3,7 @@ use chess_kit_movegen::{MoveGenerator, MoveType};
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 use chess_kit_primitives::{Black, Depth, MoveList, Sides, White};
 
-use crate::Negamax;
+use crate::{Negamax, move_ordering};
 
 /// search continues through tactical moves until the position is quiet
 ///
@@ -74,6 +74,8 @@ where
         }
         alpha = alpha.max(stand_pat);
     }
+
+    move_ordering::order_moves(position, &mut moves, None);
 
     for &mv in &moves {
         let eval = accumulator.push_next();
