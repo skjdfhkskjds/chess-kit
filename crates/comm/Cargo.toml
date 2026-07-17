@@ -2,3 +2,7 @@
 name = "chess-kit-comm"
 version = "0.1.0"
 edition = "2024"
+
+[dependencies]
+chess-kit-engine = { path = "../engine" }
+chess-kit-primitives = { path = "../primitives" }

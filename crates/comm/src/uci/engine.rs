@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use std::time::Duration;
 
+use chess_kit_primitives::Depth;
+
 use super::{PositionCommand, SearchLimits, UciMove};
 
 /// `SearchInfo` is a type that represents optional UCI search information
@@ -9,7 +11,7 @@ use super::{PositionCommand, SearchLimits, UciMove};
 /// @type
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct SearchInfo {
-    pub depth: Option<u8>,         // completed search depth in plies
+    pub depth: Option<Depth>,      // completed search depth in plies
     pub score_cp: Option<i32>,     // position score in centipawns
     pub nodes: Option<u64>,        // number of nodes searched
     pub elapsed: Option<Duration>, // elapsed search time
@@ -40,8 +42,10 @@ impl SearchResult {
     }
 }
 
-/// `UciEngine` is a trait that defines the contract for a chess engine that
-/// wants to communicate over UCI
+/// `UciEngine` is the backend contract used by the UCI command loop.
+///
+/// Most callers should wrap their protocol-neutral engine in [`super::UciAdapter`]
+/// instead of implementing this protocol-specific trait themselves.
 ///
 /// @trait
 pub trait UciEngine {

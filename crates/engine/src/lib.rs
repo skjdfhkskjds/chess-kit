@@ -1,68 +1,69 @@
 //! Protocol-agnostic chess engine session built from the toolkit crates.
 //!
-//! Presentation entry points such as UCI and the interactive CLI should be thin
-//! adapters over [`Engine`]. They own I/O and protocol shaping;
-//! this crate owns position setup, move application, and search.
+//! Presentation layers should be thin adapters over [`Engine`]. They own I/O,
+//! notation, and protocol shaping; this crate owns position setup, move
+//! application, and search.
 
-mod error;
-mod moves;
 mod engine;
+mod error;
 mod types;
 
-pub use error::EngineError;
-pub use moves::format_uci_move;
 pub use engine::DefaultEngine;
-pub use types::{
-    DEFAULT_SEARCH_DEPTH, DEFAULT_TRANSPOSITION_TABLE_SIZE_MB, MAX_SEARCH_DEPTH, PositionBase,
-    SearchOutcome, SearchRequest,
-};
+pub use error::EngineError;
+pub use types::{Board, EngineConfig, PositionBase, SearchOutcome};
 
-use std::fmt::Display;
-
-use chess_kit_primitives::Move;
+use chess_kit_primitives::{Depth, Move};
 
 /// `Engine` is the protocol-agnostic session surface used by presentation
 /// adapters
 ///
-/// Adapters such as UCI and the interactive CLI should depend on this contract
-/// rather than composing search, evaluation, and position state themselves
+/// Presentation adapters should depend on this contract rather than composing
+/// search, evaluation, and position state themselves.
 ///
 /// @trait
-pub trait Engine: Display {
+pub trait Engine {
+    /// name returns the engine's display name
+    ///
+    /// @return: engine display name
+    fn name(&self) -> &str;
+
+    /// author returns the engine author's display name
+    ///
+    /// @return: engine author display name
+    fn author(&self) -> &str;
+
+    /// board returns a value snapshot of the current position for adapters
+    ///
+    /// @return: current board snapshot
+    fn board(&self) -> Board;
+
     /// new_game resets engine state for a fresh game and loads the start position
     ///
     /// @return: Ok on success, or the engine error
     /// @side-effects: clears game-associated search state and replaces the position
     fn new_game(&mut self) -> Result<(), EngineError>;
 
-    /// set_position replaces the current position from a base and UCI move history
+    /// set_position replaces the current position from a base and move history
     ///
     /// @param: base - root position before applying moves
-    /// @param: moves - ordered UCI move strings to apply
+    /// @param: moves - ordered engine moves to apply
     /// @return: Ok on success, or the engine error
     /// @side-effects: replaces the current engine position on success
-    fn set_position(&mut self, base: PositionBase, moves: &[&str]) -> Result<(), EngineError>;
+    fn set_position(&mut self, base: PositionBase, moves: &[Move]) -> Result<(), EngineError>;
 
-    /// play_uci applies one legal move written in UCI notation
+    /// play applies a move after resolving it against the current legal moves
     ///
-    /// @param: uci - move in UCI notation
+    /// @param: mv - move requested by a caller
     /// @return: Ok on success, or the engine error
     /// @side-effects: updates the current position when the move is legal
-    fn play_uci(&mut self, uci: &str) -> Result<(), EngineError>;
-
-    /// apply plays a previously validated legal move
-    ///
-    /// @param: mv - legal move to apply
-    /// @return: Ok on success, or the engine error
-    /// @side-effects: updates the current position
-    fn apply(&mut self, mv: Move) -> Result<(), EngineError>;
+    fn play(&mut self, mv: Move) -> Result<(), EngineError>;
 
     /// search searches the current position to the requested depth
     ///
     /// @param: depth - maximum search depth in plies
     /// @return: completed search outcome, or the engine error
     /// @side-effects: may modify engine search state
-    fn search(&mut self, depth: u8) -> Result<SearchOutcome, EngineError>;
+    fn search(&mut self, depth: Depth) -> Result<SearchOutcome, EngineError>;
 
     /// has_legal_moves reports whether the side to move has any legal reply
     ///

@@ -101,6 +101,10 @@ dependencies = [
 [[package]]
 name = "chess-kit-comm"
 version = "0.1.0"
+dependencies = [
+ "chess-kit-engine",
+ "chess-kit-primitives",
+]
 
 [[package]]
 name = "chess-kit-derive"
