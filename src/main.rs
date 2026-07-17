@@ -9,7 +9,7 @@ use chess_kit::eval::{Accumulator, DefaultAccumulator, EvalState, PSQTEvalState}
 use chess_kit::movegen::{DefaultMoveGenerator, MoveGenerator};
 use chess_kit::position::{DefaultPosition, Fen, PositionMoves, Setup};
 use chess_kit::primitives::{Depth, Move, MoveList};
-use chess_kit::search::{Negamax, SearchNode};
+use chess_kit::search::{Negamax, SearchNode, iterative_deepening};
 use chess_kit::transposition::{DefaultTranspositionTable, TranspositionTable};
 
 const START_POSITION_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -120,7 +120,8 @@ impl UciEngine for ChessKitEngine {
     fn search(&mut self, limits: &SearchLimits) -> Result<SearchResult, Self::Error> {
         let depth = Self::search_depth(limits);
         let started = Instant::now();
-        let result = self.search.search(
+        let result = iterative_deepening(
+            &mut self.search,
             &mut self.position,
             &self.move_generator,
             &mut self.transposition_table,

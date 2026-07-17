@@ -1,7 +1,7 @@
 use chess_kit_eval::Score;
 use chess_kit_primitives::Move;
 
-/// The result of a completed fixed-depth search.
+/// The result of a completed search.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct SearchResult {
     pub best_move: Option<Move>,

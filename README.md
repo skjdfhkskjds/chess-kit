@@ -27,7 +27,8 @@
 ## UCI
 
 The top-level binary is a minimal [UCI](https://backscattering.de/chess/uci/)
-engine backed by the current fixed-depth search:
+engine backed by the current iterative-deepening search with a fixed target
+depth:
 
 ```sh
 cargo run --release
