@@ -153,7 +153,7 @@ record its SHA-256 checksum:
 OPENINGS=/absolute/path/to/openings.epd
 OPENING_FORMAT=epd
 OPENING_PLIES=16
-OPENING_POLICY=encounter
+OPENING_POLICY=default
 SEED=944
 sha256sum "$OPENINGS"
 ```

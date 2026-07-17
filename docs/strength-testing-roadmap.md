@@ -240,7 +240,9 @@ the initial cutechess-cli workflow.
 
 - A manifest can reproduce the same matchup and opening order.
 - Every game has a PGN and abnormal exits are retained in logs.
-- Paired colors, fixed resources, and a versioned opening suite are mandatory.
+- Color reversal, fixed resources, and a versioned opening suite are mandatory.
+  Record whether all scheduled pairs completed; use a pair-boundary controller
+  when the statistical model requires complete pairs.
 - Smoke failures prevent the statistical run.
 
 ## Phase 5: statistical acceptance policy
@@ -385,6 +387,8 @@ match:
   maximum_games: <calculated cap>
   recovery: <enabled or disabled>
   opening_file: <path or URL>
+  opening_version: <release or revision>
+  opening_license: <license identifier or URL>
   opening_sha256: <SHA-256>
   opening_format: <pgn or epd>
   opening_order: <random or sequential>
@@ -392,7 +396,8 @@ match:
   opening_start: <index>
   opening_policy: <encounter, round, or default>
   seed: <integer>
-  paired: true
+  color_reversal_scheduled: true
+  pair_complete: <true or false>
   adjudication: none
 sprt:
   elo0: 0

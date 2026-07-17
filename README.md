@@ -29,10 +29,11 @@
 
 Toolkit crates (`position`, `search`, `eval`, …) stay focused on chess
 mechanics. The [`engine`](crates/engine) crate composes them into a single
-session API (`Engine` / `EngineApi`). Entry points are thin presentation
-adapters over that API:
+session API implemented by `DefaultEngine` through the `Engine` trait. Entry
+points are thin presentation adapters over that API:
 
-- **UCI** (`cargo run`): maps UCI text to `EngineApi` and prints UCI responses
+- **UCI** (`cargo run`): maps UCI text to `Engine` operations and prints UCI
+  responses
 - **Interactive CLI** (`cargo run --example game`): prompts, board display, and
   human move UX over the same API
 
