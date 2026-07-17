@@ -15,6 +15,7 @@
 - [attack_table](crates/attack_table): attack table generation and lookup
 - [collections](crates/collections): custom collection types
 - [comm](crates/comm): communication protocols for chess engines
+- [engine](crates/engine): protocol-agnostic engine session API
 - [eval](crates/eval): position evaluation algorithms
 - [macros](crates/macros): derive macros used by other crates
 - [movegen](crates/movegen): move generation logic
@@ -23,6 +24,17 @@
 - [primitives](crates/primitives): core types used as the building blocks for other modules
 - [search](crates/search): chess position search algorithms
 - [transposition](crates/transposition): transposition table support
+
+## Architecture
+
+Toolkit crates (`position`, `search`, `eval`, …) stay focused on chess
+mechanics. The [`engine`](crates/engine) crate composes them into a single
+session API (`Engine` / `EngineApi`). Entry points are thin presentation
+adapters over that API:
+
+- **UCI** (`cargo run`): maps UCI text to `EngineApi` and prints UCI responses
+- **Interactive CLI** (`cargo run --example game`): prompts, board display, and
+  human move UX over the same API
 
 ## UCI
 
@@ -39,28 +51,28 @@ runners: `uci`, `isready`, `ucinewgame`, `position startpos`, `position fen`,
 clock-based `go`, and `quit`. It also accepts `go depth`, `go nodes`,
 `go movetime`, `stop`, and `ponderhit` as protocol primitives, although the
 current search is synchronous and only uses the depth constraint (clamped to
-the supported range of 1–5 plies).
+the supported range of 1–8 plies).
 
 See [docs/sprt.md](docs/sprt.md) for an initial local SPRT workflow.
 
 ### Play in the terminal
 
-An interactive façade keeps the move history, displays the current position,
-and searches to depth 6 by default:
+An interactive façade displays the current position and searches to depth 6 by
+default:
 
 ```sh
-cargo run --release -p chess-kit-comm --example game
+cargo run --release --example game
 ```
 
 Use `--depth` to choose a search depth from 1 through 8 plies:
 
 ```sh
-cargo run --release -p chess-kit-comm --example game -- --depth 4
+cargo run --release --example game -- --depth 4
 ```
 
 You play White. Enter one move at a time in UCI notation, such as `e2e4` or
 `e7e8q`; enter `quit` to stop. This interactive façade is an example target and
-is not included in the `chess-kit-comm` library or the top-level UCI binary.
+is not included in the library crates.
 
 ## Testing
 

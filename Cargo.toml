@@ -11,6 +11,7 @@ members = [
     "crates/perft",
     "crates/eval",
     "crates/search",
+    "crates/engine",
 ]
 
 [package]
@@ -33,3 +34,4 @@ chess-kit-transposition = { path = "crates/transposition" }
 chess-kit-perft = { path = "crates/perft" }
 chess-kit-eval = { path = "crates/eval" }
 chess-kit-search = { path = "crates/search" }
+chess-kit-engine = { path = "crates/engine" }

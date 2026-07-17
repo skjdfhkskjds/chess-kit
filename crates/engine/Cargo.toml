@@ -1,0 +1,13 @@
+[package]
+name = "chess-kit-engine"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chess-kit-attack-table = { path = "../attack_table" }
+chess-kit-eval = { path = "../eval" }
+chess-kit-movegen = { path = "../movegen" }
+chess-kit-position = { path = "../position" }
+chess-kit-primitives = { path = "../primitives" }
+chess-kit-search = { path = "../search" }
+chess-kit-transposition = { path = "../transposition" }

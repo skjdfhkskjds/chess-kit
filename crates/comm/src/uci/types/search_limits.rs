@@ -1,6 +1,8 @@
 use std::str::FromStr;
 use std::time::Duration;
 
+use chess_kit_primitives::Depth;
+
 use super::ParseError;
 
 /// `SearchLimits` is a type that represents search constraints supplied by a UCI
@@ -18,7 +20,7 @@ pub struct SearchLimits {
     pub white_increment: Option<Duration>, // white increment per move
     pub black_increment: Option<Duration>, // black increment per move
     pub moves_to_go: Option<u32>,          // moves until the next time control
-    pub depth: Option<u8>,                 // maximum search depth in plies
+    pub depth: Option<Depth>,              // maximum search depth in plies
     pub nodes: Option<u64>,                // maximum number of nodes to search
     pub move_time: Option<Duration>,       // fixed time allocated to this move
     pub infinite: bool,                    // whether search should continue until stopped
@@ -44,7 +46,7 @@ impl SearchLimits {
                 "binc" => limits.black_increment = Some(parse_millis(&mut tokens, "binc")?),
                 "movetime" => limits.move_time = Some(parse_millis(&mut tokens, "movetime")?),
                 "movestogo" => limits.moves_to_go = Some(parse_number(&mut tokens, "movestogo")?),
-                "depth" => limits.depth = Some(parse_number(&mut tokens, "depth")?),
+                "depth" => limits.depth = Some(parse_depth(&mut tokens)?),
                 "nodes" => limits.nodes = Some(parse_number(&mut tokens, "nodes")?),
                 "infinite" => limits.infinite = true,
                 // UCI requires unknown tokens to be ignored; this also leaves
@@ -54,6 +56,19 @@ impl SearchLimits {
             }
         }
         Ok(limits)
+    }
+}
+
+/// parse_depth parses a positive search depth
+///
+/// @param: tokens - iterator positioned before the depth value
+/// @return: parsed positive search depth, or a parse error
+fn parse_depth<'a>(tokens: &mut impl Iterator<Item = &'a str>) -> Result<Depth, ParseError> {
+    let depth = parse_number(tokens, "depth")?;
+    if depth > 0 {
+        Ok(depth)
+    } else {
+        Err(ParseError::InvalidArgument("depth"))
     }
 }
 
@@ -109,5 +124,11 @@ mod tests {
         assert_eq!(limits.depth, Some(4));
         assert_eq!(limits.nodes, Some(500));
         assert_eq!(limits.move_time, Some(Duration::from_millis(50)));
+    }
+
+    #[test]
+    fn rejects_non_positive_search_depths() {
+        assert!(SearchLimits::from_tokens("depth 0".split_whitespace()).is_err());
+        assert!(SearchLimits::from_tokens("depth -1".split_whitespace()).is_err());
     }
 }
