@@ -29,10 +29,11 @@
 
 Toolkit crates (`position`, `search`, `eval`, …) stay focused on chess
 mechanics. The [`engine`](crates/engine) crate composes them into a single
-session API (`Engine` / `EngineApi`). Entry points are thin presentation
-adapters over that API:
+session API implemented by `DefaultEngine` through the `Engine` trait. Entry
+points are thin presentation adapters over that API:
 
-- **UCI** (`cargo run`): maps UCI text to `EngineApi` and prints UCI responses
+- **UCI** (`cargo run`): maps UCI text to `Engine` operations and prints UCI
+  responses
 - **Interactive CLI** (`cargo run --example game`): prompts, board display, and
   human move UX over the same API
 
@@ -46,14 +47,15 @@ depth:
 cargo run --release
 ```
 
-It supports the minimum command set needed by common chess GUIs and SPRT
-runners: `uci`, `isready`, `ucinewgame`, `position startpos`, `position fen`,
-clock-based `go`, and `quit`. It also accepts `go depth`, `go nodes`,
-`go movetime`, `stop`, and `ponderhit` as protocol primitives, although the
-current search is synchronous and only uses the depth constraint (clamped to
-the supported range of 1–8 plies).
+It accepts the UCI commands needed by common chess GUIs and match runners:
+`uci`, `isready`, `ucinewgame`, `position startpos`, `position fen`,
+clock-based `go`, `go depth`, `go nodes`, `go movetime`, `stop`, `ponderhit`,
+and `quit`. The current search is synchronous and only uses a positive
+`go depth` value; other searches fall back to depth 4.
 
-See [docs/sprt.md](docs/sprt.md) for an initial local SPRT workflow.
+See the [strength-testing roadmap](docs/strength-testing-roadmap.md) for the
+capabilities required before matches can measure Elo, and
+[docs/sprt.md](docs/sprt.md) for the local match runbook.
 
 ### Play in the terminal
 
@@ -64,7 +66,7 @@ default:
 cargo run --release --example game
 ```
 
-Use `--depth` to choose a search depth from 1 through 8 plies:
+Use `--depth` to choose a search depth from 1 through 127 plies:
 
 ```sh
 cargo run --release --example game -- --depth 4
@@ -80,6 +82,7 @@ Run the workspace's normal unit and integration tests with:
 
 ```sh
 cargo test --workspace --lib --tests
+cargo test --workspace --examples
 ```
 
 Perft correctness lives with the `perft` crate:
@@ -88,8 +91,18 @@ Perft correctness lives with the `perft` crate:
 cargo test -p chess-kit-perft --release --test perft_smoke
 ```
 
-The larger perft suite is useful as a benchmarking tool but superfluous for correctness testing:
+The larger, normally ignored perft suite provides deeper regression coverage
+and performance observations:
 
 ```sh
 cargo test -p chess-kit-perft --release --test perft_full -- --ignored --no-capture
 ```
+
+Correctness and perft are prerequisites for, but do not measure, playing
+strength. See:
+
+- [Engine strength-testing roadmap](docs/strength-testing-roadmap.md) for the
+  phased implementation plan, test gates, and incremental-change policy.
+- [Local SPRT testing](docs/sprt.md) for reproducible baseline/candidate match
+  setup and result recording. Clock-based results are not representative until
+  the roadmap's playable/UCI gate is complete.
