@@ -4,7 +4,7 @@ use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, Score};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
 use chess_kit_position::{DefaultPosition, Fen, PositionView, Setup};
 use chess_kit_primitives::{Move, MoveDelta, PieceDeltaKind, Pieces, Sides, Square};
-use chess_kit_search::{Negamax, SearchNode};
+use chess_kit_search::{Bound, Negamax, SearchNode, iterative_deepening};
 use chess_kit_transposition::{DefaultTranspositionTable, TranspositionTable};
 
 type TestPosition = DefaultPosition<DefaultAttackTable>;
@@ -108,7 +108,8 @@ fn depth_zero_returns_side_to_move_evaluation() {
     let (mut position, move_generator, mut transposition_table, mut accumulator) =
         load("4k3/8/8/8/8/8/8/3QK3 b - - 0 1");
 
-    let result = Negamax::new().search(
+    let result = iterative_deepening(
+        &mut Negamax::new(),
         &mut position,
         &move_generator,
         &mut transposition_table,
@@ -257,6 +258,32 @@ fn scores_checkmate_and_stalemate() {
     );
     assert_eq!(cached_stalemate.score, stalemate_result.score);
     assert_eq!(cached_stalemate.nodes, 1);
+}
+
+#[test]
+fn iterative_deepening_visits_each_depth_and_stores_the_final_root() {
+    let (mut position, move_generator, mut transposition_table, mut accumulator) =
+        load("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1");
+    let root_key = position.key();
+    let mut search = Negamax::new();
+
+    let result = iterative_deepening(
+        &mut search,
+        &mut position,
+        &move_generator,
+        &mut transposition_table,
+        &mut accumulator,
+        3,
+    );
+
+    assert_eq!(result.best_move, None);
+    assert_eq!(result.score, -Negamax::CHECKMATE_SCORE);
+    assert_eq!(result.nodes, 3);
+
+    let root = transposition_table.probe(root_key).copied().unwrap();
+    assert_eq!(root.depth(), 3);
+    assert_eq!(root.bound(), Bound::Exact);
+    assert_eq!(root.best_move(), None);
 }
 
 #[test]

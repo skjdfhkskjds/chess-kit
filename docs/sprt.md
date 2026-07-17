@@ -1,9 +1,9 @@
 # Local SPRT testing
 
 The engine now implements the minimum UCI command set needed to start running
-automated matches. The current search is synchronous and fixed-depth, so clock,
-node, and stop-aware search remain follow-up work before results should be
-treated as representative strength measurements.
+automated matches. The current search is synchronous and iteratively deepens to
+a fixed target depth, so clock, node, and stop-aware search remain follow-up
+work before results should be treated as representative strength measurements.
 
 ## Prepare two engine versions
 
