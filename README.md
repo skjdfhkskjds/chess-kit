@@ -65,7 +65,7 @@ default:
 cargo run --release --example game
 ```
 
-Use `--depth` to choose a positive search depth:
+Use `--depth` to choose a search depth from 1 through 127 plies:
 
 ```sh
 cargo run --release --example game -- --depth 4
@@ -81,6 +81,7 @@ Run the workspace's normal unit and integration tests with:
 
 ```sh
 cargo test --workspace --lib --tests
+cargo test --workspace --examples
 ```
 
 Perft correctness lives with the `perft` crate:

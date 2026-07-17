@@ -34,6 +34,7 @@ using them.
 | Opening suite | Not available | No versioned PGN/EPD opening set is stored or fetched by repository tooling. |
 | Match automation | Documentation only | The current [SPRT guide](sprt.md) describes manual cutechess-cli use. |
 | Continuous integration | Not available | There is no checked-in CI workflow for correctness, benchmark, or match tests. |
+| Toolchain reproducibility | Not available | The workspace uses Rust edition 2024, which requires Rust 1.85 or newer, but no minimum or pinned toolchain is declared. |
 
 The immediate implication is important: chess-kit can be used to test whether
 a match runner and the UCI process complete games, but clock-based results are
@@ -89,6 +90,7 @@ testing. Chess-kit already has a useful base for this phase.
 
   ```sh
   cargo test --workspace --lib --tests
+  cargo test --workspace --examples
   ```
 
 - Run the release-mode perft smoke suite for every engine change:
@@ -149,7 +151,9 @@ obey the match runner's search limits. Parsing a UCI token is not sufficient.
   tolerances.
 - `stop` interrupts live search and returns a legal move within a documented
   response bound.
-- The runner can assign identical hash and thread resources to both engines.
+- The runner can assign identical hash resources to both engines. Thread
+  settings are equal when configurable; until parallel search exists, record
+  that both binaries are inherently single-threaded.
 - Only after these criteria pass may a clock-based match be called a strength
   test.
 
@@ -171,9 +175,9 @@ wall-clock time and NPS are machine-dependent performance observations.
   checkmate, stalemate, one-legal-move, zugzwang, repetition/draw-sensitive,
   promotion, castling, en-passant, tactical, quiet, and transposition-rich
   positions.
-- Define fixed depth or node limits, hash size, thread count, position order,
-  state-reset rules, and output format. Reset any state whose history could
-  make the total depend on a previous run.
+- Define fixed depth or node limits, hash size, configurable thread count,
+  position order, state-reset rules, and output format. Reset any state whose
+  history could make the total depend on a previous run.
 - Print per-position diagnostics and a final machine-readable summary containing
   at least total nodes, elapsed time, and NPS. OpenBench expects the human
   output to expose nodes and NPS, for example:
@@ -185,9 +189,10 @@ wall-clock time and NPS are machine-dependent performance observations.
 - Run the benchmark twice in the same build and fail if the node fingerprint
   differs. Track speed separately with multiple samples and controlled CPU
   conditions.
-- Add an OpenBench-compatible build target only when distributed testing is
-  adopted. For this Rust workspace it should produce the requested executable
-  name from a release build, without changing source-controlled files.
+- Add an OpenBench-compatible `Makefile` target only when distributed testing
+  is adopted. It must accept OpenBench's `EXE` variable and produce that
+  requested executable name from a release build without changing
+  source-controlled files.
 
 ### Exit criteria
 
@@ -208,12 +213,15 @@ the initial cutechess-cli workflow.
 
 - Build baseline and candidate from recorded commits with the same Rust
   toolchain, target CPU, profile, features, and linker settings.
-- Pin runner version, opening-suite version and checksum, opening selection
-  range, random seed, time control, concurrency, hash, threads, and adjudication
-  policy in a manifest.
+- Pin runner version, executable checksum and provenance, opening-suite version
+  and checksum, opening selection policy, random seed, time control,
+  concurrency, hash, configurable threads, and adjudication policy in a
+  manifest.
 - Use a balanced opening suite. Play each selected opening as a pair with colors
-  reversed (`-repeat`) and use pentanomial statistics where the runner supports
-  them.
+  reversed (`-repeat`). Prefer a controller such as fastchess or OpenBench that
+  supports pentanomial SPRT and stops on pair boundaries. Cutechess-cli uses a
+  trinomial SPRT and may stop after the first game in a pair; record that model
+  when it is used.
 - Start with:
   1. a baseline-versus-baseline sanity match;
   2. a short baseline-versus-candidate smoke match;
@@ -222,8 +230,8 @@ the initial cutechess-cli workflow.
   Give each process identical resources and account for protocol/OS time margin.
 - Write PGN, runner logs, result summaries, and the manifest below a unique
   `results/` directory. That directory is intentionally ignored by Git; publish
-  durable artifacts through CI/OpenBench and put the concise result in the
-  change review.
+  durable artifacts through OpenBench, a future CI workflow, or another
+  declared artifact store, and put the concise result in the change review.
 - Do not silently enable resign or draw adjudication for a young engine. First
   validate adjudication against complete games; record any later policy change
   because it can alter the result distribution.
@@ -259,13 +267,15 @@ test trends toward failure.
 
 - Reaching the upper LLR boundary accepts `H1`: a gainer passed, or a
   non-regression candidate stayed sufficiently close to zero.
-- Reaching the lower boundary accepts `H0`: reject the claimed gain or treat
-  the allowed regression as unresolved according to the declared hypotheses.
+- Reaching the lower boundary accepts `H0`: reject the claimed gain or, for
+  non-regression bounds, reject the non-regression claim because the data favor
+  the declared regression endpoint.
 - A stopped or exhausted run that reaches neither boundary is inconclusive.
   Continue the same test when valid, or record it as inconclusive; do not call
   the current W/L/D score a pass.
-- Examine paired/pentanomial counts, time losses, crashes, and opening balance
-  alongside LLR. A statistical pass does not excuse an operational defect.
+- Examine W/L/D counts and, when supported by the controller, paired
+  pentanomial counts alongside LLR, time losses, crashes, and opening balance.
+  A statistical pass does not excuse an operational defect.
 - Re-run surprising or marginal results with a new recorded seed and otherwise
   unchanged conditions. Never combine incompatible time controls, opening
   suites, builds, or adjudication settings into one result.
@@ -307,7 +317,8 @@ back to the review.
 contributors make distributed testing worthwhile. Adoption requires:
 
 - a real deterministic `bench` command and recorded node fingerprint;
-- a build target compatible with OpenBench's requested executable name;
+- a `Makefile` target that accepts OpenBench's `EXE` variable and creates the
+  requested executable name;
 - a pinned Rust toolchain and documented CPU feature policy;
 - an engine configuration specifying source, compiler requirements, NPS,
   default bounds, and test resources;
@@ -346,6 +357,8 @@ candidate:
   bench_nodes: <node fingerprint>
 build:
   rustc: <rustc --version --verbose>
+  cargo: <cargo --version>
+  linker: <linker name and version>
   profile: release
   target_cpu: <portable or exact CPU policy>
   flags: <RUSTFLAGS and Cargo features>
@@ -355,17 +368,29 @@ host:
 runner:
   name: cutechess-cli
   version: <version>
+  binary_sha256: <SHA-256>
+  provenance: <release URL or build revision>
   concurrency: 1
 engines:
-  threads: 1
+  order: [candidate, baseline]
+  elo_pov: candidate-minus-baseline
+  threads: <equal value or inherently-single-threaded>
   hash_mb: <equal size>
 match:
+  full_command: <exact runner command>
   time_control: <base+increment>
   time_margin_ms: <margin>
+  games_per_encounter: <count>
+  rounds: <count>
+  maximum_games: <calculated cap>
+  recovery: <enabled or disabled>
   opening_file: <path or URL>
   opening_sha256: <SHA-256>
   opening_format: <pgn or epd>
-  opening_range: <range>
+  opening_order: <random or sequential>
+  opening_plies: <count or pre-truncated>
+  opening_start: <index>
+  opening_policy: <encounter, round, or default>
   seed: <integer>
   paired: true
   adjudication: none
@@ -380,7 +405,8 @@ result:
   wins: <candidate wins>
   losses: <candidate losses>
   draws: <draws>
-  pentanomial: [<0>, <0.5>, <1>, <1.5>, <2>]
+  statistical_model: <trinomial or pentanomial>
+  pentanomial: <five counts or not-supported>
   llr: <value>
   llr_bounds: [<lower>, <upper>]
 artifacts:

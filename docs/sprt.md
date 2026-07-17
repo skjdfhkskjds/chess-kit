@@ -32,24 +32,27 @@ Before starting an SPRT:
 - the benchmark fingerprint has been recorded for both commits;
 - a balanced opening suite, exact opening checksum, and random seed have been
   selected;
-- both engines use the same build flags, hash, threads, time control, and
-  adjudication policy; and
+- both engines use the same build flags, hash, time control, and adjudication
+  policy, plus equal threads if threads are configurable; and
 - the SPRT hypotheses and stopping policy have been selected before games
   begin.
 
-Use one search thread initially. Keep runner concurrency low enough to avoid CPU
+Chess-kit is currently inherently single-threaded, so a `Threads` UCI option is
+not a prerequisite. Keep runner concurrency low enough to avoid CPU
 oversubscription and memory pressure.
 
 ## Prepare the test directory
 
-Create one directory for the test's manifest, logs, PGN, and summary. `results/`
-is ignored by Git, so copy durable artifacts to the pull request's CI run or the
-project's future experiment store.
+Create one directory for the test's binaries, manifest, logs, PGN, and summary.
+`results/` is ignored by Git, so upload durable artifacts to a declared artifact
+store, OpenBench, or a future CI workflow.
 
 ```sh
+set -euo pipefail
 TEST_ID="$(date -u +%Y%m%dT%H%M%SZ)-candidate-name"
-RESULT_DIR="results/$TEST_ID"
-mkdir -p "$RESULT_DIR"
+RESULT_DIR="$(pwd)/results/$TEST_ID"
+BIN_DIR="$RESULT_DIR/bin"
+mkdir -p "$BIN_DIR"
 ```
 
 Start a manifest using the template in the
@@ -59,23 +62,40 @@ build flags, opening checksum, seed, engine resources, and test bounds.
 
 ## Build baseline and candidate
 
-Build both revisions from clean worktrees with one toolchain and one set of
-flags. The commands below are a pattern; replace the revisions and preserve any
-existing worktrees.
+Rust edition 2024 requires Rust 1.85 or newer. Until the project pins a
+toolchain, build both revisions with the same newer toolchain and record it.
+Build from clean, detached worktrees with one set of flags. The commands below
+are a pattern; replace the commit values.
 
 ```sh
-git worktree add /tmp/chess-kit-baseline-worktree <baseline-commit>
-git worktree add /tmp/chess-kit-candidate-worktree <candidate-commit>
+set -euo pipefail
+BASELINE_COMMIT="replace-with-full-baseline-sha"
+CANDIDATE_COMMIT="replace-with-full-candidate-sha"
+BASELINE_WORKTREE="/tmp/chess-kit-$TEST_ID-baseline"
+CANDIDATE_WORKTREE="/tmp/chess-kit-$TEST_ID-candidate"
+BASELINE_BINARY="$BIN_DIR/chess-kit-baseline"
+CANDIDATE_BINARY="$BIN_DIR/chess-kit-candidate"
 
-cargo build --release --manifest-path /tmp/chess-kit-baseline-worktree/Cargo.toml
-cargo build --release --manifest-path /tmp/chess-kit-candidate-worktree/Cargo.toml
+rm -f "$BASELINE_BINARY" "$CANDIDATE_BINARY"
+git worktree add --detach "$BASELINE_WORKTREE" "$BASELINE_COMMIT"
+git worktree add --detach "$CANDIDATE_WORKTREE" "$CANDIDATE_COMMIT"
 
-cp /tmp/chess-kit-baseline-worktree/target/release/chess-kit /tmp/chess-kit-baseline
-cp /tmp/chess-kit-candidate-worktree/target/release/chess-kit /tmp/chess-kit-candidate
+test "$(git -C "$BASELINE_WORKTREE" rev-parse HEAD)" = "$BASELINE_COMMIT"
+test "$(git -C "$CANDIDATE_WORKTREE" rev-parse HEAD)" = "$CANDIDATE_COMMIT"
 
-sha256sum /tmp/chess-kit-baseline /tmp/chess-kit-candidate
+cargo build --locked --release --manifest-path "$BASELINE_WORKTREE/Cargo.toml"
+cargo build --locked --release --manifest-path "$CANDIDATE_WORKTREE/Cargo.toml"
+
+cp "$BASELINE_WORKTREE/target/release/chess-kit" "$BASELINE_BINARY"
+cp "$CANDIDATE_WORKTREE/target/release/chess-kit" "$CANDIDATE_BINARY"
+test -x "$BASELINE_BINARY"
+test -x "$CANDIDATE_BINARY"
+
+sha256sum "$BASELINE_BINARY" "$CANDIDATE_BINARY"
 rustc --version --verbose
+cargo --version
 cutechess-cli --version
+sha256sum "$(command -v cutechess-cli)"
 ```
 
 Do not compare a debug binary with a release binary or mix `target-cpu`,
@@ -83,17 +103,22 @@ Do not compare a debug binary with a release binary or mix `target-cpu`,
 when both binaries run on the same compatible host and that fact is recorded;
 portable builds are easier to reproduce on other workers.
 
-## Run framework sanity checks
+## Optional current framework smoke checks
 
-First run the baseline against itself. This checks process startup, UCI
-communication, game completion, and runner configuration. It does not need to
-produce an exactly even score in a small sample.
+Before the playable/UCI gate is complete, the following checks only process
+startup, basic UCI communication, and game completion. They do not validate a
+future strength-test configuration and do not need to produce an exactly even
+score in a small sample.
+
+The current binary eagerly allocates a 1024 MB transposition table per process.
+Two-engine checks therefore need more than 2 GiB of available memory plus
+runner and operating-system overhead.
 
 ```sh
-set -o pipefail
+set -euo pipefail
 cutechess-cli \
-  -engine name=baseline-a cmd=/tmp/chess-kit-baseline proto=uci \
-  -engine name=baseline-b cmd=/tmp/chess-kit-baseline proto=uci \
+  -engine name=baseline-a cmd="$BASELINE_BINARY" proto=uci \
+  -engine name=baseline-b cmd="$BASELINE_BINARY" proto=uci \
   -each tc=10+0.1 timemargin=250 \
   -games 2 -rounds 5 -repeat \
   -concurrency 1 \
@@ -104,10 +129,10 @@ cutechess-cli \
 Then run a short baseline-versus-candidate smoke match:
 
 ```sh
-set -o pipefail
+set -euo pipefail
 cutechess-cli \
-  -engine name=baseline cmd=/tmp/chess-kit-baseline proto=uci \
-  -engine name=candidate cmd=/tmp/chess-kit-candidate proto=uci \
+  -engine name=candidate cmd="$CANDIDATE_BINARY" proto=uci \
+  -engine name=baseline cmd="$BASELINE_BINARY" proto=uci \
   -each tc=10+0.1 timemargin=250 \
   -games 2 -rounds 5 -repeat \
   -concurrency 1 \
@@ -115,9 +140,8 @@ cutechess-cli \
   2>&1 | tee "$RESULT_DIR/candidate-smoke.log"
 ```
 
-These exact commands are usable today only as framework smoke checks because of
-the current search limitation. Inspect every abnormal termination. Do not
-continue after a crash, illegal move, hang, or time loss.
+Each command caps the check at 10 games. Inspect every abnormal termination. Do
+not continue after a crash, illegal move, hang, or time loss.
 
 ## Select and verify openings
 
@@ -127,28 +151,72 @@ record its SHA-256 checksum:
 
 ```sh
 OPENINGS=/absolute/path/to/openings.epd
+OPENING_FORMAT=epd
+OPENING_PLIES=16
+OPENING_POLICY=encounter
+SEED=944
 sha256sum "$OPENINGS"
 ```
 
 Use the same opening once with each engine as White. In cutechess-cli,
 `-repeat` pairs colors. Fix the random seed so the test can be reproduced.
 Different confirmation runs should use a new seed that is recorded before they
-start.
+start. Declare `plies` explicitly for PGN suites, because cutechess-cli
+otherwise uses the complete PGN line; alternatively use a documented,
+pre-truncated suite. Record the opening order, depth, start index, and policy.
+
+## Run representative sanity checks
+
+After the playable/UCI gate is complete, run preflights with the same openings,
+seed, time control, hash, concurrency, and adjudication policy intended for the
+SPRT. Disable recovery so an engine failure stops the preflight. Change only
+the engine pairing and the short round cap.
+
+```sh
+set -euo pipefail
+cutechess-cli \
+  -engine name=baseline-a cmd="$BASELINE_BINARY" proto=uci option.Hash=16 \
+  -engine name=baseline-b cmd="$BASELINE_BINARY" proto=uci option.Hash=16 \
+  -each tc=8+0.08 timemargin=250 \
+  -openings file="$OPENINGS" format="$OPENING_FORMAT" order=random \
+    plies="$OPENING_PLIES" policy="$OPENING_POLICY" \
+  -srand "$SEED" \
+  -games 2 -rounds 5 -repeat \
+  -concurrency 1 \
+  -pgnout "$RESULT_DIR/representative-baseline-self.pgn" \
+  2>&1 | tee "$RESULT_DIR/representative-baseline-self.log"
+
+cutechess-cli \
+  -engine name=candidate cmd="$CANDIDATE_BINARY" proto=uci option.Hash=16 \
+  -engine name=baseline cmd="$BASELINE_BINARY" proto=uci option.Hash=16 \
+  -each tc=8+0.08 timemargin=250 \
+  -openings file="$OPENINGS" format="$OPENING_FORMAT" order=random \
+    plies="$OPENING_PLIES" policy="$OPENING_POLICY" \
+  -srand "$SEED" \
+  -games 2 -rounds 5 -repeat \
+  -concurrency 1 \
+  -pgnout "$RESULT_DIR/representative-candidate-smoke.pgn" \
+  2>&1 | tee "$RESULT_DIR/representative-candidate-smoke.log"
+```
+
+These commands assume the planned UCI `Hash` option exists. Confirm its exact
+name in the engine's `uci` output.
 
 ## Run the SPRT
 
 The following command is the target workflow after clock-aware, interruptible
-search and runtime `Hash`/`Threads` options exist. It is intentionally not a
-claim that the current binary supports those capabilities.
+search and a runtime `Hash` option exist. It is intentionally not a claim that
+the current binary supports those capabilities.
 
 ```sh
-set -o pipefail
+set -euo pipefail
 cutechess-cli \
-  -engine name=baseline cmd=/tmp/chess-kit-baseline proto=uci option.Hash=16 option.Threads=1 \
-  -engine name=candidate cmd=/tmp/chess-kit-candidate proto=uci option.Hash=16 option.Threads=1 \
+  -engine name=candidate cmd="$CANDIDATE_BINARY" proto=uci option.Hash=16 \
+  -engine name=baseline cmd="$BASELINE_BINARY" proto=uci option.Hash=16 \
   -each tc=8+0.08 timemargin=250 \
-  -openings file="$OPENINGS" format=epd order=random \
-  -srand 944 \
+  -openings file="$OPENINGS" format="$OPENING_FORMAT" order=random \
+    plies="$OPENING_PLIES" policy="$OPENING_POLICY" \
+  -srand "$SEED" \
   -games 2 -rounds 15000 -repeat \
   -concurrency 1 -recover \
   -sprt elo0=0 elo1=10 alpha=0.05 beta=0.05 \
@@ -156,15 +224,20 @@ cutechess-cli \
   2>&1 | tee "$RESULT_DIR/sprt.log"
 ```
 
-Confirm the option names against the implemented UCI output before using the
-target command. If the opening file is PGN, change `format=epd` to `format=pgn`.
-Choose `-rounds` high enough that the SPRT, rather than the round cap, normally
-stops the test.
+Candidate must be engine A (the first `-engine`) so positive bounds test
+candidate-minus-baseline Elo. Record that point of view in the manifest. The
+command has a 30,000-game cap; choose the cap high enough that the SPRT, rather
+than the cap, normally stops the test.
 
 `-recover` keeps the tournament runner alive after some engine failures; it
 does not make those failures acceptable. Retain and investigate them. Avoid
 resign and draw adjudication until it has been validated against complete games
 for the engine's current strength.
+
+Cutechess-cli's SPRT uses trinomial W/L/D statistics and can stop between the
+two games in a color-reversed pair. `-repeat` still controls color balance, but
+it does not turn this into a pentanomial test. Prefer fastchess or OpenBench when
+pair-boundary stopping and pentanomial statistics are required.
 
 ## Choose bounds before running
 
@@ -195,15 +268,15 @@ Use the runner's reported LLR and boundaries:
 - reaching neither boundary is inconclusive, not a pass.
 
 At five-percent false-positive and false-negative thresholds, the basic
-unpaired theoretical boundaries are approximately `(-2.94, 2.94)`. Treat the
-runner's displayed boundaries as authoritative because its model and paired
-statistics may affect the reported values.
+boundaries are approximately `(-2.94, 2.94)`. Record the runner's displayed
+values as authoritative, especially when alpha and beta differ.
 
 Record:
 
 - the SPRT status and final LLR with its bounds;
 - game count, candidate wins, losses, and draws;
-- pentanomial counts for paired games when available;
+- the statistical model and pentanomial counts only when the controller
+  supports them;
 - time forfeits, crashes, illegal moves, and recoveries;
 - both benchmark node fingerprints;
 - links or paths to the manifest, complete log, and PGN; and
@@ -219,8 +292,9 @@ fixed-game match against a pinned reference-engine release as described in
 After artifacts are safely stored and the worktrees are no longer needed:
 
 ```sh
-git worktree remove /tmp/chess-kit-baseline-worktree
-git worktree remove /tmp/chess-kit-candidate-worktree
+git worktree remove "$BASELINE_WORKTREE"
+git worktree remove "$CANDIDATE_WORKTREE"
+rm -f "$BASELINE_BINARY" "$CANDIDATE_BINARY"
 ```
 
 Do not remove a worktree that contains uncommitted work.
