@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use chess_kit::comm::uci::UciMove;
 use chess_kit::engine::{
-    Engine, EngineApi, MAX_SEARCH_DEPTH, SearchOutcome, format_uci_move,
+    DefaultEngine, Engine, MAX_SEARCH_DEPTH, SearchOutcome, format_uci_move,
 };
 
 /// DEFAULT_INTERACTIVE_SEARCH_DEPTH is the search depth used when `--depth` is
@@ -77,7 +77,7 @@ pub struct InteractiveGame<EngineT> {
 
 impl<EngineT> InteractiveGame<EngineT>
 where
-    EngineT: EngineApi,
+    EngineT: Engine,
 {
     /// new creates an interactive game around the given engine
     ///
@@ -216,7 +216,7 @@ fn run() -> Result<(), String> {
         return Ok(());
     };
 
-    let engine = Engine::new().map_err(|error| error.to_string())?;
+    let engine = DefaultEngine::new().map_err(|error| error.to_string())?;
     InteractiveGame::new(engine, options.depth)
         .run()
         .map_err(|error| error.to_string())
@@ -254,7 +254,7 @@ mod tests {
         }
     }
 
-    impl EngineApi for TestEngine {
+    impl Engine for TestEngine {
         fn new_game(&mut self) -> Result<(), EngineError> {
             self.moves.clear();
             self.legal_after_engine = true;

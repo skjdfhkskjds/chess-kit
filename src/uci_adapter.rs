@@ -4,7 +4,7 @@ use chess_kit::comm::uci::{
     BasePosition, PositionCommand, SearchInfo, SearchLimits, SearchResult, UciEngine, UciMove,
 };
 use chess_kit::engine::{
-    Engine, EngineApi, PositionBase, SearchRequest, format_uci_move,
+    DefaultEngine, Engine, PositionBase, SearchRequest, format_uci_move,
 };
 
 /// `UciAdapter` translates UCI protocol types into the internal engine API
@@ -15,7 +15,7 @@ use chess_kit::engine::{
 ///
 /// @type
 pub struct UciAdapter {
-    engine: Engine,
+    engine: DefaultEngine,
 }
 
 impl UciAdapter {
@@ -23,7 +23,7 @@ impl UciAdapter {
     ///
     /// @param: engine - protocol-agnostic engine session
     /// @return: UCI adapter
-    pub fn new(engine: Engine) -> Self {
+    pub fn new(engine: DefaultEngine) -> Self {
         Self { engine }
     }
 }

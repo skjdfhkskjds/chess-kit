@@ -1,6 +1,6 @@
 mod uci_adapter;
 
-use chess_kit::engine::Engine;
+use chess_kit::engine::DefaultEngine;
 use uci_adapter::UciAdapter;
 
 fn main() {
@@ -11,7 +11,7 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let engine = Engine::new()?;
+    let engine = DefaultEngine::new()?;
     let mut adapter = UciAdapter::new(engine);
     chess_kit::comm::uci::run(&mut adapter)?;
     Ok(())

@@ -10,7 +10,7 @@ use chess_kit_search::{Negamax, SearchNode, iterative_deepening};
 use chess_kit_transposition::{DefaultTranspositionTable, TranspositionTable};
 
 use crate::{
-    EngineApi, EngineError, PositionBase, SearchOutcome, SearchRequest, format_uci_move,
+    Engine, EngineError, PositionBase, SearchOutcome, SearchRequest, format_uci_move,
     types::{DEFAULT_SEARCH_DEPTH, DEFAULT_TRANSPOSITION_TABLE_SIZE_MB, MAX_SEARCH_DEPTH},
 };
 
@@ -26,7 +26,7 @@ type EngineTranspositionTable = DefaultTranspositionTable<SearchNode>;
 /// wiring toolkit crates themselves
 ///
 /// @type
-pub struct Engine {
+pub struct DefaultEngine {
     position: EnginePosition,
     move_generator: EngineMoveGenerator,
     accumulator: EngineAccumulator,
@@ -34,7 +34,7 @@ pub struct Engine {
     search: Negamax,
 }
 
-impl Engine {
+impl DefaultEngine {
     /// new creates an engine at the standard starting position
     ///
     /// @return: initialized engine, or an engine error
@@ -132,7 +132,7 @@ impl Engine {
     }
 }
 
-impl EngineApi for Engine {
+impl Engine for DefaultEngine {
     fn new_game(&mut self) -> Result<(), EngineError> {
         (self.position, self.accumulator) = Self::build_position(PositionBase::StartPos, &[])?;
         self.transposition_table.clear();
@@ -166,7 +166,7 @@ impl EngineApi for Engine {
     }
 }
 
-impl Display for Engine {
+impl Display for DefaultEngine {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.position.fmt(f)
     }
@@ -202,7 +202,7 @@ mod tests {
 
     #[test]
     fn position_applies_legal_move_history() {
-        let mut engine = Engine::new().unwrap();
+        let mut engine = DefaultEngine::new().unwrap();
         engine
             .set_position(PositionBase::StartPos, &["e2e4", "e7e5"])
             .unwrap();
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn search_returns_a_legal_move() {
-        let mut engine = Engine::new().unwrap();
+        let mut engine = DefaultEngine::new().unwrap();
         let outcome = engine.search(1).unwrap();
 
         assert!(outcome.best_move.is_some());
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn play_uci_rejects_illegal_moves_without_changing_turn() {
-        let mut engine = Engine::new().unwrap();
+        let mut engine = DefaultEngine::new().unwrap();
         let turn = engine.position.turn();
 
         assert!(engine.play_uci("e2e5").is_err());
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn has_legal_moves_is_true_from_the_start_position() {
-        let engine = Engine::new().unwrap();
+        let engine = DefaultEngine::new().unwrap();
         assert!(engine.has_legal_moves());
     }
 }
