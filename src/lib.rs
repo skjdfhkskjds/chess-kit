@@ -1,5 +1,6 @@
 pub use chess_kit_attack_table as attack_table;
 pub use chess_kit_comm as comm;
+pub use chess_kit_engine as engine;
 pub use chess_kit_eval as eval;
 pub use chess_kit_movegen as movegen;
 pub use chess_kit_perft as perft;

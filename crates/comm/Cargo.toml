@@ -2,12 +2,3 @@
 name = "chess-kit-comm"
 version = "0.1.0"
 edition = "2024"
-
-[dev-dependencies]
-chess-kit-attack-table = { path = "../attack_table" }
-chess-kit-eval = { path = "../eval" }
-chess-kit-movegen = { path = "../movegen" }
-chess-kit-position = { path = "../position" }
-chess-kit-primitives = { path = "../primitives" }
-chess-kit-search = { path = "../search" }
-chess-kit-transposition = { path = "../transposition" }
