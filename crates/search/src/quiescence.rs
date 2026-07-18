@@ -1,5 +1,5 @@
 use chess_kit_eval::{Accumulator, EvalState, Score};
-use chess_kit_movegen::{MoveGenerator, MoveType};
+use chess_kit_movegen::{MoveGenerationStrategy, MoveGenerator};
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 use chess_kit_primitives::{Depth, MoveList, call_as};
 
@@ -44,7 +44,7 @@ where
             return -Negamax::CHECKMATE_SCORE + Score::from(ply);
         }
     } else {
-        move_generator.generate_moves(position, &mut moves, MoveType::Capture);
+        move_generator.generate_moves(position, &mut moves, MoveGenerationStrategy::Capture);
         retain_legal_moves(position, &mut moves);
 
         // Capture generation cannot distinguish a quiet position from

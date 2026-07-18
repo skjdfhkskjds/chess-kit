@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-use chess_kit_primitives::{Depth, Move};
+use chess_kit_primitives::{Move, SearchDepth};
+use chess_kit_search::SearchResult;
 
 /// `EngineConfig` contains construction-time settings for a composed engine session
 ///
@@ -37,8 +38,21 @@ pub enum PositionBase {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SearchOutcome {
     pub best_move: Option<Move>, // best move found, or None when no legal move exists
-    pub depth: Depth,            // completed search depth in plies
+    pub depth: SearchDepth,      // completed positive search depth in plies
     pub score: i32,              // position score in centipawns
     pub nodes: u64,              // number of nodes searched
     pub elapsed: Duration,       // elapsed search time
+}
+
+impl From<(SearchResult, SearchDepth, Duration)> for SearchOutcome {
+    /// from enriches an internal search result with engine-boundary metadata.
+    fn from((result, depth, elapsed): (SearchResult, SearchDepth, Duration)) -> Self {
+        Self {
+            best_move: result.best_move,
+            depth,
+            score: result.score,
+            nodes: result.nodes,
+            elapsed,
+        }
+    }
 }

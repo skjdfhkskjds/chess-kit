@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::time::Duration;
 
-use chess_kit_primitives::Depth;
+use chess_kit_primitives::SearchDepth;
 
 use super::ParseError;
 
@@ -20,7 +20,7 @@ pub struct SearchLimits {
     pub white_increment: Option<Duration>, // white increment per move
     pub black_increment: Option<Duration>, // black increment per move
     pub moves_to_go: Option<u32>,          // moves until the next time control
-    pub depth: Option<Depth>,              // maximum search depth in plies
+    pub depth: Option<SearchDepth>,        // maximum positive search depth in plies
     pub nodes: Option<u64>,                // maximum number of nodes to search
     pub move_time: Option<Duration>,       // fixed time allocated to this move
     pub infinite: bool,                    // whether search should continue until stopped
@@ -63,13 +63,9 @@ impl SearchLimits {
 ///
 /// @param: tokens - iterator positioned before the depth value
 /// @return: parsed positive search depth, or a parse error
-fn parse_depth<'a>(tokens: &mut impl Iterator<Item = &'a str>) -> Result<Depth, ParseError> {
+fn parse_depth<'a>(tokens: &mut impl Iterator<Item = &'a str>) -> Result<SearchDepth, ParseError> {
     let depth = parse_number(tokens, "depth")?;
-    if depth > 0 {
-        Ok(depth)
-    } else {
-        Err(ParseError::InvalidArgument("depth"))
-    }
+    SearchDepth::new(depth).map_err(|_| ParseError::InvalidArgument("depth"))
 }
 
 /// parse_millis parses the next argument as a millisecond duration
@@ -121,7 +117,7 @@ mod tests {
         assert_eq!(limits.white_increment, Some(Duration::from_millis(10)));
         assert_eq!(limits.black_increment, Some(Duration::from_millis(20)));
         assert_eq!(limits.moves_to_go, Some(30));
-        assert_eq!(limits.depth, Some(4));
+        assert_eq!(limits.depth.map(SearchDepth::get), Some(4));
         assert_eq!(limits.nodes, Some(500));
         assert_eq!(limits.move_time, Some(Duration::from_millis(50)));
     }

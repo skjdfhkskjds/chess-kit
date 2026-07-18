@@ -1,7 +1,7 @@
-use crate::{MoveGenerator, MoveType};
+use crate::{MoveGenerationStrategy, MoveGenerator};
 use chess_kit_attack_table::AttackTable;
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
-use chess_kit_primitives::{Black, MoveList, Sides, White, moves::MoveType::EnPassant};
+use chess_kit_primitives::{MoveList, call_as, moves::MoveType::EnPassant};
 use std::marker::PhantomData;
 
 /// `DefaultMoveGenerator` is a default implementation of the `MoveGenerator` trait
@@ -30,16 +30,12 @@ impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
         &self,
         position: &PositionT,
         list: &mut MoveList,
-        move_type: MoveType,
+        strategy: MoveGenerationStrategy,
     ) {
-        match position.turn() {
-            Sides::White => {
-                self.generate_moves_for_side::<White, PositionT>(position, list, move_type)
-            }
-            Sides::Black => {
-                self.generate_moves_for_side::<Black, PositionT>(position, list, move_type)
-            }
-        }
+        call_as!(position.turn(), |SideT| self
+            .generate_moves_for_side::<SideT, PositionT>(
+                position, list, strategy
+            ));
     }
 
     /// generate_legal_moves generates all the legal moves from the current position
@@ -53,45 +49,23 @@ impl<AT: AttackTable> MoveGenerator for DefaultMoveGenerator<AT> {
     ) {
         // if the side to move is in check, just generate evasions during legal
         // move generation
-        let move_type = if position.checkers().not_empty() {
-            MoveType::Evasions
+        let strategy = if position.checkers().not_empty() {
+            MoveGenerationStrategy::Evasions
         } else {
-            MoveType::NonEvasions
+            MoveGenerationStrategy::NonEvasions
         };
 
-        match position.turn() {
-            Sides::White => {
-                let king_square = position.king_square::<White>();
-                let pinned =
-                    position.king_blocker_pieces::<White>() & position.occupancy::<White>();
+        call_as!(position.turn(), |SideT| {
+            let king_square = position.king_square::<SideT>();
+            let pinned = position.king_blocker_pieces::<SideT>() & position.occupancy::<SideT>();
 
-                // generate all the pseudo-legal moves
-                self.generate_moves_for_side::<White, PositionT>(position, list, move_type);
-
-                // retain the moves to only include legal moves
-                list.retain(|mv| {
-                    !(((pinned.has_square(mv.from()))
-                        || mv.from() == king_square
-                        || matches!(mv.type_of(), EnPassant))
-                        && !position.is_legal_move::<White>(*mv))
-                })
-            }
-            Sides::Black => {
-                let king_square = position.king_square::<Black>();
-                let pinned =
-                    position.king_blocker_pieces::<Black>() & position.occupancy::<Black>();
-
-                // generate all the pseudo-legal moves
-                self.generate_moves_for_side::<Black, PositionT>(position, list, move_type);
-
-                // retain the moves to only include legal moves
-                list.retain(|mv| {
-                    !(((pinned.has_square(mv.from()))
-                        || mv.from() == king_square
-                        || matches!(mv.type_of(), EnPassant))
-                        && !position.is_legal_move::<Black>(*mv))
-                })
-            }
-        }
+            self.generate_moves_for_side::<SideT, PositionT>(position, list, strategy);
+            list.retain(|mv| {
+                !((pinned.has_square(mv.from())
+                    || mv.from() == king_square
+                    || matches!(mv.type_of(), EnPassant))
+                    && !position.is_legal_move::<SideT>(*mv))
+            });
+        });
     }
 }

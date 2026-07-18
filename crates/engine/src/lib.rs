@@ -13,7 +13,7 @@ pub use engine::DefaultEngine;
 pub use error::EngineError;
 pub use types::{EngineConfig, PositionBase, SearchOutcome};
 
-use chess_kit_primitives::{Depth, Move};
+use chess_kit_primitives::{Move, SearchDepth};
 
 /// `Engine` is the protocol-agnostic session surface used by presentation
 /// adapters
@@ -59,7 +59,7 @@ pub trait Engine {
     /// @param: depth - maximum search depth in plies
     /// @return: completed search outcome, or the engine error
     /// @side-effects: may modify engine search state
-    fn search(&mut self, depth: Depth) -> Result<SearchOutcome, EngineError>;
+    fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError>;
 
     /// has_legal_moves reports whether the side to move has any legal reply
     ///

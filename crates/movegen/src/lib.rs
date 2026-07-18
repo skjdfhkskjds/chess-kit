@@ -8,11 +8,11 @@ use chess_kit_primitives::{MoveList, Rank};
 
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 
-/// `MoveType` is a type that represents the variation of moves that can be generated
+/// `MoveGenerationStrategy` selects the subset of moves to generate.
 ///
 /// @type
 #[derive(Copy, Clone, PartialEq, Eq)]
-pub enum MoveType {
+pub enum MoveGenerationStrategy {
     Quiet,
     Capture,
     Evasions,
@@ -29,19 +29,19 @@ pub trait MoveGenerator {
     /// @return: new move generator
     fn new() -> Self;
 
-    /// generate_moves generates all the pseudo-legal moves of the given move type
+    /// generate_moves generates all pseudo-legal moves selected by a strategy
     /// from the current position and pushes them to the move list
     ///
     /// @param: position - immutable reference to the position
     /// @param: list - mutable reference to the move list
-    /// @param: move_type - move type to generate moves for
+    /// @param: strategy - subset of moves to generate
     /// @return: void
     /// @side-effects: modifies the `move list`
     fn generate_moves<PositionT: PositionView + PositionAttacks>(
         &self,
         position: &PositionT,
         list: &mut MoveList,
-        move_type: MoveType,
+        strategy: MoveGenerationStrategy,
     );
 
     /// generate_legal_moves generates all the legal moves from the current position

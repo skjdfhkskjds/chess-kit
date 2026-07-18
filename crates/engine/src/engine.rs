@@ -4,7 +4,7 @@ use chess_kit_attack_table::DefaultAttackTable;
 use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, PSQTEvalState};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
 use chess_kit_position::{DefaultPosition, Fen, PositionMoves, PositionSnapshot, Setup};
-use chess_kit_primitives::{Depth, Move, MoveList, MoveType};
+use chess_kit_primitives::{Move, MoveList, MoveType, SearchDepth};
 use chess_kit_search::{Negamax, SearchNode, iterative_deepening};
 use chess_kit_transposition::{DefaultTranspositionTable, TranspositionTable};
 
@@ -150,11 +150,7 @@ impl Engine for DefaultEngine {
     }
 
     /// @impl: Engine::search
-    fn search(&mut self, depth: Depth) -> Result<SearchOutcome, EngineError> {
-        if depth < 1 {
-            return Err(EngineError::new("search depth must be positive"));
-        }
-
+    fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError> {
         let started = Instant::now();
         let result = iterative_deepening(
             &mut self.search,
@@ -162,16 +158,10 @@ impl Engine for DefaultEngine {
             &self.move_generator,
             &mut self.transposition_table,
             &mut self.accumulator,
-            depth,
+            depth.get(),
         );
 
-        Ok(SearchOutcome {
-            best_move: result.best_move,
-            depth,
-            score: result.score,
-            nodes: result.nodes,
-            elapsed: started.elapsed(),
-        })
+        Ok(SearchOutcome::from((result, depth, started.elapsed())))
     }
 
     /// @impl: Engine::has_legal_moves
@@ -265,10 +255,10 @@ mod tests {
     #[test]
     fn search_returns_a_legal_move() {
         let mut engine = engine();
-        let outcome = engine.search(1).unwrap();
+        let outcome = engine.search(SearchDepth::new(1).unwrap()).unwrap();
 
         assert!(outcome.best_move.is_some());
-        assert_eq!(outcome.depth, 1);
+        assert_eq!(outcome.depth.get(), 1);
         assert!(outcome.nodes > 1);
     }
 
@@ -299,11 +289,9 @@ mod tests {
     }
 
     #[test]
-    fn search_rejects_non_positive_depths() {
-        let mut engine = engine();
-
-        assert!(engine.search(0).is_err());
-        assert!(engine.search(-1).is_err());
+    fn search_depth_rejects_non_positive_values() {
+        assert!(SearchDepth::new(0).is_err());
+        assert!(SearchDepth::new(-1).is_err());
     }
 
     #[test]

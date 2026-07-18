@@ -1,9 +1,12 @@
 use chess_kit::comm::uci::UciAdapter;
 use chess_kit::engine::{DefaultEngine, EngineConfig};
-use chess_kit::primitives::Depth;
+use chess_kit::primitives::SearchDepth;
 
 /// DEFAULT_UCI_SEARCH_DEPTH is the fallback depth for an unconstrained UCI search
-const DEFAULT_UCI_SEARCH_DEPTH: Depth = 4;
+const DEFAULT_UCI_SEARCH_DEPTH: SearchDepth = match SearchDepth::new(4) {
+    Ok(depth) => depth,
+    Err(_) => panic!("default UCI search depth must be positive"),
+};
 
 /// UCI_TRANSPOSITION_TABLE_SIZE_MB is the transposition table size selected by
 /// the UCI presentation

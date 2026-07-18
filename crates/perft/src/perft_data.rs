@@ -1,6 +1,6 @@
 use chess_kit_collections::Value;
-use chess_kit_transposition::NodeData;
 use chess_kit_primitives::Depth;
+use chess_kit_transposition::NodeData;
 use std::fmt::{self, Display};
 
 pub type NodeCount = usize;
@@ -38,14 +38,6 @@ impl PerftData {
 }
 
 impl NodeData for PerftData {
-    /// empty creates a new instance of a node with no data
-    ///
-    /// @return: new instance of a node with no data
-    #[inline]
-    fn empty() -> Self {
-        Self(0, 0)
-    }
-
     /// depth returns the depth of the node
     ///
     /// @return: depth of the node
@@ -71,7 +63,7 @@ impl Default for PerftData {
     /// @return: new instance of a node with no data
     #[inline]
     fn default() -> Self {
-        Self::empty()
+        Self(0, 0)
     }
 }
 

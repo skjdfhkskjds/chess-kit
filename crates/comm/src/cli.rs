@@ -5,7 +5,7 @@ use std::io::{self, BufRead, Write};
 use std::str::FromStr;
 
 use chess_kit_engine::{Engine, PositionProvider, PositionSnapshot, SearchOutcome};
-use chess_kit_primitives::{Depth, Move, Pieces, Sides, Square, call_as};
+use chess_kit_primitives::{Move, Pieces, SearchDepth, Sides, Square, call_as};
 
 use crate::uci::UciMove;
 
@@ -18,8 +18,8 @@ use crate::uci::UciMove;
 /// @marker: EngineT - protocol-neutral engine implementation
 /// @type
 pub struct InteractiveGame<EngineT> {
-    engine: EngineT,     // engine used to play the game
-    search_depth: Depth, // fixed depth used for engine replies
+    engine: EngineT,           // engine used to play the game
+    search_depth: SearchDepth, // fixed positive depth used for engine replies
 }
 
 impl<EngineT> InteractiveGame<EngineT>
@@ -31,7 +31,7 @@ where
     /// @param: engine - protocol-neutral engine session
     /// @param: search_depth - fixed search depth used for engine replies
     /// @return: interactive game adapter
-    pub const fn new(engine: EngineT, search_depth: Depth) -> Self {
+    pub const fn new(engine: EngineT, search_depth: SearchDepth) -> Self {
         Self {
             engine,
             search_depth,
@@ -236,7 +236,7 @@ mod tests {
     struct TestEngine {
         moves: Vec<Move>,
         searches: usize,
-        search_depths: Vec<Depth>,
+        search_depths: Vec<SearchDepth>,
         legal_after_engine: bool,
     }
 
@@ -261,14 +261,14 @@ mod tests {
         }
 
         fn play(&mut self, mv: Move) -> Result<(), EngineError> {
-            if UciMove::from(mv).as_str() == "e2e5" {
+            if UciMove::from(mv).to_string() == "e2e5" {
                 return Err(EngineError::new("illegal move: e2e5"));
             }
             self.moves.push(mv);
             Ok(())
         }
 
-        fn search(&mut self, depth: Depth) -> Result<SearchOutcome, EngineError> {
+        fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError> {
             self.searches += 1;
             self.search_depths.push(depth);
             let best_move = match self.searches {
@@ -302,7 +302,7 @@ mod tests {
     fn wraps_moves_and_search_into_a_human_session() {
         let input = Cursor::new(b"not-a-move\ne2e4\nquit\n");
         let mut output = Vec::new();
-        let mut game = InteractiveGame::new(TestEngine::default(), 7);
+        let mut game = InteractiveGame::new(TestEngine::default(), SearchDepth::new(7).unwrap());
 
         game.run_with_io(input, &mut output).unwrap();
 
@@ -319,6 +319,6 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(moves, ["e2e4", "e7e5"]);
         assert!(output.contains("Game over: you have no legal moves."));
-        assert_eq!(game.engine().search_depths, [7]);
+        assert_eq!(game.engine().search_depths[0].get(), 7);
     }
 }
