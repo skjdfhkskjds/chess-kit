@@ -46,6 +46,45 @@ macro_rules! define_sides {
     };
 }
 
+/// `call_as!` dispatches a runtime [`Sides`] value to a compile-time side marker
+///
+/// The marker identifier supplied after the runtime side is bound to [`White`]
+/// or [`Black`] in the selected branch. The body can be any expression, so
+/// method arguments and compound operations do not require dedicated variadic
+/// macro syntax. The runtime side expression is evaluated exactly once.
+///
+/// Usage:
+///
+/// ```
+/// use chess_kit_primitives::{Side, Sides, call_as};
+///
+/// fn side_number<SideT: Side>(offset: usize) -> usize {
+///     SideT::SIDE.idx() + offset
+/// }
+///
+/// let side = Sides::Black;
+/// let number = call_as!(side, |SideT| side_number::<SideT>(10));
+/// assert_eq!(number, 11);
+/// ```
+///
+/// Expands conceptually to a `match` whose branches define the requested
+/// marker alias and evaluate the supplied body.
+#[macro_export]
+macro_rules! call_as {
+    ($side:expr, |$side_type:ident| $body:expr $(,)?) => {{
+        match $side {
+            $crate::Sides::White => {
+                type $side_type = $crate::White;
+                $body
+            }
+            $crate::Sides::Black => {
+                type $side_type = $crate::Black;
+                $body
+            }
+        }
+    }};
+}
+
 /// 'White' is a marker struct for compile-time generics over operations on the
 /// white side
 ///
@@ -95,4 +134,40 @@ impl Side for Black {
     type Other = White;
 
     const SIDE: Sides = Sides::Black;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn side_number<SideT: Side>(offset: usize) -> usize {
+        SideT::SIDE.idx() + offset
+    }
+
+    #[test]
+    fn call_as_dispatches_both_markers_and_returns_the_body_value() {
+        assert_eq!(
+            crate::call_as!(Sides::White, |SideT| side_number::<SideT>(10)),
+            10
+        );
+        assert_eq!(
+            crate::call_as!(Sides::Black, |SideT| side_number::<SideT>(10)),
+            11
+        );
+    }
+
+    #[test]
+    fn call_as_evaluates_the_runtime_side_once() {
+        let mut evaluations = 0;
+        let result = crate::call_as!(
+            {
+                evaluations += 1;
+                Sides::White
+            },
+            |SideT| SideT::SIDE,
+        );
+
+        assert_eq!(result, Sides::White);
+        assert_eq!(evaluations, 1);
+    }
 }

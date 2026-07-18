@@ -5,7 +5,7 @@ use std::io::{self, BufRead, Write};
 use std::str::FromStr;
 
 use chess_kit_engine::{Engine, PositionProvider, PositionSnapshot, SearchOutcome};
-use chess_kit_primitives::{Black, Depth, Move, Pieces, Sides, Square, White};
+use chess_kit_primitives::{Depth, Move, Pieces, Sides, Square, call_as};
 
 use crate::uci::UciMove;
 
@@ -207,10 +207,7 @@ fn write_position(writer: &mut impl Write, position: &PositionSnapshot) -> io::R
 /// @param: piece - piece to display
 /// @return: Unicode piece symbol
 fn piece_symbol(side: Sides, piece: Pieces) -> char {
-    let display = match side {
-        Sides::White => piece.display::<White>().to_string(),
-        Sides::Black => piece.display::<Black>().to_string(),
-    };
+    let display = call_as!(side, |SideT| piece.display::<SideT>().to_string());
     display
         .chars()
         .next()
@@ -231,6 +228,7 @@ mod tests {
     use std::time::Duration;
 
     use chess_kit_engine::{EngineError, PositionBase};
+    use chess_kit_primitives::White;
 
     use super::*;
 

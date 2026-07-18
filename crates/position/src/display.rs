@@ -1,6 +1,6 @@
 use crate::position::DefaultPosition;
 use chess_kit_attack_table::AttackTable;
-use chess_kit_primitives::{Black, File, Pieces, Rank, Sides, White};
+use chess_kit_primitives::{File, Pieces, Rank, Sides, call_as};
 use std::{fmt, iter::once};
 
 impl<AT> fmt::Display for DefaultPosition<AT>
@@ -15,13 +15,10 @@ where
             let side = Sides::from_idx(side_idx);
             for (piece_idx, bitboard) in bitboards.iter().enumerate() {
                 let piece = Pieces::from_idx(piece_idx);
-                let piece_char = match side {
-                    Sides::White => piece.display::<White>().to_string(),
-                    Sides::Black => piece.display::<Black>().to_string(),
-                }
-                .chars()
-                .next()
-                .expect("piece displays are never empty");
+                let piece_char = call_as!(side, |SideT| piece.display::<SideT>().to_string())
+                    .chars()
+                    .next()
+                    .expect("piece displays are never empty");
 
                 for square in bitboard.iter() {
                     board[square.rank()][square.file()] = piece_char;
@@ -73,7 +70,7 @@ where
 mod tests {
     use super::*;
     use chess_kit_attack_table::DefaultAttackTable;
-    use chess_kit_primitives::PieceDisplay;
+    use chess_kit_primitives::{Black, PieceDisplay, White};
 
     #[test]
     fn displays_position_with_side_appropriate_unicode_pieces() {

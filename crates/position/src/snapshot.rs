@@ -1,4 +1,4 @@
-use chess_kit_primitives::{Black, Pieces, Side, Sides, Square, White};
+use chess_kit_primitives::{Black, Pieces, Side, Sides, Square, White, call_as};
 
 use crate::PositionView;
 
@@ -87,10 +87,7 @@ where
     /// @param: position - position view to snapshot
     /// @return: owned position snapshot
     fn from(position: &PositionT) -> Self {
-        let mut snapshot = match position.turn() {
-            Sides::White => Self::empty::<White>(),
-            Sides::Black => Self::empty::<Black>(),
-        };
+        let mut snapshot = call_as!(position.turn(), |SideT| Self::empty::<SideT>());
         snapshot.copy_side::<White, _>(position);
         snapshot.copy_side::<Black, _>(position);
         snapshot

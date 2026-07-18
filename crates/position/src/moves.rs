@@ -4,7 +4,7 @@ use super::{
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{
     Bitboard, Black, Move, MoveDelta, MoveType, PieceDelta, Pieces, Side, Sides, Square, White,
-    ZobristTable,
+    ZobristTable, call_as,
 };
 
 impl<AT> PositionMoves for DefaultPosition<AT>
@@ -16,14 +16,9 @@ where
     /// @impl: PositionMoves::play
     #[inline]
     fn play(&mut self, mv: Move) -> Result<MoveDelta, PlayError> {
-        let legal = match self.turn() {
-            Sides::White => {
-                self.occupancy::<White>().has_square(mv.from()) && self.is_legal_move::<White>(mv)
-            }
-            Sides::Black => {
-                self.occupancy::<Black>().has_square(mv.from()) && self.is_legal_move::<Black>(mv)
-            }
-        };
+        let legal = call_as!(self.turn(), |SideT| {
+            self.occupancy::<SideT>().has_square(mv.from()) && self.is_legal_move::<SideT>(mv)
+        });
         if !legal {
             return Err(PlayError::IllegalMove(mv));
         }
@@ -35,10 +30,8 @@ where
     /// @impl: PositionMoves::play_unchecked
     #[inline]
     fn play_unchecked(&mut self, mv: Move) -> MoveDelta {
-        match self.turn() {
-            Sides::White => self.play_unchecked_for_side::<White>(mv),
-            Sides::Black => self.play_unchecked_for_side::<Black>(mv),
-        }
+        call_as!(self.turn(), |SideT| self
+            .play_unchecked_for_side::<SideT>(mv))
     }
 
     /// undo reverses the last move on the board
@@ -46,10 +39,9 @@ where
     /// @impl: PositionMoves::undo
     #[inline]
     fn undo(&mut self, mv: Move) {
-        match self.turn() {
-            Sides::White => self.undo_for_side::<Black>(mv),
-            Sides::Black => self.undo_for_side::<White>(mv),
-        }
+        call_as!(self.turn(), |SideT| {
+            self.undo_for_side::<<SideT as Side>::Other>(mv)
+        });
     }
 
     /// is_legal_move checks if the given move played by SideT is legal
