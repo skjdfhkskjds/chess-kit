@@ -3,12 +3,12 @@ use std::time::Instant;
 use chess_kit_attack_table::DefaultAttackTable;
 use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, PSQTEvalState};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
-use chess_kit_position::{DefaultPosition, Fen, PositionMoves, PositionView, Setup};
-use chess_kit_primitives::{Depth, Move, MoveList, MoveType, Pieces, Sides, Square, White};
+use chess_kit_position::{DefaultPosition, Fen, PositionMoves, PositionSnapshot, Setup};
+use chess_kit_primitives::{Depth, Move, MoveList, MoveType};
 use chess_kit_search::{Negamax, SearchNode, iterative_deepening};
 use chess_kit_transposition::{DefaultTranspositionTable, TranspositionTable};
 
-use crate::{Board, Engine, EngineConfig, EngineError, PositionBase, SearchOutcome};
+use crate::{Engine, EngineConfig, EngineError, PositionBase, PositionProvider, SearchOutcome};
 
 type EnginePosition = DefaultPosition<DefaultAttackTable>;
 type EngineMoveGenerator = DefaultMoveGenerator<DefaultAttackTable>;
@@ -126,31 +126,6 @@ impl Engine for DefaultEngine {
         self.author()
     }
 
-    /// @impl: Engine::board
-    fn board(&self) -> Board {
-        let side_to_move = self.position.turn();
-        let white = self.position.occupancy::<White>();
-        let mut board = Board::empty(side_to_move);
-        for square in Square::ALL {
-            let piece = match self.position.piece_at(square) {
-                Pieces::None => continue,
-                piece => piece,
-            };
-            board.set_piece(
-                square,
-                Some((
-                    if white.has_square(square) {
-                        Sides::White
-                    } else {
-                        Sides::Black
-                    },
-                    piece,
-                )),
-            );
-        }
-        board
-    }
-
     /// @impl: Engine::new_game
     fn new_game(&mut self) -> Result<(), EngineError> {
         (self.position, self.accumulator) = Self::build_position(PositionBase::StartPos, &[])?;
@@ -205,6 +180,13 @@ impl Engine for DefaultEngine {
     }
 }
 
+impl PositionProvider for DefaultEngine {
+    /// @impl: PositionProvider::position
+    fn position(&self) -> PositionSnapshot {
+        PositionSnapshot::from(&self.position)
+    }
+}
+
 /// find_legal_move resolves an engine move against the current legal moves
 ///
 /// @param: move_generator - move generator used to enumerate legal moves
@@ -252,7 +234,7 @@ fn requested_move_matches(legal_move: Move, requested_move: Move) -> bool {
 #[cfg(test)]
 mod tests {
     use chess_kit_position::PositionView;
-    use chess_kit_primitives::{Pieces, Sides, Square as BoardSquare};
+    use chess_kit_primitives::{Pieces, Sides, Square};
 
     use super::*;
 
@@ -275,8 +257,8 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(engine.position.piece_at(BoardSquare::E4), Pieces::Pawn);
-        assert_eq!(engine.position.piece_at(BoardSquare::E5), Pieces::Pawn);
+        assert_eq!(engine.position.piece_at(Square::E4), Pieces::Pawn);
+        assert_eq!(engine.position.piece_at(Square::E5), Pieces::Pawn);
         assert_eq!(engine.position.turn(), Sides::White);
     }
 
@@ -331,13 +313,13 @@ mod tests {
     }
 
     #[test]
-    fn board_exposes_a_protocol_neutral_position_snapshot() {
+    fn position_exposes_a_protocol_neutral_snapshot() {
         let engine = engine();
-        let board = engine.board();
+        let snapshot = PositionProvider::position(&engine);
 
-        assert_eq!(board.side_to_move(), Sides::White);
+        assert_eq!(snapshot.side_to_move(), Sides::White);
         assert_eq!(
-            board.piece_at(Square::E1),
+            snapshot.piece_at(Square::E1),
             Some((Sides::White, Pieces::King))
         );
     }

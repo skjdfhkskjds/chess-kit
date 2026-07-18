@@ -109,8 +109,8 @@ where
 mod tests {
     use std::time::Duration;
 
-    use chess_kit_engine::{Board, SearchOutcome};
-    use chess_kit_primitives::{Pieces, Sides, Square};
+    use chess_kit_engine::SearchOutcome;
+    use chess_kit_primitives::{Pieces, Square};
 
     use super::*;
 
@@ -126,10 +126,6 @@ mod tests {
 
         fn author(&self) -> &str {
             "Test Author"
-        }
-
-        fn board(&self) -> Board {
-            Board::empty(Sides::White)
         }
 
         fn new_game(&mut self) -> Result<(), EngineError> {

@@ -4,7 +4,7 @@ use std::fmt::Display;
 use std::io::{self, BufRead, Write};
 use std::str::FromStr;
 
-use chess_kit_engine::{Board, Engine, SearchOutcome};
+use chess_kit_engine::{Engine, PositionProvider, PositionSnapshot, SearchOutcome};
 use chess_kit_primitives::{Black, Depth, Move, Pieces, Sides, Square, White};
 
 use crate::uci::UciMove;
@@ -24,7 +24,7 @@ pub struct InteractiveGame<EngineT> {
 
 impl<EngineT> InteractiveGame<EngineT>
 where
-    EngineT: Engine,
+    EngineT: Engine + PositionProvider,
 {
     /// new creates an interactive game around the given engine
     ///
@@ -94,7 +94,7 @@ where
             "You are playing White. Enter moves in UCI notation (for example, e2e4)."
         )?;
         writeln!(writer, "Enter `quit` or `exit` to stop.\n")?;
-        write_board(&mut writer, &self.engine.board())?;
+        write_position(&mut writer, &self.engine.position())?;
 
         let mut line = String::new();
         loop {
@@ -136,7 +136,7 @@ where
                 .search(self.search_depth)
                 .map_err(engine_error)?;
             let Some(engine_move) = outcome.best_move else {
-                write_board(&mut writer, &self.engine.board())?;
+                write_position(&mut writer, &self.engine.position())?;
                 writeln!(writer, "Game over: the engine has no legal moves.")?;
                 break;
             };
@@ -148,7 +148,7 @@ where
                 format_search_info(&outcome)
             )?;
             self.engine.play(engine_move).map_err(engine_error)?;
-            write_board(&mut writer, &self.engine.board())?;
+            write_position(&mut writer, &self.engine.position())?;
 
             if !self.engine.has_legal_moves() {
                 writeln!(writer, "Game over: you have no legal moves.")?;
@@ -171,19 +171,19 @@ fn format_search_info(outcome: &SearchOutcome) -> String {
     )
 }
 
-/// write_board renders a protocol-neutral board snapshot for the human CLI
+/// write_position renders a protocol-neutral position snapshot for the human CLI
 ///
 /// @param: writer - output stream receiving the rendered board
-/// @param: board - board snapshot to render
+/// @param: position - position snapshot to render
 /// @return: Ok after writing, or an I/O error
 /// @side-effects: writes the board to the output stream
-fn write_board(writer: &mut impl Write, board: &Board) -> io::Result<()> {
+fn write_position(writer: &mut impl Write, position: &PositionSnapshot) -> io::Result<()> {
     writeln!(writer)?;
     for rank in (0..8).rev() {
         write!(writer, "{}", rank + 1)?;
         for file in 0..8 {
             let square = Square::from_idx((rank * 8 + file) as usize);
-            let symbol = board
+            let symbol = position
                 .piece_at(square)
                 .map_or('.', |(side, piece)| piece_symbol(side, piece));
             write!(writer, " {symbol}")?;
@@ -194,7 +194,7 @@ fn write_board(writer: &mut impl Write, board: &Board) -> io::Result<()> {
     writeln!(
         writer,
         "{} to move",
-        match board.side_to_move() {
+        match position.side_to_move() {
             Sides::White => "White",
             Sides::Black => "Black",
         }
@@ -251,10 +251,6 @@ mod tests {
             "Test Author"
         }
 
-        fn board(&self) -> Board {
-            Board::empty(Sides::White)
-        }
-
         fn new_game(&mut self) -> Result<(), EngineError> {
             self.moves.clear();
             self.legal_after_engine = true;
@@ -295,6 +291,12 @@ mod tests {
 
         fn has_legal_moves(&self) -> bool {
             self.legal_after_engine
+        }
+    }
+
+    impl PositionProvider for TestEngine {
+        fn position(&self) -> PositionSnapshot {
+            PositionSnapshot::empty::<White>()
         }
     }
 

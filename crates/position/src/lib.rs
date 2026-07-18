@@ -9,6 +9,7 @@ mod position;
 mod rules;
 mod setup;
 mod sides;
+mod snapshot;
 mod state;
 
 pub use errors::PlayError;
@@ -16,6 +17,7 @@ pub use gamestate::DrawState;
 pub(crate) use gamestate::{History, PositionState};
 pub use position::DefaultPosition;
 pub use setup::{FENError, Fen, Setup};
+pub use snapshot::PositionSnapshot;
 
 use chess_kit_primitives::{
     Bitboard, Castling, Move, MoveDelta, Pieces, Side, Sides, Square, ZobristKey,

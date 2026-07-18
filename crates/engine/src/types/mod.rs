@@ -1,7 +1,3 @@
-mod board;
-
-pub use board::Board;
-
 use std::time::Duration;
 
 use chess_kit_primitives::{Depth, Move};
