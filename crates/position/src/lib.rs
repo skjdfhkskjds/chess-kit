@@ -212,13 +212,13 @@ pub trait PositionMoves {
 // `CastlingSquares` is a per-side table of castling squares
 chess_kit_primitives::define_sides! {
     CastlingSquares: Square {
-        KING                        => (Square::E1, Square::E8),
-        KINGSIDE_ROOK               => (Square::H1, Square::H8),
-        QUEENSIDE_ROOK              => (Square::A1, Square::A8),
-        KINGSIDE_DESTINATION        => (Square::G1, Square::G8),
-        KINGSIDE_ROOK_DESTINATION   => (Square::F1, Square::F8),
-        QUEENSIDE_DESTINATION       => (Square::C1, Square::C8),
-        QUEENSIDE_ROOK_DESTINATION  => (Square::D1, Square::D8),
-        QUEENSIDE_ROOK_INTERMEDIATE => (Square::B1, Square::B8),
+        KING as king => (Square::E1, Square::E8),
+        KINGSIDE_ROOK as kingside_rook => (Square::H1, Square::H8),
+        QUEENSIDE_ROOK as queenside_rook => (Square::A1, Square::A8),
+        KINGSIDE_DESTINATION as kingside_destination => (Square::G1, Square::G8),
+        KINGSIDE_ROOK_DESTINATION as kingside_rook_destination => (Square::F1, Square::F8),
+        QUEENSIDE_DESTINATION as queenside_destination => (Square::C1, Square::C8),
+        QUEENSIDE_ROOK_DESTINATION as queenside_rook_destination => (Square::D1, Square::D8),
+        QUEENSIDE_ROOK_INTERMEDIATE as queenside_rook_intermediate => (Square::B1, Square::B8),
     }
 }

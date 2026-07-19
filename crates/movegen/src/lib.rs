@@ -61,16 +61,16 @@ pub trait MoveGenerator {
 // PawnOffsets is a per-side table of pawn movement offsets
 chess_kit_primitives::define_sides! {
     PawnOffsets: i8 {
-        PUSH => (8, -8),
-        RIGHT_TARGET => (9, -9),
-        LEFT_TARGET => (7, -7),
+        PUSH as push => (8, -8),
+        RIGHT_TARGET as right_target => (9, -9),
+        LEFT_TARGET as left_target => (7, -7),
     }
 }
 
 // PawnRanks is a per-side table of pawn ranks
 chess_kit_primitives::define_sides! {
     PawnRanks: Rank {
-        SINGLE_STEP => (Rank::R3, Rank::R6),
-        PROMOTABLE => (Rank::R7, Rank::R2),
+        SINGLE_STEP as single_step => (Rank::R3, Rank::R6),
+        PROMOTABLE as promotable => (Rank::R7, Rank::R2),
     }
 }

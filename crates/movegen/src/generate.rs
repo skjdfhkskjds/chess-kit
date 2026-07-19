@@ -179,8 +179,8 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         strategy: MoveGenerationStrategy,
     ) {
         let empty_squares = position.empty_squares();
-        let single_step_rank = Bitboard::rank(PawnRanks::SINGLE_STEP[SideT::SIDE]);
-        let promotable_rank = Bitboard::rank(PawnRanks::PROMOTABLE[SideT::SIDE]);
+        let single_step_rank = Bitboard::rank(PawnRanks::single_step::<SideT>());
+        let promotable_rank = Bitboard::rank(PawnRanks::promotable::<SideT>());
 
         // get the enemies for the pawns to target
         let enemies = if matches!(strategy, MoveGenerationStrategy::Evasions) {
@@ -214,10 +214,10 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             }
 
             // push the pawn pushes to the move list
-            self.push_pawn_moves(single_step_pawns, PawnOffsets::PUSH[SideT::SIDE], list);
+            self.push_pawn_moves(single_step_pawns, PawnOffsets::push::<SideT>(), list);
             self.push_pawn_moves(
                 double_step_pawns,
-                PawnOffsets::PUSH[SideT::SIDE] + PawnOffsets::PUSH[SideT::SIDE],
+                PawnOffsets::push::<SideT>() + PawnOffsets::push::<SideT>(),
                 list,
             );
         }
@@ -243,23 +243,17 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             }
 
             // push the all variants of pawn promotions to the move list
-            self.push_pawn_promotions(
-                pushes,
-                PawnOffsets::PUSH[SideT::SIDE],
-                false,
-                list,
-                strategy,
-            );
+            self.push_pawn_promotions(pushes, PawnOffsets::push::<SideT>(), false, list, strategy);
             self.push_pawn_promotions(
                 right_targets,
-                PawnOffsets::RIGHT_TARGET[SideT::SIDE],
+                PawnOffsets::right_target::<SideT>(),
                 true,
                 list,
                 strategy,
             );
             self.push_pawn_promotions(
                 left_targets,
-                PawnOffsets::LEFT_TARGET[SideT::SIDE],
+                PawnOffsets::left_target::<SideT>(),
                 true,
                 list,
                 strategy,
@@ -278,8 +272,8 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
                 AT::all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Left) & enemies;
 
             // push the pawn captures to the move list
-            self.push_pawn_moves(right_targets, PawnOffsets::RIGHT_TARGET[SideT::SIDE], list);
-            self.push_pawn_moves(left_targets, PawnOffsets::LEFT_TARGET[SideT::SIDE], list);
+            self.push_pawn_moves(right_targets, PawnOffsets::right_target::<SideT>(), list);
+            self.push_pawn_moves(left_targets, PawnOffsets::left_target::<SideT>(), list);
 
             // generate en passant captures if possible
             let en_passant = position.en_passant();
@@ -386,18 +380,18 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             // get the blockers (squares in between the king and the rook)
             //
             // TOOD: refactor this call to use Bitboard::between
-            let blockers = Bitboard::square(CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE])
-                | Bitboard::square(CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE]);
+            let blockers = Bitboard::square(CastlingSquares::kingside_destination::<SideT>())
+                | Bitboard::square(CastlingSquares::kingside_rook_destination::<SideT>());
 
             // if the squares along the path are empty and the king is not moving
             // "through" check, we can castle
             if !occupancy.intersects(blockers)
                 && !position.is_attacked::<SideT>(
-                    CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE],
+                    CastlingSquares::kingside_rook_destination::<SideT>(),
                     occupancy,
                 )
             {
-                moves |= Bitboard::square(CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE]);
+                moves |= Bitboard::square(CastlingSquares::kingside_destination::<SideT>());
             }
         }
 
@@ -406,17 +400,17 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             //
             // Note: the queenside blockers include an additional square, see
             //       `CASTLING_QUEENSIDE_ROOK_INTERMEDIATE` for more details.
-            let blockers = Bitboard::square(CastlingSquares::QUEENSIDE_DESTINATION[SideT::SIDE])
-                | Bitboard::square(CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE])
-                | Bitboard::square(CastlingSquares::QUEENSIDE_ROOK_INTERMEDIATE[SideT::SIDE]);
+            let blockers = Bitboard::square(CastlingSquares::queenside_destination::<SideT>())
+                | Bitboard::square(CastlingSquares::queenside_rook_destination::<SideT>())
+                | Bitboard::square(CastlingSquares::queenside_rook_intermediate::<SideT>());
 
             if !occupancy.intersects(blockers)
                 && !position.is_attacked::<SideT>(
-                    CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE],
+                    CastlingSquares::queenside_rook_destination::<SideT>(),
                     occupancy,
                 )
             {
-                moves |= Bitboard::square(CastlingSquares::QUEENSIDE_DESTINATION[SideT::SIDE]);
+                moves |= Bitboard::square(CastlingSquares::queenside_destination::<SideT>());
             }
         }
 

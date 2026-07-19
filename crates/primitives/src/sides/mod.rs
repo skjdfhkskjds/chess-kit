@@ -5,28 +5,33 @@ use chess_kit_derive::IndexableEnum;
 
 pub use table::SideTable;
 
-/// `define_sides!` generates a unit struct with associated `SideTable` constants,
-/// providing a clean namespace for per-side data without requiring trait hierarchies.
+/// `define_sides!` generates a unit struct with associated [`SideTable`] constants
+/// and typed accessor functions, providing a clean namespace for per-side data
+/// without requiring trait hierarchies.
+///
+/// The constants support lookup with a runtime [`Sides`] value, while the
+/// lowercase accessors support lookup with a compile-time [`Side`] marker.
 ///
 /// Usage:
 ///
 /// ```
-/// use chess_kit_primitives::{Castling, Sides, define_sides};
+/// use chess_kit_primitives::{Black, Castling, Sides, define_sides};
 ///
 /// define_sides! {
 ///     SideCastling: Castling {
-///         ALL => (Castling::WHITE, Castling::BLACK),
-///         KINGSIDE => (Castling::WHITE_KING, Castling::BLACK_KING),
+///         ALL as all => (Castling::WHITE, Castling::BLACK),
+///         KINGSIDE as kingside => (Castling::WHITE_KING, Castling::BLACK_KING),
 ///     }
 /// }
 ///
 /// assert_eq!(SideCastling::ALL[Sides::White], Castling::WHITE);
+/// assert_eq!(SideCastling::kingside::<Black>(), Castling::BLACK_KING);
 /// ```
 ///
 /// Expands to:
 ///
 /// ```
-/// use chess_kit_primitives::{Castling, SideTable};
+/// use chess_kit_primitives::{Castling, Side, SideTable, Sides};
 ///
 /// pub struct SideCastling;
 /// impl SideCastling {
@@ -34,14 +39,39 @@ pub use table::SideTable;
 ///         SideTable::new(Castling::WHITE, Castling::BLACK);
 ///     pub const KINGSIDE: SideTable<Castling> =
 ///         SideTable::new(Castling::WHITE_KING, Castling::BLACK_KING);
+///
+///     pub const fn all<SideT: Side>() -> Castling {
+///         match SideT::SIDE {
+///             Sides::White => Castling::WHITE,
+///             Sides::Black => Castling::BLACK,
+///         }
+///     }
+///
+///     pub const fn kingside<SideT: Side>() -> Castling {
+///         match SideT::SIDE {
+///             Sides::White => Castling::WHITE_KING,
+///             Sides::Black => Castling::BLACK_KING,
+///         }
+///     }
 /// }
 /// ```
 #[macro_export]
 macro_rules! define_sides {
-    ($name:ident: $ty:ty { $($field:ident => ($white:expr, $black:expr)),* $(,)? }) => {
+    ($name:ident: $ty:ty { $($field:ident as $accessor:ident => ($white:expr, $black:expr)),* $(,)? }) => {
         pub struct $name;
         impl $name {
-            $(pub const $field: $crate::SideTable<$ty> = $crate::SideTable::new($white, $black);)*
+            $(
+                pub const $field: $crate::SideTable<$ty> =
+                    $crate::SideTable::new($white, $black);
+
+                #[inline]
+                pub const fn $accessor<SideT: $crate::Side>() -> $ty {
+                    match SideT::SIDE {
+                        $crate::Sides::White => $white,
+                        $crate::Sides::Black => $black,
+                    }
+                }
+            )*
         }
     };
 }
@@ -140,6 +170,15 @@ impl Side for Black {
 mod tests {
     use super::*;
 
+    crate::define_sides! {
+        TestSideValues: usize {
+            VALUE as value => (10, 20),
+        }
+    }
+
+    const WHITE_VALUE: usize = TestSideValues::value::<White>();
+    const BLACK_VALUE: usize = TestSideValues::value::<Black>();
+
     fn side_number<SideT: Side>(offset: usize) -> usize {
         SideT::SIDE.idx() + offset
     }
@@ -169,5 +208,13 @@ mod tests {
 
         assert_eq!(result, Sides::White);
         assert_eq!(evaluations, 1);
+    }
+
+    #[test]
+    fn define_sides_supports_runtime_and_marker_lookups() {
+        assert_eq!(TestSideValues::VALUE[Sides::White], WHITE_VALUE);
+        assert_eq!(TestSideValues::VALUE[Sides::Black], BLACK_VALUE);
+        assert_eq!(WHITE_VALUE, 10);
+        assert_eq!(BLACK_VALUE, 20);
     }
 }
