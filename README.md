@@ -88,6 +88,16 @@ Perft correctness lives with the `perft` crate:
 cargo test -p chess-kit-perft --release --test perft_smoke
 ```
 
+Each position/depth pair is an independent integration test. Cargo runs the
+cases in parallel by default, reports failures separately, and permits a single
+case to be selected by name:
+
+```sh
+cargo test -p chess-kit-perft --release --test perft_smoke psqt::case_032 -- --exact
+```
+
+Pass `--test-threads=1` after `--` when a serialized run is useful for profiling.
+
 The larger perft suite is useful as a benchmarking tool but superfluous for correctness testing:
 
 ```sh
