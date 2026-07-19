@@ -4,8 +4,8 @@ use std::fmt::Display;
 use std::io::{self, BufRead, Write};
 use std::str::FromStr;
 
-use chess_kit_engine::{Board, Engine, SearchOutcome};
-use chess_kit_primitives::{Black, Depth, Move, Pieces, Sides, Square, White};
+use chess_kit_engine::{Engine, PositionProvider, PositionSnapshot, SearchOutcome};
+use chess_kit_primitives::{Move, Pieces, SearchDepth, Sides, Square, call_as};
 
 use crate::uci::UciMove;
 
@@ -18,20 +18,20 @@ use crate::uci::UciMove;
 /// @marker: EngineT - protocol-neutral engine implementation
 /// @type
 pub struct InteractiveGame<EngineT> {
-    engine: EngineT,     // engine used to play the game
-    search_depth: Depth, // fixed depth used for engine replies
+    engine: EngineT,           // engine used to play the game
+    search_depth: SearchDepth, // fixed positive depth used for engine replies
 }
 
 impl<EngineT> InteractiveGame<EngineT>
 where
-    EngineT: Engine,
+    EngineT: Engine + PositionProvider,
 {
     /// new creates an interactive game around the given engine
     ///
     /// @param: engine - protocol-neutral engine session
     /// @param: search_depth - fixed search depth used for engine replies
     /// @return: interactive game adapter
-    pub const fn new(engine: EngineT, search_depth: Depth) -> Self {
+    pub const fn new(engine: EngineT, search_depth: SearchDepth) -> Self {
         Self {
             engine,
             search_depth,
@@ -94,7 +94,7 @@ where
             "You are playing White. Enter moves in UCI notation (for example, e2e4)."
         )?;
         writeln!(writer, "Enter `quit` or `exit` to stop.\n")?;
-        write_board(&mut writer, &self.engine.board())?;
+        write_position(&mut writer, &self.engine.position())?;
 
         let mut line = String::new();
         loop {
@@ -136,7 +136,7 @@ where
                 .search(self.search_depth)
                 .map_err(engine_error)?;
             let Some(engine_move) = outcome.best_move else {
-                write_board(&mut writer, &self.engine.board())?;
+                write_position(&mut writer, &self.engine.position())?;
                 writeln!(writer, "Game over: the engine has no legal moves.")?;
                 break;
             };
@@ -148,7 +148,7 @@ where
                 format_search_info(&outcome)
             )?;
             self.engine.play(engine_move).map_err(engine_error)?;
-            write_board(&mut writer, &self.engine.board())?;
+            write_position(&mut writer, &self.engine.position())?;
 
             if !self.engine.has_legal_moves() {
                 writeln!(writer, "Game over: you have no legal moves.")?;
@@ -171,19 +171,19 @@ fn format_search_info(outcome: &SearchOutcome) -> String {
     )
 }
 
-/// write_board renders a protocol-neutral board snapshot for the human CLI
+/// write_position renders a protocol-neutral position snapshot for the human CLI
 ///
 /// @param: writer - output stream receiving the rendered board
-/// @param: board - board snapshot to render
+/// @param: position - position snapshot to render
 /// @return: Ok after writing, or an I/O error
 /// @side-effects: writes the board to the output stream
-fn write_board(writer: &mut impl Write, board: &Board) -> io::Result<()> {
+fn write_position(writer: &mut impl Write, position: &PositionSnapshot) -> io::Result<()> {
     writeln!(writer)?;
     for rank in (0..8).rev() {
         write!(writer, "{}", rank + 1)?;
         for file in 0..8 {
             let square = Square::from_idx((rank * 8 + file) as usize);
-            let symbol = board
+            let symbol = position
                 .piece_at(square)
                 .map_or('.', |(side, piece)| piece_symbol(side, piece));
             write!(writer, " {symbol}")?;
@@ -194,7 +194,7 @@ fn write_board(writer: &mut impl Write, board: &Board) -> io::Result<()> {
     writeln!(
         writer,
         "{} to move",
-        match board.side_to_move() {
+        match position.side_to_move() {
             Sides::White => "White",
             Sides::Black => "Black",
         }
@@ -207,10 +207,7 @@ fn write_board(writer: &mut impl Write, board: &Board) -> io::Result<()> {
 /// @param: piece - piece to display
 /// @return: Unicode piece symbol
 fn piece_symbol(side: Sides, piece: Pieces) -> char {
-    let display = match side {
-        Sides::White => piece.display::<White>().to_string(),
-        Sides::Black => piece.display::<Black>().to_string(),
-    };
+    let display = call_as!(side, |SideT| piece.display::<SideT>().to_string());
     display
         .chars()
         .next()
@@ -231,6 +228,7 @@ mod tests {
     use std::time::Duration;
 
     use chess_kit_engine::{EngineError, PositionBase};
+    use chess_kit_primitives::White;
 
     use super::*;
 
@@ -238,7 +236,7 @@ mod tests {
     struct TestEngine {
         moves: Vec<Move>,
         searches: usize,
-        search_depths: Vec<Depth>,
+        search_depths: Vec<SearchDepth>,
         legal_after_engine: bool,
     }
 
@@ -249,10 +247,6 @@ mod tests {
 
         fn author(&self) -> &str {
             "Test Author"
-        }
-
-        fn board(&self) -> Board {
-            Board::empty(Sides::White)
         }
 
         fn new_game(&mut self) -> Result<(), EngineError> {
@@ -267,14 +261,14 @@ mod tests {
         }
 
         fn play(&mut self, mv: Move) -> Result<(), EngineError> {
-            if UciMove::from(mv).as_str() == "e2e5" {
+            if UciMove::from(mv).to_string() == "e2e5" {
                 return Err(EngineError::new("illegal move: e2e5"));
             }
             self.moves.push(mv);
             Ok(())
         }
 
-        fn search(&mut self, depth: Depth) -> Result<SearchOutcome, EngineError> {
+        fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError> {
             self.searches += 1;
             self.search_depths.push(depth);
             let best_move = match self.searches {
@@ -298,11 +292,17 @@ mod tests {
         }
     }
 
+    impl PositionProvider for TestEngine {
+        fn position(&self) -> PositionSnapshot {
+            PositionSnapshot::empty::<White>()
+        }
+    }
+
     #[test]
     fn wraps_moves_and_search_into_a_human_session() {
         let input = Cursor::new(b"not-a-move\ne2e4\nquit\n");
         let mut output = Vec::new();
-        let mut game = InteractiveGame::new(TestEngine::default(), 7);
+        let mut game = InteractiveGame::new(TestEngine::default(), SearchDepth::new(7).unwrap());
 
         game.run_with_io(input, &mut output).unwrap();
 
@@ -319,6 +319,6 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(moves, ["e2e4", "e7e5"]);
         assert!(output.contains("Game over: you have no legal moves."));
-        assert_eq!(game.engine().search_depths, [7]);
+        assert_eq!(game.engine().search_depths[0].get(), 7);
     }
 }

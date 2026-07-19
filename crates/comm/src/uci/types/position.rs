@@ -1,23 +1,15 @@
 use std::str::FromStr;
 
-use super::{ParseError, UciMove};
+use chess_kit_engine::PositionBase;
 
-/// `BasePosition` is an enum that represents the base position supplied by a UCI
-/// `position` command
-///
-/// @type
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BasePosition {
-    StartPos,
-    Fen(String),
-}
+use super::{ParseError, UciMove};
 
 /// `PositionCommand` is a type that represents a parsed UCI `position` command
 ///
 /// @type
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PositionCommand {
-    pub base: BasePosition,  // position from which the move history begins
+    pub base: PositionBase,  // position from which the move history begins
     pub moves: Vec<UciMove>, // ordered moves applied to the base position
 }
 
@@ -32,7 +24,7 @@ impl PositionCommand {
         // parse the required base position before considering the optional
         // move history
         let base = match tokens.next() {
-            Some("startpos") => BasePosition::StartPos,
+            Some("startpos") => PositionBase::StartPos,
             Some("fen") => {
                 // a FEN contains spaces, so collect every field up to the
                 // optional moves delimiter
@@ -46,7 +38,7 @@ impl PositionCommand {
                 let fen = fields.join(" ");
                 let moves = parse_moves(tokens)?;
                 return Ok(Self {
-                    base: BasePosition::Fen(fen),
+                    base: PositionBase::Fen(fen),
                     moves,
                 });
             }
@@ -85,7 +77,7 @@ mod tests {
         assert_eq!(
             position,
             PositionCommand {
-                base: BasePosition::StartPos,
+                base: PositionBase::StartPos,
                 moves: vec!["e2e4".parse().unwrap(), "e7e5".parse().unwrap()],
             }
         );
@@ -101,7 +93,7 @@ mod tests {
         assert_eq!(
             position,
             PositionCommand {
-                base: BasePosition::Fen("8/8/8/8/8/8/4k3/7K w - - 0 1".to_owned()),
+                base: PositionBase::Fen("8/8/8/8/8/8/4k3/7K w - - 0 1".to_owned()),
                 moves: vec!["h1g1".parse().unwrap()],
             }
         );

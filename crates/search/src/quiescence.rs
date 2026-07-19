@@ -1,7 +1,7 @@
 use chess_kit_eval::{Accumulator, EvalState, Score};
-use chess_kit_movegen::{MoveGenerator, MoveType};
+use chess_kit_movegen::{MoveGenerationStrategy, MoveGenerator};
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
-use chess_kit_primitives::{Black, Depth, MoveList, Sides, White};
+use chess_kit_primitives::{Depth, MoveList, call_as};
 
 use crate::{Negamax, move_ordering};
 
@@ -44,7 +44,7 @@ where
             return -Negamax::CHECKMATE_SCORE + Score::from(ply);
         }
     } else {
-        move_generator.generate_moves(position, &mut moves, MoveType::Capture);
+        move_generator.generate_moves(position, &mut moves, MoveGenerationStrategy::Capture);
         retain_legal_moves(position, &mut moves);
 
         // Capture generation cannot distinguish a quiet position from
@@ -115,8 +115,7 @@ fn retain_legal_moves<PositionT>(position: &PositionT, moves: &mut MoveList)
 where
     PositionT: PositionView + PositionMoves,
 {
-    match position.turn() {
-        Sides::White => moves.retain(|mv| position.is_legal_move::<White>(*mv)),
-        Sides::Black => moves.retain(|mv| position.is_legal_move::<Black>(*mv)),
-    }
+    call_as!(position.turn(), |SideT| {
+        moves.retain(|mv| position.is_legal_move::<SideT>(*mv))
+    });
 }

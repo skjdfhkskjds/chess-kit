@@ -77,14 +77,6 @@ impl SearchNode {
 }
 
 impl NodeData for SearchNode {
-    /// empty creates a new search node with no data
-    ///
-    /// @impl: NodeData::empty
-    #[inline]
-    fn empty() -> Self {
-        Self::default()
-    }
-
     /// depth returns the remaining search depth represented by this entry
     ///
     /// @impl: NodeData::depth

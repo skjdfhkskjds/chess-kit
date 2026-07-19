@@ -1,16 +1,16 @@
-use crate::{DefaultMoveGenerator, MoveType, PawnOffsets, PawnRanks};
+use crate::{DefaultMoveGenerator, MoveGenerationStrategy, PawnOffsets, PawnRanks};
 use chess_kit_attack_table::{AttackTable, PawnDirections};
 use chess_kit_position::{CastlingSquares, PositionAttacks, PositionView};
 use chess_kit_primitives::{Bitboard, MoveList, Pieces, Side};
 
 impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     /// generate_moves_for_side generates all the pseudo-legal moves of the given
-    /// move type for the side to move from the current position and pushes them to
+    /// strategy for the side to move from the current position and pushes them to
     /// the move list
     ///
     /// @param: position - immutable reference to the position
     /// @param: list - mutable reference to the move list
-    /// @param: move_type - move type to generate moves for
+    /// @param: strategy - move generation strategy to apply
     /// @return: void
     /// @side-effects: modifies the `move list`
     #[inline]
@@ -21,7 +21,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         &self,
         position: &PositionT,
         list: &mut MoveList,
-        move_type: MoveType,
+        strategy: MoveGenerationStrategy,
     ) {
         // get the set of possible destination squares for our next move based
         // on the move type and the number of pieces delivering check to the
@@ -32,9 +32,9 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         // being attacked, so we can skip all other pieces and only consider the
         // king
         let mut destinations = Bitboard::empty();
-        if move_type != MoveType::Evasions || !position.checkers().more_than_one() {
-            destinations = match move_type {
-                MoveType::Evasions => {
+        if strategy != MoveGenerationStrategy::Evasions || !position.checkers().more_than_one() {
+            destinations = match strategy {
+                MoveGenerationStrategy::Evasions => {
                     // if the move type is evasions, then there must be exactly
                     // one piece delivering check
                     //
@@ -47,19 +47,19 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
                     let checker = position.checkers().first_unchecked();
                     Bitboard::between(position.king_square::<SideT>(), checker)
                 }
-                MoveType::NonEvasions => !position.occupancy::<SideT>(),
-                MoveType::Capture => position.occupancy::<SideT::Other>(),
-                MoveType::Quiet => position.empty_squares(),
+                MoveGenerationStrategy::NonEvasions => !position.occupancy::<SideT>(),
+                MoveGenerationStrategy::Capture => position.occupancy::<SideT::Other>(),
+                MoveGenerationStrategy::Quiet => position.empty_squares(),
             };
 
-            self.generate_pawn_moves::<SideT, PositionT>(position, list, destinations, move_type);
+            self.generate_pawn_moves::<SideT, PositionT>(position, list, destinations, strategy);
             self.generate_queen_moves::<SideT, PositionT>(position, list, destinations);
             self.generate_rook_moves::<SideT, PositionT>(position, list, destinations);
             self.generate_bishop_moves::<SideT, PositionT>(position, list, destinations);
             self.generate_knight_moves::<SideT, PositionT>(position, list, destinations);
         }
 
-        self.generate_king_moves::<SideT, PositionT>(position, list, destinations, move_type);
+        self.generate_king_moves::<SideT, PositionT>(position, list, destinations, strategy);
     }
 
     /// generate_queen_moves generates all the pseudo-legal moves of the given
@@ -68,7 +68,6 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     ///
     /// @param: position - immutable reference to the position
     /// @param: list - mutable reference to the move list
-    /// @param: move_type - move type to generate moves of
     /// @return: void
     /// @side-effects: modifies the `move list`
     #[inline]
@@ -95,7 +94,6 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     ///
     /// @param: position - immutable reference to the position
     /// @param: list - mutable reference to the move list
-    /// @param: move_type - move type to generate moves of
     /// @return: void
     #[inline]
     fn generate_rook_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
@@ -121,7 +119,6 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     ///
     /// @param: position - immutable reference to the position
     /// @param: list - mutable reference to the move list
-    /// @param: move_type - move type to generate moves of
     /// @return: void
     #[inline]
     fn generate_bishop_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
@@ -147,7 +144,6 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     ///
     /// @param: position - immutable reference to the position
     /// @param: list - mutable reference to the move list
-    /// @param: move_type - move type to generate moves of
     /// @return: void
     #[inline]
     fn generate_knight_moves<SideT: Side, PositionT: PositionView + PositionAttacks>(
@@ -171,7 +167,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     ///
     /// @param: position - immutable reference to the position
     /// @param: list - mutable reference to the move list
-    /// @param: move_type - move type to generate moves of
+    /// @param: strategy - move generation strategy to apply
     /// @return: void
     /// @side-effects: modifies the `move list`
     #[inline]
@@ -180,14 +176,14 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         position: &PositionT,
         list: &mut MoveList,
         destinations: Bitboard,
-        move_type: MoveType,
+        strategy: MoveGenerationStrategy,
     ) {
         let empty_squares = position.empty_squares();
-        let single_step_rank = Bitboard::rank(PawnRanks::SINGLE_STEP[SideT::SIDE]);
-        let promotable_rank = Bitboard::rank(PawnRanks::PROMOTABLE[SideT::SIDE]);
+        let single_step_rank = Bitboard::rank(PawnRanks::single_step::<SideT>());
+        let promotable_rank = Bitboard::rank(PawnRanks::promotable::<SideT>());
 
         // get the enemies for the pawns to target
-        let enemies = if matches!(move_type, MoveType::Evasions) {
+        let enemies = if matches!(strategy, MoveGenerationStrategy::Evasions) {
             position.checkers()
         } else {
             position.occupancy::<SideT::Other>()
@@ -198,7 +194,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         let non_promotable_pawns = position.get_piece::<SideT>(Pieces::Pawn) & !promotable_rank;
 
         // generate pawn pushes for non-promotable pawns
-        if !matches!(move_type, MoveType::Capture) {
+        if !matches!(strategy, MoveGenerationStrategy::Capture) {
             // regular pawn pushes are a single step from the current square
             let mut single_step_pawns =
                 AT::all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Up)
@@ -212,16 +208,16 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
 
             // if the move type is evasions, we only need to generate moves for
             // squares that would block a check
-            if matches!(move_type, MoveType::Evasions) {
+            if matches!(strategy, MoveGenerationStrategy::Evasions) {
                 single_step_pawns &= destinations;
                 double_step_pawns &= destinations;
             }
 
             // push the pawn pushes to the move list
-            self.push_pawn_moves(single_step_pawns, PawnOffsets::PUSH[SideT::SIDE], list);
+            self.push_pawn_moves(single_step_pawns, PawnOffsets::push::<SideT>(), list);
             self.push_pawn_moves(
                 double_step_pawns,
-                PawnOffsets::PUSH[SideT::SIDE] + PawnOffsets::PUSH[SideT::SIDE],
+                PawnOffsets::push::<SideT>() + PawnOffsets::push::<SideT>(),
                 list,
             );
         }
@@ -242,36 +238,30 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
 
             // again, if the move type is evasions, we only need to generate
             // moves for squares that would block a check
-            if matches!(move_type, MoveType::Evasions) {
+            if matches!(strategy, MoveGenerationStrategy::Evasions) {
                 pushes &= destinations;
             }
 
             // push the all variants of pawn promotions to the move list
-            self.push_pawn_promotions(
-                pushes,
-                PawnOffsets::PUSH[SideT::SIDE],
-                false,
-                list,
-                move_type,
-            );
+            self.push_pawn_promotions(pushes, PawnOffsets::push::<SideT>(), false, list, strategy);
             self.push_pawn_promotions(
                 right_targets,
-                PawnOffsets::RIGHT_TARGET[SideT::SIDE],
+                PawnOffsets::right_target::<SideT>(),
                 true,
                 list,
-                move_type,
+                strategy,
             );
             self.push_pawn_promotions(
                 left_targets,
-                PawnOffsets::LEFT_TARGET[SideT::SIDE],
+                PawnOffsets::left_target::<SideT>(),
                 true,
                 list,
-                move_type,
+                strategy,
             );
         }
 
         // generate pawn captures for non-promotable pawns
-        if !matches!(move_type, MoveType::Quiet) {
+        if !matches!(strategy, MoveGenerationStrategy::Quiet) {
             // get the target squares on the right of the non-promotable pawns
             let right_targets =
                 AT::all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Right)
@@ -282,8 +272,8 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
                 AT::all_pawn_targets::<SideT>(non_promotable_pawns, PawnDirections::Left) & enemies;
 
             // push the pawn captures to the move list
-            self.push_pawn_moves(right_targets, PawnOffsets::RIGHT_TARGET[SideT::SIDE], list);
-            self.push_pawn_moves(left_targets, PawnOffsets::LEFT_TARGET[SideT::SIDE], list);
+            self.push_pawn_moves(right_targets, PawnOffsets::right_target::<SideT>(), list);
+            self.push_pawn_moves(left_targets, PawnOffsets::left_target::<SideT>(), list);
 
             // generate en passant captures if possible
             let en_passant = position.en_passant();
@@ -300,7 +290,9 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             // used to be on a square that is now a line of attack, the pawn push
             // delivered a discovered check, and an en passant capture would not
             // block the check, so we can skip it
-            if matches!(move_type, MoveType::Evasions) && destinations.intersects(source_square) {
+            if matches!(strategy, MoveGenerationStrategy::Evasions)
+                && destinations.intersects(source_square)
+            {
                 return;
             }
 
@@ -319,7 +311,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     ///
     /// @param: position - immutable reference to the position
     /// @param: list - mutable reference to the move list
-    /// @param: move_type - move type to generate moves of
+    /// @param: strategy - move generation strategy to apply
     /// @return: void
     /// @side-effects: modifies the `move list`
     #[inline]
@@ -328,14 +320,14 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         position: &PositionT,
         list: &mut MoveList,
         destinations: Bitboard,
-        move_type: MoveType,
+        strategy: MoveGenerationStrategy,
     ) {
         let king_square = position.king_square::<SideT>();
         let targets = AT::king_targets(king_square);
 
         // filter the moves according to the requested move type
-        let moves = match move_type {
-            MoveType::Evasions => targets & !position.occupancy::<SideT>(),
+        let moves = match strategy {
+            MoveGenerationStrategy::Evasions => targets & !position.occupancy::<SideT>(),
             _ => targets & destinations,
         };
 
@@ -345,7 +337,10 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         // castling is only legal if the king is not currently in check and the
         // squares along the path from the king to the rook are empty, thus only
         // non-evasions and quiet moves result in the consideration of castling
-        if matches!(move_type, MoveType::NonEvasions | MoveType::Quiet) {
+        if matches!(
+            strategy,
+            MoveGenerationStrategy::NonEvasions | MoveGenerationStrategy::Quiet
+        ) {
             self.generate_castle_moves::<SideT, PositionT>(position, list);
         }
     }
@@ -385,18 +380,18 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             // get the blockers (squares in between the king and the rook)
             //
             // TOOD: refactor this call to use Bitboard::between
-            let blockers = Bitboard::square(CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE])
-                | Bitboard::square(CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE]);
+            let blockers = Bitboard::square(CastlingSquares::kingside_destination::<SideT>())
+                | Bitboard::square(CastlingSquares::kingside_rook_destination::<SideT>());
 
             // if the squares along the path are empty and the king is not moving
             // "through" check, we can castle
             if !occupancy.intersects(blockers)
                 && !position.is_attacked::<SideT>(
-                    CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE],
+                    CastlingSquares::kingside_rook_destination::<SideT>(),
                     occupancy,
                 )
             {
-                moves |= Bitboard::square(CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE]);
+                moves |= Bitboard::square(CastlingSquares::kingside_destination::<SideT>());
             }
         }
 
@@ -405,17 +400,17 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
             //
             // Note: the queenside blockers include an additional square, see
             //       `CASTLING_QUEENSIDE_ROOK_INTERMEDIATE` for more details.
-            let blockers = Bitboard::square(CastlingSquares::QUEENSIDE_DESTINATION[SideT::SIDE])
-                | Bitboard::square(CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE])
-                | Bitboard::square(CastlingSquares::QUEENSIDE_ROOK_INTERMEDIATE[SideT::SIDE]);
+            let blockers = Bitboard::square(CastlingSquares::queenside_destination::<SideT>())
+                | Bitboard::square(CastlingSquares::queenside_rook_destination::<SideT>())
+                | Bitboard::square(CastlingSquares::queenside_rook_intermediate::<SideT>());
 
             if !occupancy.intersects(blockers)
                 && !position.is_attacked::<SideT>(
-                    CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE],
+                    CastlingSquares::queenside_rook_destination::<SideT>(),
                     occupancy,
                 )
             {
-                moves |= Bitboard::square(CastlingSquares::QUEENSIDE_DESTINATION[SideT::SIDE]);
+                moves |= Bitboard::square(CastlingSquares::queenside_destination::<SideT>());
             }
         }
 

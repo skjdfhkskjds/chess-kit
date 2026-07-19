@@ -1,7 +1,8 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-use chess_kit_primitives::Depth;
+use chess_kit_engine::SearchOutcome;
+use chess_kit_primitives::SearchDepth;
 
 use super::{PositionCommand, SearchLimits, UciMove};
 
@@ -11,10 +12,10 @@ use super::{PositionCommand, SearchLimits, UciMove};
 /// @type
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct SearchInfo {
-    pub depth: Option<Depth>,      // completed search depth in plies
-    pub score_cp: Option<i32>,     // position score in centipawns
-    pub nodes: Option<u64>,        // number of nodes searched
-    pub elapsed: Option<Duration>, // elapsed search time
+    pub depth: Option<SearchDepth>, // completed positive search depth in plies
+    pub score_cp: Option<i32>,      // position score in centipawns
+    pub nodes: Option<u64>,         // number of nodes searched
+    pub elapsed: Option<Duration>,  // elapsed search time
 }
 
 /// `SearchResult` is a type that represents the result of a completed UCI search
@@ -38,6 +39,29 @@ impl SearchResult {
             best_move,
             ponder: None,
             info: SearchInfo::default(),
+        }
+    }
+}
+
+impl From<&SearchOutcome> for SearchInfo {
+    /// from translates protocol-neutral engine metrics into UCI information.
+    fn from(outcome: &SearchOutcome) -> Self {
+        Self {
+            depth: Some(outcome.depth),
+            score_cp: Some(outcome.score),
+            nodes: Some(outcome.nodes),
+            elapsed: Some(outcome.elapsed),
+        }
+    }
+}
+
+impl From<SearchOutcome> for SearchResult {
+    /// from translates a completed engine search into a UCI result.
+    fn from(outcome: SearchOutcome) -> Self {
+        Self {
+            best_move: outcome.best_move.map(UciMove::from),
+            ponder: None,
+            info: SearchInfo::from(&outcome),
         }
     }
 }

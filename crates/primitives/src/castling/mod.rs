@@ -33,9 +33,9 @@ impl Castling {
 // SideCastling is a per-side table of castling rights
 crate::define_sides! {
     SideCastling: Castling {
-        ALL => (Castling::WHITE, Castling::BLACK),
-        KINGSIDE => (Castling::WHITE_KING, Castling::BLACK_KING),
-        QUEENSIDE => (Castling::WHITE_QUEEN, Castling::BLACK_QUEEN),
+        ALL as all => (Castling::WHITE, Castling::BLACK),
+        KINGSIDE as kingside => (Castling::WHITE_KING, Castling::BLACK_KING),
+        QUEENSIDE as queenside => (Castling::WHITE_QUEEN, Castling::BLACK_QUEEN),
     }
 }
 
@@ -70,7 +70,7 @@ impl Castling {
     /// @return: castling rights value with the kingside rights added
     #[inline]
     pub fn with_kingside<S: Side>(&self) -> Self {
-        Self(self.0 | SideCastling::KINGSIDE[S::SIDE].0)
+        Self(self.0 | SideCastling::kingside::<S>().0)
     }
 
     /// with_queenside adds the queenside castling rights for the given side
@@ -79,7 +79,7 @@ impl Castling {
     /// @return: castling rights value with the queenside rights added
     #[inline]
     pub fn with_queenside<S: Side>(&self) -> Self {
-        Self(self.0 | SideCastling::QUEENSIDE[S::SIDE].0)
+        Self(self.0 | SideCastling::queenside::<S>().0)
     }
 
     /// revoke revokes all the castling rights for the given side
@@ -88,7 +88,7 @@ impl Castling {
     /// @return: castling rights value with the castling rights revoked
     #[inline]
     pub fn revoke<S: Side>(&self) -> Self {
-        Self(self.0 & !(SideCastling::ALL[S::SIDE].0))
+        Self(self.0 & !(SideCastling::all::<S>().0))
     }
 
     /// revoke_kingside revokes the kingside castling rights for the given side
@@ -97,7 +97,7 @@ impl Castling {
     /// @return: castling rights value with the kingside rights revoked
     #[inline]
     pub fn revoke_kingside<S: Side>(&self) -> Self {
-        Self(self.0 & !(SideCastling::KINGSIDE[S::SIDE].0))
+        Self(self.0 & !(SideCastling::kingside::<S>().0))
     }
 
     /// revoke_queenside revokes the queenside castling rights for the given side
@@ -106,7 +106,7 @@ impl Castling {
     /// @return: castling rights value with the queenside rights revoked
     #[inline]
     pub fn revoke_queenside<S: Side>(&self) -> Self {
-        Self(self.0 & !(SideCastling::QUEENSIDE[S::SIDE].0))
+        Self(self.0 & !(SideCastling::queenside::<S>().0))
     }
 
     /// can_castle checks if the castling rights allow the given side to castle
@@ -115,7 +115,7 @@ impl Castling {
     /// @return: true if the side can castle, false otherwise
     #[inline]
     pub fn can_castle<S: Side>(&self) -> bool {
-        (self.0 & SideCastling::ALL[S::SIDE].0) != Castling::NONE.0
+        (self.0 & SideCastling::all::<S>().0) != Castling::NONE.0
     }
 
     /// kingside checks if the castling rights allow the given side to castle
@@ -125,7 +125,7 @@ impl Castling {
     /// @return: true if the side can castle kingside, false otherwise
     #[inline]
     pub fn kingside<S: Side>(&self) -> bool {
-        (self.0 & SideCastling::KINGSIDE[S::SIDE].0) != Castling::NONE.0
+        (self.0 & SideCastling::kingside::<S>().0) != Castling::NONE.0
     }
 
     /// queenside checks if the castling rights allow the given side to castle
@@ -135,6 +135,6 @@ impl Castling {
     /// @return: true if the side can castle queenside, false otherwise
     #[inline]
     pub fn queenside<S: Side>(&self) -> bool {
-        (self.0 & SideCastling::QUEENSIDE[S::SIDE].0) != Castling::NONE.0
+        (self.0 & SideCastling::queenside::<S>().0) != Castling::NONE.0
     }
 }

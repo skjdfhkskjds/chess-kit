@@ -1,9 +1,7 @@
-use chess_kit_engine::{Engine, EngineError, PositionBase};
-use chess_kit_primitives::{Depth, Move};
+use chess_kit_engine::{Engine, EngineError};
+use chess_kit_primitives::{Move, SearchDepth};
 
-use super::{
-    BasePosition, PositionCommand, SearchInfo, SearchLimits, SearchResult, UciEngine, UciMove,
-};
+use super::{PositionCommand, SearchLimits, SearchResult, UciEngine};
 
 /// `UciAdapter` translates UCI protocol values to the protocol-neutral engine
 /// boundary and translates engine search results back to UCI values.
@@ -14,8 +12,8 @@ use super::{
 /// @marker: EngineT - protocol-neutral engine implementation
 /// @type
 pub struct UciAdapter<EngineT> {
-    engine: EngineT,             // engine receiving translated UCI operations
-    default_search_depth: Depth, // depth used when a go command has no depth
+    engine: EngineT,                   // engine receiving translated UCI operations
+    default_search_depth: SearchDepth, // depth used when a go command has no depth
 }
 
 impl<EngineT> UciAdapter<EngineT> {
@@ -24,7 +22,7 @@ impl<EngineT> UciAdapter<EngineT> {
     /// @param: engine - protocol-neutral engine session
     /// @param: default_search_depth - fallback depth for unconstrained searches
     /// @return: UCI adapter
-    pub const fn new(engine: EngineT, default_search_depth: Depth) -> Self {
+    pub const fn new(engine: EngineT, default_search_depth: SearchDepth) -> Self {
         Self {
             engine,
             default_search_depth,
@@ -76,17 +74,13 @@ where
 
     /// @impl: UciEngine::set_position
     fn set_position(&mut self, command: &PositionCommand) -> Result<(), Self::Error> {
-        let base = match &command.base {
-            BasePosition::StartPos => PositionBase::StartPos,
-            BasePosition::Fen(fen) => PositionBase::Fen(fen.clone()),
-        };
         let moves = command
             .moves
             .iter()
             .map(Move::try_from)
             .collect::<Result<Vec<_>, _>>()
             .map_err(|error| EngineError::new(error.to_string()))?;
-        self.engine.set_position(base, &moves)
+        self.engine.set_position(command.base.clone(), &moves)
     }
 
     /// @impl: UciEngine::search
@@ -94,14 +88,7 @@ where
         let outcome = self
             .engine
             .search(limits.depth.unwrap_or(self.default_search_depth))?;
-        let mut result = SearchResult::new(outcome.best_move.map(UciMove::from));
-        result.info = SearchInfo {
-            depth: Some(outcome.depth),
-            score_cp: Some(outcome.score),
-            nodes: Some(outcome.nodes),
-            elapsed: Some(outcome.elapsed),
-        };
-        Ok(result)
+        Ok(SearchResult::from(outcome))
     }
 }
 
@@ -109,10 +96,11 @@ where
 mod tests {
     use std::time::Duration;
 
-    use chess_kit_engine::{Board, SearchOutcome};
-    use chess_kit_primitives::{Pieces, Sides, Square};
+    use chess_kit_engine::{PositionBase, SearchOutcome};
+    use chess_kit_primitives::{Pieces, Square};
 
     use super::*;
+    use crate::uci::UciMove;
 
     #[derive(Default)]
     struct TestEngine {
@@ -128,10 +116,6 @@ mod tests {
             "Test Author"
         }
 
-        fn board(&self) -> Board {
-            Board::empty(Sides::White)
-        }
-
         fn new_game(&mut self) -> Result<(), EngineError> {
             Ok(())
         }
@@ -145,7 +129,7 @@ mod tests {
             Ok(())
         }
 
-        fn search(&mut self, depth: Depth) -> Result<SearchOutcome, EngineError> {
+        fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError> {
             Ok(SearchOutcome {
                 best_move: Some(Move::new(Square::A7, Square::A8).with_promotion(Pieces::Queen)),
                 depth,
@@ -163,28 +147,28 @@ mod tests {
     #[test]
     fn converts_uci_commands_and_engine_results_at_the_adapter_boundary() {
         let engine = TestEngine::default();
-        let mut adapter = UciAdapter::new(engine, 4);
+        let mut adapter = UciAdapter::new(engine, SearchDepth::new(4).unwrap());
         let position = PositionCommand {
-            base: BasePosition::StartPos,
+            base: PositionBase::StartPos,
             moves: vec!["e2e4".parse().unwrap()],
         };
 
         adapter.set_position(&position).unwrap();
         let result = adapter
             .search(&SearchLimits {
-                depth: Some(3),
+                depth: Some(SearchDepth::new(3).unwrap()),
                 ..SearchLimits::default()
             })
             .unwrap();
 
         assert_eq!(
-            UciMove::from(adapter.engine().positions[0].1[0]).as_str(),
+            UciMove::from(adapter.engine().positions[0].1[0]).to_string(),
             "e2e4"
         );
-        assert_eq!(result.best_move.unwrap().as_str(), "a7a8q");
-        assert_eq!(result.info.depth, Some(3));
+        assert_eq!(result.best_move.unwrap().to_string(), "a7a8q");
+        assert_eq!(result.info.depth.map(SearchDepth::get), Some(3));
 
         let default_result = adapter.search(&SearchLimits::default()).unwrap();
-        assert_eq!(default_result.info.depth, Some(4));
+        assert_eq!(default_result.info.depth.map(SearchDepth::get), Some(4));
     }
 }

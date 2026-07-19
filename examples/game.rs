@@ -2,11 +2,14 @@ use std::env;
 
 use chess_kit::comm::cli::InteractiveGame;
 use chess_kit::engine::{DefaultEngine, EngineConfig};
-use chess_kit::primitives::Depth;
+use chess_kit::primitives::{Depth, SearchDepth};
 
 /// DEFAULT_INTERACTIVE_SEARCH_DEPTH is the search depth used when `--depth` is
 /// not supplied
-pub const DEFAULT_INTERACTIVE_SEARCH_DEPTH: Depth = 6;
+pub const DEFAULT_INTERACTIVE_SEARCH_DEPTH: SearchDepth = match SearchDepth::new(6) {
+    Ok(depth) => depth,
+    Err(_) => panic!("default interactive search depth must be positive"),
+};
 
 /// INTERACTIVE_TRANSPOSITION_TABLE_SIZE_MB is the transposition table size used
 /// by the interactive presentation
@@ -19,7 +22,7 @@ Options:\n\
   -h, --help           Print help";
 
 struct GameOptions {
-    depth: Depth,
+    depth: SearchDepth,
 }
 
 fn parse_options(
@@ -53,12 +56,11 @@ fn parse_options(
     }))
 }
 
-fn parse_depth(value: &str) -> Result<Depth, String> {
-    value
+fn parse_depth(value: &str) -> Result<SearchDepth, String> {
+    let depth = value
         .parse::<Depth>()
-        .ok()
-        .filter(|depth| *depth > 0)
-        .ok_or_else(|| format!("depth must be a positive integer (got {value:?})"))
+        .map_err(|_| format!("depth must be a positive integer (got {value:?})"))?;
+    SearchDepth::new(depth).map_err(|_| format!("depth must be a positive integer (got {value:?})"))
 }
 
 fn run() -> Result<(), String> {
@@ -67,10 +69,8 @@ fn run() -> Result<(), String> {
         return Ok(());
     };
 
-    let engine = DefaultEngine::new(EngineConfig::new(
-        INTERACTIVE_TRANSPOSITION_TABLE_SIZE_MB,
-    ))
-    .map_err(|error| error.to_string())?;
+    let engine = DefaultEngine::new(EngineConfig::new(INTERACTIVE_TRANSPOSITION_TABLE_SIZE_MB))
+        .map_err(|error| error.to_string())?;
     InteractiveGame::new(engine, options.depth)
         .run()
         .map_err(|error| error.to_string())
@@ -96,9 +96,9 @@ mod tests {
             .unwrap();
         let equals = parse_options(["--depth=3".to_owned()]).unwrap().unwrap();
 
-        assert_eq!(default.depth, 6);
-        assert_eq!(explicit.depth, 7);
-        assert_eq!(equals.depth, 3);
+        assert_eq!(default.depth.get(), 6);
+        assert_eq!(explicit.depth.get(), 7);
+        assert_eq!(equals.depth.get(), 3);
     }
 
     #[test]

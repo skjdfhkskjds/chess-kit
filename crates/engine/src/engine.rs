@@ -3,12 +3,12 @@ use std::time::Instant;
 use chess_kit_attack_table::DefaultAttackTable;
 use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, PSQTEvalState};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
-use chess_kit_position::{DefaultPosition, Fen, PositionMoves, PositionView, Setup};
-use chess_kit_primitives::{Depth, Move, MoveList, MoveType, Pieces, Sides, Square, White};
+use chess_kit_position::{DefaultPosition, Fen, PositionMoves, PositionSnapshot, Setup};
+use chess_kit_primitives::{Move, MoveList, MoveType, SearchDepth};
 use chess_kit_search::{Negamax, SearchNode, iterative_deepening};
 use chess_kit_transposition::{DefaultTranspositionTable, TranspositionTable};
 
-use crate::{Board, Engine, EngineConfig, EngineError, PositionBase, SearchOutcome};
+use crate::{Engine, EngineConfig, EngineError, PositionBase, PositionProvider, SearchOutcome};
 
 type EnginePosition = DefaultPosition<DefaultAttackTable>;
 type EngineMoveGenerator = DefaultMoveGenerator<DefaultAttackTable>;
@@ -126,31 +126,6 @@ impl Engine for DefaultEngine {
         self.author()
     }
 
-    /// @impl: Engine::board
-    fn board(&self) -> Board {
-        let side_to_move = self.position.turn();
-        let white = self.position.occupancy::<White>();
-        let mut board = Board::empty(side_to_move);
-        for square in Square::ALL {
-            let piece = match self.position.piece_at(square) {
-                Pieces::None => continue,
-                piece => piece,
-            };
-            board.set_piece(
-                square,
-                Some((
-                    if white.has_square(square) {
-                        Sides::White
-                    } else {
-                        Sides::Black
-                    },
-                    piece,
-                )),
-            );
-        }
-        board
-    }
-
     /// @impl: Engine::new_game
     fn new_game(&mut self) -> Result<(), EngineError> {
         (self.position, self.accumulator) = Self::build_position(PositionBase::StartPos, &[])?;
@@ -175,11 +150,7 @@ impl Engine for DefaultEngine {
     }
 
     /// @impl: Engine::search
-    fn search(&mut self, depth: Depth) -> Result<SearchOutcome, EngineError> {
-        if depth < 1 {
-            return Err(EngineError::new("search depth must be positive"));
-        }
-
+    fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError> {
         let started = Instant::now();
         let result = iterative_deepening(
             &mut self.search,
@@ -187,21 +158,22 @@ impl Engine for DefaultEngine {
             &self.move_generator,
             &mut self.transposition_table,
             &mut self.accumulator,
-            depth,
+            depth.get(),
         );
 
-        Ok(SearchOutcome {
-            best_move: result.best_move,
-            depth,
-            score: result.score,
-            nodes: result.nodes,
-            elapsed: started.elapsed(),
-        })
+        Ok(SearchOutcome::from((result, depth, started.elapsed())))
     }
 
     /// @impl: Engine::has_legal_moves
     fn has_legal_moves(&self) -> bool {
         !self.primitive_legal_moves().as_slice().is_empty()
+    }
+}
+
+impl PositionProvider for DefaultEngine {
+    /// @impl: PositionProvider::position
+    fn position(&self) -> PositionSnapshot {
+        PositionSnapshot::from(&self.position)
     }
 }
 
@@ -252,7 +224,7 @@ fn requested_move_matches(legal_move: Move, requested_move: Move) -> bool {
 #[cfg(test)]
 mod tests {
     use chess_kit_position::PositionView;
-    use chess_kit_primitives::{Pieces, Sides, Square as BoardSquare};
+    use chess_kit_primitives::{Pieces, Sides, Square};
 
     use super::*;
 
@@ -275,18 +247,18 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(engine.position.piece_at(BoardSquare::E4), Pieces::Pawn);
-        assert_eq!(engine.position.piece_at(BoardSquare::E5), Pieces::Pawn);
+        assert_eq!(engine.position.piece_at(Square::E4), Pieces::Pawn);
+        assert_eq!(engine.position.piece_at(Square::E5), Pieces::Pawn);
         assert_eq!(engine.position.turn(), Sides::White);
     }
 
     #[test]
     fn search_returns_a_legal_move() {
         let mut engine = engine();
-        let outcome = engine.search(1).unwrap();
+        let outcome = engine.search(SearchDepth::new(1).unwrap()).unwrap();
 
         assert!(outcome.best_move.is_some());
-        assert_eq!(outcome.depth, 1);
+        assert_eq!(outcome.depth.get(), 1);
         assert!(outcome.nodes > 1);
     }
 
@@ -317,11 +289,9 @@ mod tests {
     }
 
     #[test]
-    fn search_rejects_non_positive_depths() {
-        let mut engine = engine();
-
-        assert!(engine.search(0).is_err());
-        assert!(engine.search(-1).is_err());
+    fn search_depth_rejects_non_positive_values() {
+        assert!(SearchDepth::new(0).is_err());
+        assert!(SearchDepth::new(-1).is_err());
     }
 
     #[test]
@@ -331,13 +301,13 @@ mod tests {
     }
 
     #[test]
-    fn board_exposes_a_protocol_neutral_position_snapshot() {
+    fn position_exposes_a_protocol_neutral_snapshot() {
         let engine = engine();
-        let board = engine.board();
+        let snapshot = PositionProvider::position(&engine);
 
-        assert_eq!(board.side_to_move(), Sides::White);
+        assert_eq!(snapshot.side_to_move(), Sides::White);
         assert_eq!(
-            board.piece_at(Square::E1),
+            snapshot.piece_at(Square::E1),
             Some((Sides::White, Pieces::King))
         );
     }

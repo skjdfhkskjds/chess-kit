@@ -1,7 +1,7 @@
 use crate::setup::Setup;
 use crate::{History, PositionState, PositionView};
 use chess_kit_attack_table::AttackTable;
-use chess_kit_primitives::{Bitboard, Black, Pieces, Side, Sides, Square, White, ZobristTable};
+use chess_kit_primitives::{Bitboard, Pieces, Side, Sides, Square, ZobristTable, call_as};
 use std::marker::PhantomData;
 
 /// DefaultPosition is the default position implementation
@@ -67,10 +67,7 @@ impl<AT: AttackTable> DefaultPosition<AT> {
     fn initialize(&mut self) {
         self.initialize_sides();
         self.initialize_pieces();
-        match self.turn() {
-            Sides::White => self.initialize_state::<White>(),
-            Sides::Black => self.initialize_state::<Black>(),
-        }
+        call_as!(self.turn(), |SideT| self.initialize_state::<SideT>());
     }
 
     /// initialize_sides derives the per-side and total occupancy bitboards

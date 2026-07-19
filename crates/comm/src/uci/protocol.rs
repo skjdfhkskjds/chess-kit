@@ -80,6 +80,8 @@ mod tests {
     use std::convert::Infallible;
     use std::io::Cursor;
 
+    use chess_kit_primitives::SearchDepth;
+
     use super::*;
     use crate::uci::{PositionCommand, SearchInfo, SearchLimits, SearchResult, UciMove};
 
@@ -116,7 +118,7 @@ mod tests {
         fn search(&mut self, _: &SearchLimits) -> Result<SearchResult, Self::Error> {
             let mut result = SearchResult::new(Some(UciMove::from_str("e2e4").unwrap()));
             result.info = SearchInfo {
-                depth: Some(3),
+                depth: Some(SearchDepth::new(3).unwrap()),
                 score_cp: Some(12),
                 nodes: Some(42),
                 elapsed: Some(std::time::Duration::from_millis(2)),

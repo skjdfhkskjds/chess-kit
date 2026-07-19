@@ -1,4 +1,4 @@
-use crate::{DefaultMoveGenerator, MoveType};
+use crate::{DefaultMoveGenerator, MoveGenerationStrategy};
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{Bitboard, Move, MoveList, Pieces, Square};
 
@@ -66,7 +66,7 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
     ///                  from square of a pawn promotion
     /// @param: is_capture - whether the pawn is capturing a piece when promoting
     /// @param: list - mutable reference to the move list
-    /// @param: move_type - move type to generate promotions of
+    /// @param: strategy - move generation strategy to apply
     #[inline]
     pub(crate) fn push_pawn_promotions(
         &self,
@@ -74,18 +74,20 @@ impl<AT: AttackTable> DefaultMoveGenerator<AT> {
         offset: i8,
         is_capture: bool,
         list: &mut MoveList,
-        move_type: MoveType,
+        strategy: MoveGenerationStrategy,
     ) {
         for to in to_squares.iter() {
             let from = Square::from_idx((to as i8 - offset) as usize);
 
-            if !matches!(move_type, MoveType::Quiet) {
+            if !matches!(strategy, MoveGenerationStrategy::Quiet) {
                 list.push(Move::new(from, to).with_promotion(Pieces::Queen));
             }
 
-            if matches!(move_type, MoveType::Evasions | MoveType::NonEvasions)
-                || (matches!(move_type, MoveType::Capture) && is_capture)
-                || (matches!(move_type, MoveType::Quiet) && !is_capture)
+            if matches!(
+                strategy,
+                MoveGenerationStrategy::Evasions | MoveGenerationStrategy::NonEvasions
+            ) || (matches!(strategy, MoveGenerationStrategy::Capture) && is_capture)
+                || (matches!(strategy, MoveGenerationStrategy::Quiet) && !is_capture)
             {
                 list.push(Move::new(from, to).with_promotion(Pieces::Knight));
                 list.push(Move::new(from, to).with_promotion(Pieces::Bishop));

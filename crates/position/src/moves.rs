@@ -4,7 +4,7 @@ use super::{
 use chess_kit_attack_table::AttackTable;
 use chess_kit_primitives::{
     Bitboard, Black, Move, MoveDelta, MoveType, PieceDelta, Pieces, Side, Sides, Square, White,
-    ZobristTable,
+    ZobristTable, call_as,
 };
 
 impl<AT> PositionMoves for DefaultPosition<AT>
@@ -16,14 +16,9 @@ where
     /// @impl: PositionMoves::play
     #[inline]
     fn play(&mut self, mv: Move) -> Result<MoveDelta, PlayError> {
-        let legal = match self.turn() {
-            Sides::White => {
-                self.occupancy::<White>().has_square(mv.from()) && self.is_legal_move::<White>(mv)
-            }
-            Sides::Black => {
-                self.occupancy::<Black>().has_square(mv.from()) && self.is_legal_move::<Black>(mv)
-            }
-        };
+        let legal = call_as!(self.turn(), |SideT| {
+            self.occupancy::<SideT>().has_square(mv.from()) && self.is_legal_move::<SideT>(mv)
+        });
         if !legal {
             return Err(PlayError::IllegalMove(mv));
         }
@@ -35,10 +30,8 @@ where
     /// @impl: PositionMoves::play_unchecked
     #[inline]
     fn play_unchecked(&mut self, mv: Move) -> MoveDelta {
-        match self.turn() {
-            Sides::White => self.play_unchecked_for_side::<White>(mv),
-            Sides::Black => self.play_unchecked_for_side::<Black>(mv),
-        }
+        call_as!(self.turn(), |SideT| self
+            .play_unchecked_for_side::<SideT>(mv))
     }
 
     /// undo reverses the last move on the board
@@ -46,10 +39,9 @@ where
     /// @impl: PositionMoves::undo
     #[inline]
     fn undo(&mut self, mv: Move) {
-        match self.turn() {
-            Sides::White => self.undo_for_side::<Black>(mv),
-            Sides::Black => self.undo_for_side::<White>(mv),
-        }
+        call_as!(self.turn(), |SideT| {
+            self.undo_for_side::<<SideT as Side>::Other>(mv)
+        });
     }
 
     /// is_legal_move checks if the given move played by SideT is legal
@@ -186,10 +178,10 @@ where
                 )
             }
             MoveType::Castle => {
-                let rook_square = if to == CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE] {
-                    CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE]
+                let rook_square = if to == CastlingSquares::kingside_destination::<SideT>() {
+                    CastlingSquares::kingside_rook_destination::<SideT>()
                 } else {
-                    CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE]
+                    CastlingSquares::queenside_rook_destination::<SideT>()
                 };
 
                 // check if the opponent's king is being attacked by the rook
@@ -263,9 +255,9 @@ where
         // the side has castling permissions, then revoke the appropriate
         // castling permissions
         if piece == Pieces::Rook && self.state().castling().can_castle::<SideT>() {
-            if square == CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE] {
+            if square == CastlingSquares::queenside_rook::<SideT>() {
                 self.set_castling(self.state().castling().revoke_queenside::<SideT>());
-            } else if square == CastlingSquares::KINGSIDE_ROOK[SideT::SIDE] {
+            } else if square == CastlingSquares::kingside_rook::<SideT>() {
                 self.set_castling(self.state().castling().revoke_kingside::<SideT>());
             }
         }
@@ -411,16 +403,16 @@ where
 
         delta.push(PieceDelta::removed(SideT::SIDE, piece, from));
         if mv.type_of() == MoveType::Castle {
-            let kingside = to == CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE];
+            let kingside = to == CastlingSquares::kingside_destination::<SideT>();
             let rook_from = if kingside {
-                CastlingSquares::KINGSIDE_ROOK[SideT::SIDE]
+                CastlingSquares::kingside_rook::<SideT>()
             } else {
-                CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE]
+                CastlingSquares::queenside_rook::<SideT>()
             };
             let rook_to = if kingside {
-                CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE]
+                CastlingSquares::kingside_rook_destination::<SideT>()
             } else {
-                CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE]
+                CastlingSquares::queenside_rook_destination::<SideT>()
             };
             delta.push(PieceDelta::removed(SideT::SIDE, Pieces::Rook, rook_from));
             delta.push(PieceDelta::added(SideT::SIDE, Pieces::King, to));
@@ -489,19 +481,19 @@ where
 
                 // if the move is a castle, move the appropriate rook as well
                 if matches!(mv.type_of(), MoveType::Castle) {
-                    if to == CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE] {
+                    if to == CastlingSquares::kingside_destination::<SideT>() {
                         // kingside castle
                         self.move_piece::<SideT>(
                             Pieces::Rook,
-                            CastlingSquares::KINGSIDE_ROOK[SideT::SIDE],
-                            CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE],
+                            CastlingSquares::kingside_rook::<SideT>(),
+                            CastlingSquares::kingside_rook_destination::<SideT>(),
                         );
                     } else {
                         // queenside castle
                         self.move_piece::<SideT>(
                             Pieces::Rook,
-                            CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE],
-                            CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE],
+                            CastlingSquares::queenside_rook::<SideT>(),
+                            CastlingSquares::queenside_rook_destination::<SideT>(),
                         );
                     }
 
@@ -520,9 +512,9 @@ where
                 // revoke the appropriate castling permissions if the rook is
                 // leaving the starting square
                 if self.state().castling().can_castle::<SideT>() {
-                    if from == CastlingSquares::KINGSIDE_ROOK[SideT::SIDE] {
+                    if from == CastlingSquares::kingside_rook::<SideT>() {
                         self.set_castling(self.state().castling().revoke_kingside::<SideT>());
-                    } else if from == CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE] {
+                    } else if from == CastlingSquares::queenside_rook::<SideT>() {
                         self.set_castling(self.state().castling().revoke_queenside::<SideT>());
                     }
                 }
@@ -738,17 +730,17 @@ where
                 self.move_piece_no_incrementals::<SideT>(Pieces::King, to, from);
 
                 // if the move was a castle, move the appropriate rook back as well
-                if to == CastlingSquares::KINGSIDE_DESTINATION[SideT::SIDE] {
+                if to == CastlingSquares::kingside_destination::<SideT>() {
                     self.move_piece_no_incrementals::<SideT>(
                         Pieces::Rook,
-                        CastlingSquares::KINGSIDE_ROOK_DESTINATION[SideT::SIDE],
-                        CastlingSquares::KINGSIDE_ROOK[SideT::SIDE],
+                        CastlingSquares::kingside_rook_destination::<SideT>(),
+                        CastlingSquares::kingside_rook::<SideT>(),
                     );
-                } else if to == CastlingSquares::QUEENSIDE_DESTINATION[SideT::SIDE] {
+                } else if to == CastlingSquares::queenside_destination::<SideT>() {
                     self.move_piece_no_incrementals::<SideT>(
                         Pieces::Rook,
-                        CastlingSquares::QUEENSIDE_ROOK_DESTINATION[SideT::SIDE],
-                        CastlingSquares::QUEENSIDE_ROOK[SideT::SIDE],
+                        CastlingSquares::queenside_rook_destination::<SideT>(),
+                        CastlingSquares::queenside_rook::<SideT>(),
                     );
                 }
             }

@@ -8,11 +8,12 @@ mod engine;
 mod error;
 mod types;
 
+pub use chess_kit_position::PositionSnapshot;
 pub use engine::DefaultEngine;
 pub use error::EngineError;
-pub use types::{Board, EngineConfig, PositionBase, SearchOutcome};
+pub use types::{EngineConfig, PositionBase, SearchOutcome};
 
-use chess_kit_primitives::{Depth, Move};
+use chess_kit_primitives::{Move, SearchDepth};
 
 /// `Engine` is the protocol-agnostic session surface used by presentation
 /// adapters
@@ -31,11 +32,6 @@ pub trait Engine {
     ///
     /// @return: engine author display name
     fn author(&self) -> &str;
-
-    /// board returns a value snapshot of the current position for adapters
-    ///
-    /// @return: current board snapshot
-    fn board(&self) -> Board;
 
     /// new_game resets engine state for a fresh game and loads the start position
     ///
@@ -63,10 +59,23 @@ pub trait Engine {
     /// @param: depth - maximum search depth in plies
     /// @return: completed search outcome, or the engine error
     /// @side-effects: may modify engine search state
-    fn search(&mut self, depth: Depth) -> Result<SearchOutcome, EngineError>;
+    fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError>;
 
     /// has_legal_moves reports whether the side to move has any legal reply
     ///
     /// @return: true when at least one legal move exists
     fn has_legal_moves(&self) -> bool;
+}
+
+/// `PositionProvider` exposes an owned view of an engine's current position
+///
+/// Presentation adapters that render a board can require this capability
+/// without making position inspection part of every engine integration.
+///
+/// @trait
+pub trait PositionProvider {
+    /// position returns an owned snapshot of the current position
+    ///
+    /// @return: current position snapshot
+    fn position(&self) -> PositionSnapshot;
 }

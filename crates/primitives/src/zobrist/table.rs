@@ -1,5 +1,5 @@
 use crate::zobrist::{CASTLING_RANDOMS, EN_PASSANT_RANDOMS, PIECE_RANDOMS, SIDE_RANDOMS};
-use crate::{Bitboard, Black, Castling, Pieces, Side, Sides, Square, White, ZobristKey};
+use crate::{Bitboard, Castling, Pieces, Side, Sides, Square, ZobristKey};
 
 /// `ZobristTable` is the marker type for the table of zobrist random values
 ///
@@ -23,14 +23,9 @@ impl ZobristTable {
         for (side, bitboards) in bitboards.iter().enumerate() {
             for (piece, bitboard) in bitboards.iter().enumerate() {
                 for square in bitboard.iter() {
-                    match Sides::from_idx(side) {
-                        Sides::White => {
-                            key ^= ZobristTable::piece::<White>(Pieces::from_idx(piece), square)
-                        }
-                        Sides::Black => {
-                            key ^= ZobristTable::piece::<Black>(Pieces::from_idx(piece), square)
-                        }
-                    }
+                    key ^= crate::call_as!(Sides::from_idx(side), |SideT| {
+                        ZobristTable::piece::<SideT>(Pieces::from_idx(piece), square)
+                    });
                 }
             }
         }
