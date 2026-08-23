@@ -33,25 +33,17 @@ running elsewhere:
 cargo run -p chess-kit-tui -- --engine /path/to/stockfish
 ```
 
-Piece assets are selected independently from the engine. The scalable `ascii`
-set remains the default. A higher-detail TUI-native set renders external CC0
-silhouettes with Unicode Braille cells:
+Pieces use the default `ascii` set, which samples external CC0 silhouette masks
+into opaque Unicode block cells. It can also be selected explicitly:
 
 ```sh
-cargo run -p chess-kit-tui -- --pieces braille --engine /path/to/stockfish
-```
-
-For larger, fully opaque marks, the `quadrant` set samples the same silhouettes
-into two-by-two Unicode block mosaics:
-
-```sh
-cargo run -p chess-kit-tui -- --pieces quadrant --engine /path/to/stockfish
+cargo run -p chess-kit-tui -- --pieces ascii --engine /path/to/stockfish
 ```
 
 Arguments after the standalone `--` continue to be forwarded to the engine.
 The piece-set boundary lives under `ui/pieces`, so renderers can be added
-without changing board layout or cell highlighting. Braille asset provenance
-is documented in `assets/pieces/braille/SOURCE.md`.
+without changing board layout or cell highlighting. Asset provenance is
+documented in `assets/pieces/ascii/SOURCE.md`.
 
 ## Controls
 

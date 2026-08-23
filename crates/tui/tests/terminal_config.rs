@@ -35,12 +35,6 @@ fn selects_piece_assets_without_forwarding_them_to_the_engine() {
         config.arguments(),
         [OsStr::new("--threads"), OsStr::new("2")]
     );
-
-    let braille = TerminalConfig::from_args(["--pieces", "braille"]).unwrap();
-    assert_eq!(braille.piece_set(), PieceSet::Braille);
-
-    let quadrant = TerminalConfig::from_args(["--pieces", "quadrant"]).unwrap();
-    assert_eq!(quadrant.piece_set(), PieceSet::Quadrant);
 }
 
 #[test]
@@ -72,10 +66,7 @@ fn reports_help_and_invalid_arguments() {
     let help = TerminalConfig::from_args(["--help"]).unwrap_err();
     assert_eq!(help, ConfigError::Help);
     assert!(help.to_string().contains("--pieces <set>"));
-    assert!(
-        help.to_string()
-            .contains("Piece sets: ascii, braille, quadrant")
-    );
+    assert!(help.to_string().contains("Piece sets: ascii"));
     assert_eq!(
         TerminalConfig::from_args(["--engine"]).unwrap_err(),
         ConfigError::MissingEnginePath

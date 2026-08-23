@@ -1,30 +1,5 @@
-use chess_kit_primitives::Pieces;
-
 const WIDTH: usize = 40;
 const HEIGHT: usize = 40;
-
-const BISHOP: &str = include_str!("../../../assets/pieces/braille/bishop.mask");
-const KING: &str = include_str!("../../../assets/pieces/braille/king.mask");
-const KNIGHT: &str = include_str!("../../../assets/pieces/braille/knight.mask");
-const PAWN: &str = include_str!("../../../assets/pieces/braille/pawn.mask");
-const QUEEN: &str = include_str!("../../../assets/pieces/braille/queen.mask");
-const ROOK: &str = include_str!("../../../assets/pieces/braille/rook.mask");
-
-/// piece returns the normalized silhouette asset for a piece type.
-///
-/// @param: piece - piece type to look up
-/// @return: 40-by-40 text mask
-pub(super) fn piece(piece: Pieces) -> &'static str {
-    match piece {
-        Pieces::Pawn => PAWN,
-        Pieces::Knight => KNIGHT,
-        Pieces::Bishop => BISHOP,
-        Pieces::Rook => ROOK,
-        Pieces::Queen => QUEEN,
-        Pieces::King => KING,
-        Pieces::None => unreachable!("empty squares do not have piece silhouettes"),
-    }
-}
 
 /// sample maps a normalized silhouette into a target pixel canvas.
 ///
@@ -57,15 +32,6 @@ fn scale_coordinate(coordinate: usize, target_size: usize, source_size: usize) -
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn source_masks_have_the_expected_dimensions() {
-        for piece_type in Pieces::ALL {
-            let rows = piece(piece_type).lines().collect::<Vec<_>>();
-            assert_eq!(rows.len(), HEIGHT);
-            assert!(rows.iter().all(|row| row.len() == WIDTH));
-        }
-    }
 
     #[test]
     fn coordinate_scaling_preserves_both_endpoints_and_symmetry() {

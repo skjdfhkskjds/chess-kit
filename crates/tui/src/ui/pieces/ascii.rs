@@ -1,95 +1,19 @@
 use chess_kit_primitives::{Pieces, Sides};
 
-use super::symbol;
+use super::{silhouette, symbol};
 
-const PATTERN_WIDTH: usize = 8;
-const PATTERN_HEIGHT: usize = 10;
+const PAWN: &str = include_str!("../../../assets/pieces/ascii/pawn.mask");
+const KNIGHT: &str = include_str!("../../../assets/pieces/ascii/knight.mask");
+const BISHOP: &str = include_str!("../../../assets/pieces/ascii/bishop.mask");
+const ROOK: &str = include_str!("../../../assets/pieces/ascii/rook.mask");
+const QUEEN: &str = include_str!("../../../assets/pieces/ascii/queen.mask");
+const KING: &str = include_str!("../../../assets/pieces/ascii/king.mask");
 
-#[rustfmt::skip]
-const PAWN: [&str; PATTERN_HEIGHT] = [
-    "........",
-    "...##...",
-    "..####..",
-    "..####..",
-    "...##...",
-    "...##...",
-    "..####..",
-    ".######.",
-    "########",
-    "........",
+const GLYPHS: [char; 16] = [
+    ' ', '▘', '▝', '▀', '▖', '▌', '▞', '▛', '▗', '▚', '▐', '▜', '▄', '▙', '▟', '█',
 ];
 
-#[rustfmt::skip]
-const KNIGHT: [&str; PATTERN_HEIGHT] = [
-    "..###...",
-    ".#####..",
-    "######..",
-    "###.###.",
-    "######..",
-    ".#####..",
-    "..####..",
-    "..####..",
-    ".######.",
-    "########",
-];
-
-#[rustfmt::skip]
-const BISHOP: [&str; PATTERN_HEIGHT] = [
-    "...##...",
-    "..####..",
-    ".##.###.",
-    "..####..",
-    "...##...",
-    "..####..",
-    "..####..",
-    ".######.",
-    "########",
-    "........",
-];
-
-#[rustfmt::skip]
-const ROOK: [&str; PATTERN_HEIGHT] = [
-    "##.##.##",
-    "########",
-    ".######.",
-    "..####..",
-    "..####..",
-    "..####..",
-    "..####..",
-    ".######.",
-    "########",
-    "........",
-];
-
-#[rustfmt::skip]
-const QUEEN: [&str; PATTERN_HEIGHT] = [
-    "#..##..#",
-    "##.##.##",
-    ".######.",
-    "..####..",
-    "...##...",
-    "..####..",
-    "..####..",
-    ".######.",
-    "########",
-    "........",
-];
-
-#[rustfmt::skip]
-const KING: [&str; PATTERN_HEIGHT] = [
-    "...##...",
-    "..####..",
-    "...##...",
-    ".######.",
-    "..####..",
-    "...##...",
-    "..####..",
-    ".######.",
-    "########",
-    "........",
-];
-
-/// render_row draws the existing block-and-glyph piece style.
+/// render_row draws an ASCII-style silhouette with opaque block cells.
 ///
 /// @param: piece - piece type to draw
 /// @param: side - side that owns the piece
@@ -98,79 +22,134 @@ const KING: [&str; PATTERN_HEIGHT] = [
 /// @param: row - zero-based row within the cell
 /// @return: piece row padded to the cell width
 pub(super) fn render_row(piece: Pieces, side: Sides, width: u16, height: u16, row: u16) -> String {
-    if height >= 3 {
-        return large_piece_row(piece, width, height, row);
+    if height < 3 {
+        return symbol::render_row(piece, side, width, height, row);
     }
-    symbol::render_row(piece, side, width, height, row)
-}
 
-/// `large_piece_row` rasterizes one row of a piece at 75% of its cell width.
-///
-/// @param: piece - piece shape to rasterize
-/// @param: width - cell width in terminal columns
-/// @param: height - cell height in terminal rows
-/// @param: row - row within the cell to render
-/// @return: one terminal row of half-block graphics
-fn large_piece_row(piece: Pieces, width: u16, height: u16, row: u16) -> String {
-    let piece_width = (u32::from(width) * 3).div_ceil(4) as u16;
-    let canvas_height = height * 2;
-    let piece_height = (u32::from(canvas_height) * 4).div_ceil(5) as u16;
-    let left = width.saturating_sub(piece_width) / 2;
-    let top = canvas_height.saturating_sub(piece_height) / 2;
-    let top_pixel = row * 2;
-    let bottom_pixel = top_pixel + 1;
-    let pattern = pattern(piece);
+    let piece_columns = (u32::from(width) * 3).div_ceil(4) as u16;
+    let piece_pixel_width = piece_columns * 2;
+    let canvas_pixel_width = width * 2;
+    let canvas_pixel_height = height * 2;
+    let piece_pixel_height = (u32::from(canvas_pixel_height) * 4).div_ceil(5) as u16;
+    let left = canvas_pixel_width.saturating_sub(piece_pixel_width) / 2;
+    let top = canvas_pixel_height.saturating_sub(piece_pixel_height) / 2;
+    let bounds = (left, top, piece_pixel_width, piece_pixel_height);
+    let mask = piece_mask(piece);
 
     (0..width)
-        .map(|column| {
-            let bounds = (left, top, piece_width, piece_height);
-            let upper = piece_pixel(pattern, column, top_pixel, bounds);
-            let lower = piece_pixel(pattern, column, bottom_pixel, bounds);
-            match (upper, lower) {
-                (false, false) => ' ',
-                (true, false) => '▀',
-                (false, true) => '▄',
-                (true, true) => '█',
-            }
-        })
+        .map(|column| block_cell(mask, column, row, bounds))
         .collect()
 }
 
-/// `piece_pixel` samples a canonical silhouette into a scaled pixel canvas.
-///
-/// @param: pattern - canonical piece silhouette
-/// @param: x - horizontal canvas coordinate
-/// @param: y - vertical canvas coordinate
-/// @param: bounds - silhouette origin and scaled dimensions
-/// @return: whether the sampled pixel belongs to the piece
-fn piece_pixel(
-    pattern: &[&str; PATTERN_HEIGHT],
-    x: u16,
-    y: u16,
-    bounds: (u16, u16, u16, u16),
-) -> bool {
-    let (left, top, width, height) = bounds;
-    if x < left || x >= left + width || y < top || y >= top + height {
-        return false;
+/// Returns the standalone silhouette asset for an ASCII piece.
+fn piece_mask(piece: Pieces) -> &'static str {
+    match piece {
+        Pieces::Pawn => PAWN,
+        Pieces::Knight => KNIGHT,
+        Pieces::Bishop => BISHOP,
+        Pieces::Rook => ROOK,
+        Pieces::Queen => QUEEN,
+        Pieces::King => KING,
+        Pieces::None => unreachable!("empty squares do not have piece silhouettes"),
     }
-
-    let pattern_x = usize::from(x - left) * PATTERN_WIDTH / usize::from(width);
-    let pattern_y = usize::from(y - top) * PATTERN_HEIGHT / usize::from(height);
-    pattern[pattern_y].as_bytes()[pattern_x] == b'#'
 }
 
-/// pattern returns the canonical silhouette for a piece type.
+/// `block_cell` samples the four pixels represented by one terminal character.
 ///
-/// @param: piece - piece type to look up
-/// @return: fixed-size bitmap silhouette
-fn pattern(piece: Pieces) -> &'static [&'static str; PATTERN_HEIGHT] {
-    match piece {
-        Pieces::Pawn => &PAWN,
-        Pieces::Knight => &KNIGHT,
-        Pieces::Bishop => &BISHOP,
-        Pieces::Rook => &ROOK,
-        Pieces::Queen => &QUEEN,
-        Pieces::King => &KING,
-        Pieces::None => unreachable!("empty squares do not have piece silhouettes"),
+/// @param: mask - normalized piece silhouette
+/// @param: column - terminal column within the board cell
+/// @param: row - terminal row within the board cell
+/// @param: bounds - silhouette origin and dimensions in block pixels
+/// @return: block-element glyph representing the sampled pixels
+fn block_cell(mask: &str, column: u16, row: u16, bounds: (u16, u16, u16, u16)) -> char {
+    let top_left = silhouette::sample(mask, column * 2, row * 2, bounds) as usize;
+    let top_right = silhouette::sample(mask, column * 2 + 1, row * 2, bounds) as usize;
+    let bottom_left = silhouette::sample(mask, column * 2, row * 2 + 1, bounds) as usize;
+    let bottom_right = silhouette::sample(mask, column * 2 + 1, row * 2 + 1, bounds) as usize;
+    let pixels = top_left | (top_right << 1) | (bottom_left << 2) | (bottom_right << 3);
+    GLYPHS[pixels]
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    fn filled_runs(row: &str) -> usize {
+        row.chars()
+            .fold((0, false), |(runs, was_filled), pixel| {
+                let is_filled = pixel == '#';
+                (runs + usize::from(is_filled && !was_filled), is_filled)
+            })
+            .0
+    }
+
+    #[test]
+    fn king_crown_keeps_its_defining_cross() {
+        assert!(KING.lines().take(2).all(|row| !row.contains('#')));
+        let king_stem = KING.lines().nth(2).unwrap();
+        let king_crossbar = KING.lines().nth(11).unwrap();
+        assert_eq!(filled_runs(king_stem), 1);
+        assert_eq!(filled_runs(king_crossbar), 1);
+        assert!(king_crossbar.matches('#').count() > king_stem.matches('#').count());
+    }
+
+    #[test]
+    fn bishop_has_a_long_flat_base() {
+        let body = BISHOP.lines().nth(30).unwrap();
+        let base = BISHOP.lines().nth(35).unwrap();
+        assert_eq!(filled_runs(base), 1);
+        assert!(base.matches('#').count() > body.matches('#').count());
+    }
+
+    #[test]
+    fn ascii_assets_share_dimensions_and_vertical_bounds() {
+        let occupied_rows = |mask: &str| {
+            let first = mask.lines().position(|row| row.contains('#')).unwrap();
+            let last = mask
+                .lines()
+                .enumerate()
+                .filter(|(_, row)| row.contains('#'))
+                .map(|(index, _)| index)
+                .last()
+                .unwrap();
+            (first, last)
+        };
+
+        for piece in Pieces::ALL {
+            let mask = piece_mask(piece);
+            let rows = mask.lines().collect::<Vec<_>>();
+            assert_eq!(rows.len(), 40);
+            assert!(rows.iter().all(|row| row.len() == 40));
+            assert_eq!(occupied_rows(mask), (2, 39));
+        }
+    }
+
+    #[test]
+    fn assets_that_should_be_symmetric_are_exactly_mirrored() {
+        for mask in [PAWN, ROOK, QUEEN, KING] {
+            assert!(mask.lines().all(|row| row.bytes().eq(row.bytes().rev())));
+        }
+    }
+
+    #[test]
+    fn each_piece_has_a_distinct_fixed_width_ascii_rendering() {
+        let renderings = Pieces::ALL
+            .map(|piece| {
+                (0..5)
+                    .map(|row| render_row(piece, Sides::White, 10, 5, row))
+                    .inspect(|row| assert_eq!(row.chars().count(), 10))
+                    .collect::<String>()
+            })
+            .into_iter()
+            .collect::<HashSet<_>>();
+
+        assert_eq!(renderings.len(), Pieces::ALL.len());
+        assert!(renderings.iter().all(|rendering| {
+            rendering
+                .chars()
+                .any(|character| GLYPHS[1..].contains(&character))
+        }));
     }
 }
