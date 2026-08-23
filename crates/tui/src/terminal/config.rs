@@ -3,9 +3,11 @@ use std::ffi::OsString;
 use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
 
+use crate::PieceSet;
+
 /// USAGE describes the supported first-pass command-line interface.
-pub const USAGE: &str =
-    "Usage: chess-kit-tui [--engine <path> | <path>] [-- <engine arguments...>]";
+pub const USAGE: &str = "Usage: chess-kit-tui [--engine <path> | <path>] [--pieces <set>] \
+                         [-- <engine arguments...>]";
 
 /// `TerminalConfig` describes the local UCI process to launch.
 ///
@@ -14,6 +16,7 @@ pub const USAGE: &str =
 pub struct TerminalConfig {
     program: PathBuf,
     arguments: Vec<OsString>,
+    piece_set: PieceSet,
 }
 
 impl TerminalConfig {
@@ -33,6 +36,7 @@ impl TerminalConfig {
     {
         let arguments = arguments.into_iter().map(Into::into).collect::<Vec<_>>();
         let mut program = None;
+        let mut piece_set = None;
         let mut engine_arguments = Vec::new();
         let mut index = 0;
         while index < arguments.len() {
@@ -44,6 +48,19 @@ impl TerminalConfig {
                         .ok_or(ConfigError::MissingEnginePath)?;
                     if program.replace(PathBuf::from(value)).is_some() {
                         return Err(ConfigError::DuplicateEnginePath);
+                    }
+                    index += 2;
+                }
+                Some("--pieces") => {
+                    let value = arguments
+                        .get(index + 1)
+                        .ok_or(ConfigError::MissingPieceSet)?;
+                    let name = value.to_string_lossy();
+                    let parsed = name
+                        .parse()
+                        .map_err(|_| ConfigError::InvalidPieceSet(name.to_string()))?;
+                    if piece_set.replace(parsed).is_some() {
+                        return Err(ConfigError::DuplicatePieceSet);
                     }
                     index += 2;
                 }
@@ -66,6 +83,7 @@ impl TerminalConfig {
         Ok(Self {
             program: program.unwrap_or_else(default_engine_path),
             arguments: engine_arguments,
+            piece_set: piece_set.unwrap_or_default(),
         })
     }
 
@@ -81,6 +99,13 @@ impl TerminalConfig {
     /// @return: engine process arguments
     pub fn arguments(&self) -> &[OsString] {
         &self.arguments
+    }
+
+    /// piece_set returns the configured terminal piece assets.
+    ///
+    /// @return: selected piece set
+    pub const fn piece_set(&self) -> PieceSet {
+        self.piece_set
     }
 }
 
@@ -100,7 +125,10 @@ fn default_engine_path() -> PathBuf {
 pub enum ConfigError {
     Help,
     MissingEnginePath,
+    MissingPieceSet,
     DuplicateEnginePath,
+    DuplicatePieceSet,
+    InvalidPieceSet(String),
     UnexpectedArgument(String),
 }
 
@@ -119,20 +147,21 @@ impl Display for ConfigError {
     /// @impl: Display::fmt
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Help => formatter.write_str(USAGE),
-            Self::MissingEnginePath => {
-                write!(formatter, "missing path after --engine\n{USAGE}")
-            }
+            Self::Help => {}
+            Self::MissingEnginePath => formatter.write_str("missing path after --engine\n")?,
+            Self::MissingPieceSet => formatter.write_str("missing set name after --pieces\n")?,
             Self::DuplicateEnginePath => {
-                write!(
-                    formatter,
-                    "engine path was provided more than once\n{USAGE}"
-                )
+                formatter.write_str("engine path was provided more than once\n")?;
             }
+            Self::DuplicatePieceSet => {
+                formatter.write_str("piece set was provided more than once\n")?;
+            }
+            Self::InvalidPieceSet(name) => writeln!(formatter, "unknown piece set: {name}")?,
             Self::UnexpectedArgument(argument) => {
-                write!(formatter, "unexpected argument: {argument}\n{USAGE}")
+                writeln!(formatter, "unexpected argument: {argument}")?;
             }
         }
+        write!(formatter, "{USAGE}\nPiece sets: {}", PieceSet::NAMES)
     }
 }
 

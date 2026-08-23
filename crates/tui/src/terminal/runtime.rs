@@ -5,7 +5,7 @@ use crossterm::event::{self, Event};
 use ratatui::DefaultTerminal;
 
 use super::event::action;
-use crate::{Action, App, ConnectionState, Effect, UciRunner, render};
+use crate::{Action, App, ConnectionState, Effect, PieceSet, UciRunner, render_with_piece_set};
 
 /// EVENT_POLL_INTERVAL bounds input and engine-output latency.
 const EVENT_POLL_INTERVAL: Duration = Duration::from_millis(50);
@@ -29,7 +29,26 @@ pub fn run_terminal<RunnerT>(app: &mut App, runner: &mut RunnerT) -> io::Result<
 where
     RunnerT: UciRunner,
 {
-    let result = ratatui::run(|terminal| run_loop(terminal, app, runner));
+    run_terminal_with_piece_set(app, runner, PieceSet::default())
+}
+
+/// run_terminal_with_piece_set runs an interactive application with selected piece assets.
+///
+/// @marker: RunnerT - UCI runner implementation
+/// @param: app - application state
+/// @param: runner - connected UCI engine runner
+/// @param: piece_set - assets used to draw pieces
+/// @return: Ok after a requested exit, or an I/O error
+/// @side-effects: enters raw alternate-screen mode, reads input, and drives UCI
+pub fn run_terminal_with_piece_set<RunnerT>(
+    app: &mut App,
+    runner: &mut RunnerT,
+    piece_set: PieceSet,
+) -> io::Result<()>
+where
+    RunnerT: UciRunner,
+{
+    let result = ratatui::run(|terminal| run_loop(terminal, app, runner, piece_set));
     let shutdown = runner.shutdown();
     result.and(shutdown)
 }
@@ -40,12 +59,14 @@ where
 /// @param: terminal - initialized terminal
 /// @param: app - application state
 /// @param: runner - connected UCI engine runner
+/// @param: piece_set - assets used to draw pieces
 /// @return: Ok after a requested exit, or an I/O error
 /// @side-effects: draws frames, reads input, and sends UCI commands
 fn run_loop<RunnerT>(
     terminal: &mut DefaultTerminal,
     app: &mut App,
     runner: &mut RunnerT,
+    piece_set: PieceSet,
 ) -> io::Result<()>
 where
     RunnerT: UciRunner,
@@ -95,7 +116,7 @@ where
             stopping_since = None;
         }
 
-        terminal.draw(|frame| render(frame, app))?;
+        terminal.draw(|frame| render_with_piece_set(frame, app, piece_set))?;
         let poll_interval = if saturated {
             Duration::ZERO
         } else {

@@ -1,10 +1,12 @@
-use chess_kit_primitives::{Pieces, Sides, Square, call_as};
+use chess_kit_primitives::Square;
 use ratatui::Frame;
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
 
+use super::cell::Cell;
+use super::pieces::PieceSet;
 use crate::App;
 
 /// render draws the chess board with cursor and selection highlighting.
@@ -12,37 +14,48 @@ use crate::App;
 /// @param: frame - destination terminal frame
 /// @param: area - board widget area
 /// @param: app - application state to render
+/// @param: piece_set - assets used to draw occupied cells
 /// @return: void
 /// @side-effects: writes the board widget into the frame buffer
-pub(super) fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
-    let mut lines = Vec::with_capacity(9);
+pub(super) fn render(frame: &mut Frame<'_>, area: Rect, app: &App, piece_set: PieceSet) {
+    let inner_width = area.width.saturating_sub(2);
+    let inner_height = area.height.saturating_sub(2);
+    let (square_width, square_height) = square_dimensions(inner_width, inner_height);
+    let board_width = 2 + square_width * 8;
+    let board_height = square_height * 8 + 1;
+    let horizontal_padding = inner_width.saturating_sub(board_width) / 2;
+    let vertical_padding = inner_height.saturating_sub(board_height) / 2;
+    let mut lines = Vec::with_capacity(inner_height as usize);
+    lines.extend((0..vertical_padding).map(|_| Line::default()));
+
     for display_rank in 0..8 {
         let rank = if app.flipped() {
             display_rank
         } else {
             7 - display_rank
         };
-        let mut spans = vec![Span::styled(
-            format!("{} ", rank + 1),
-            Style::default().fg(Color::DarkGray),
-        )];
-        for display_file in 0..8 {
-            let file = if app.flipped() {
-                7 - display_file
+        for square_row in 0..square_height {
+            let label = if square_row == square_height / 2 {
+                format!("{} ", rank + 1)
             } else {
-                display_file
+                "  ".to_owned()
             };
-            let square = Square::from_idx(rank * 8 + file);
-            let symbol = app
-                .position()
-                .piece_at(square)
-                .map_or(' ', |(side, piece)| piece_symbol(side, piece));
-            spans.push(Span::styled(
-                format!(" {symbol} "),
-                square_style(square, app, file, rank),
-            ));
+            let mut spans = vec![
+                Span::raw(" ".repeat(horizontal_padding as usize)),
+                Span::styled(label, Style::default().fg(Color::DarkGray)),
+            ];
+            for display_file in 0..8 {
+                let file = if app.flipped() {
+                    7 - display_file
+                } else {
+                    display_file
+                };
+                let square = Square::from_idx(rank * 8 + file);
+                let cell = Cell::new(square, file, rank, square_width, square_height);
+                spans.push(cell.render_row(app, piece_set, square_row));
+            }
+            lines.push(Line::from(spans));
         }
-        lines.push(Line::from(spans));
     }
     let files = (0..8)
         .map(|display_file| {
@@ -52,12 +65,15 @@ pub(super) fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 display_file
             };
             Span::styled(
-                format!(" {} ", (b'a' + file as u8) as char),
+                centered((b'a' + file as u8) as char, square_width),
                 Style::default().fg(Color::DarkGray),
             )
         })
         .collect::<Vec<_>>();
-    let mut labels = vec![Span::raw("  ")];
+    let mut labels = vec![
+        Span::raw(" ".repeat(horizontal_padding as usize)),
+        Span::raw("  "),
+    ];
     labels.extend(files);
     lines.push(Line::from(labels));
 
@@ -71,41 +87,31 @@ pub(super) fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
     );
 }
 
-/// square_style returns the board and interaction colors for a square.
+/// `square_dimensions` scales board cells while accounting for terminal character aspect ratio.
 ///
-/// @param: square - logical board square
-/// @param: app - application state
-/// @param: file - zero-based logical file
-/// @param: rank - zero-based logical rank
-/// @return: square style
-fn square_style(square: Square, app: &App, file: usize, rank: usize) -> Style {
-    let background = if (file + rank).is_multiple_of(2) {
-        Color::Rgb(92, 64, 51)
-    } else {
-        Color::Rgb(181, 136, 99)
-    };
-    let mut style = Style::default().fg(Color::White).bg(background);
-    if app.selected() == Some(square) {
-        style = style.bg(Color::Blue).add_modifier(Modifier::BOLD);
-    }
-    if app.cursor() == square {
-        style = style
-            .bg(Color::Yellow)
-            .fg(Color::Black)
-            .add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
-    }
-    style
+/// @param: width - available width inside the board border
+/// @param: height - available height inside the board border
+/// @return: square width and height in terminal cells
+fn square_dimensions(width: u16, height: u16) -> (u16, u16) {
+    let maximum_width = width.saturating_sub(2) / 8;
+    let maximum_height = height.saturating_sub(1) / 8;
+    let square_height = maximum_height.min(maximum_width / 2).max(1);
+    let square_width = (square_height * 2).max(3).min(maximum_width.max(1));
+    (square_width, square_height)
 }
 
-/// piece_symbol returns the side-aware Unicode chess symbol.
+/// `centered` places one character in the middle of a fixed-width square.
 ///
-/// @param: side - side that owns the piece
-/// @param: piece - piece to render
-/// @return: Unicode chess symbol
-fn piece_symbol(side: Sides, piece: Pieces) -> char {
-    let display = call_as!(side, |SideT| piece.display::<SideT>().to_string());
-    display
-        .chars()
-        .next()
-        .expect("primitive piece displays are never empty")
+/// @param: symbol - character to center
+/// @param: width - square width in terminal cells
+/// @return: padded square contents
+fn centered(symbol: char, width: u16) -> String {
+    let left = width.saturating_sub(1) / 2;
+    let right = width.saturating_sub(left + 1);
+    format!(
+        "{}{}{}",
+        " ".repeat(left as usize),
+        symbol,
+        " ".repeat(right as usize)
+    )
 }

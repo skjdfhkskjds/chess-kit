@@ -20,12 +20,12 @@ pub use app::{
     ProtocolEntry,
 };
 pub use runner::{ProcessRunner, RunnerEvent};
-pub use terminal::{ConfigError, TerminalConfig, run_terminal};
+pub use terminal::{ConfigError, TerminalConfig, run_terminal, run_terminal_with_piece_set};
 pub use uci::{
     EngineMessage, EngineMessageKind, IdentityField, Score, ScoreBound, ScoreValue, SearchInfo,
     SearchRequest, UciCommand, UciOption, UciPosition,
 };
-pub use ui::render;
+pub use ui::{PieceSet, render, render_with_piece_set};
 
 /// `GameSession` defines the local rules boundary used by the presentation.
 ///

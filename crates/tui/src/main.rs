@@ -3,7 +3,7 @@
 use std::error::Error;
 
 use chess_kit_engine::{DefaultEngine, EngineConfig};
-use chess_kit_tui::{App, ProcessRunner, TerminalConfig, run_terminal};
+use chess_kit_tui::{App, ProcessRunner, TerminalConfig, run_terminal_with_piece_set};
 
 /// LOCAL_TRANSPOSITION_TABLE_SIZE_MB is the local rules session cache size.
 const LOCAL_TRANSPOSITION_TABLE_SIZE_MB: usize = 16;
@@ -35,6 +35,6 @@ fn run(config: &TerminalConfig) -> Result<(), Box<dyn Error>> {
     let local_engine = DefaultEngine::new(EngineConfig::new(LOCAL_TRANSPOSITION_TABLE_SIZE_MB))?;
     let mut runner = ProcessRunner::spawn(config.program(), config.arguments())?;
     let mut app = App::new(Box::new(local_engine));
-    run_terminal(&mut app, &mut runner)?;
+    run_terminal_with_piece_set(&mut app, &mut runner, config.piece_set())?;
     Ok(())
 }

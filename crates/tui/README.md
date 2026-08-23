@@ -33,7 +33,17 @@ running elsewhere:
 cargo run -p chess-kit-tui -- --engine /path/to/stockfish
 ```
 
-Use `--` after the engine path to forward arguments to the engine process.
+Piece assets are selected independently from the engine. The `ascii` set is
+the default and can be selected explicitly:
+
+```sh
+cargo run -p chess-kit-tui -- --pieces ascii --engine /path/to/stockfish
+```
+
+Arguments after the standalone `--` continue to be forwarded to the engine.
+The piece-set boundary lives under `ui/pieces`, so additional renderers such as
+the planned Braille set can be added without changing board layout or cell
+highlighting.
 
 ## Controls
 
@@ -63,8 +73,9 @@ Use `--` after the engine path to forward arguments to the engine process.
 - Promotion currently defaults to a queen. An underpromotion chooser is a
   follow-up interaction.
 - The full interface requires at least a 40-column by 18-row terminal and uses
-  Unicode chess symbols and color. A too-small terminal receives a resize
-  message; an ASCII piece theme is not part of this POC.
+  Unicode chess symbols, block graphics, and color. A too-small terminal
+  receives a resize message; terminals without Unicode support are not part of
+  this POC.
 - UCI initialization/readiness waits are limited to five seconds, a stopped
   search must return `bestmove` within two seconds, and shutdown allows 500
   milliseconds before terminating the direct child process. Engines should
@@ -80,4 +91,3 @@ rendering and makes them testable without a real terminal or chess engine.
 
 Protocol and process tests use deterministic fixtures and never require a
 system Stockfish installation.
-

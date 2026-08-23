@@ -57,6 +57,26 @@ fn renders_a_narrow_fallback_without_panicking() {
 }
 
 #[test]
+fn gives_the_board_most_of_a_wide_layout() {
+    let app = populated_app();
+    let screen = render_to_lines(&app, 120, 30);
+    let content_border = &screen[3];
+    let divider = content_border
+        .find(" Analysis ")
+        .expect("wide layout has an analysis pane");
+
+    assert!(divider >= 79, "board pane ended at column {divider}");
+}
+
+#[test]
+fn scales_pieces_when_board_cells_are_large_enough() {
+    let app = populated_app();
+    let screen = render_to_string(&app, 240, 54);
+
+    assert!(screen.contains(['▀', '▄', '█']));
+}
+
+#[test]
 fn renders_help_and_protocol_overlays() {
     let mut app = populated_app();
     app.update(Action::ToggleProtocol);
@@ -121,6 +141,10 @@ fn populated_app() -> App {
 }
 
 fn render_to_string(app: &App, width: u16, height: u16) -> String {
+    render_to_lines(app, width, height).concat()
+}
+
+fn render_to_lines(app: &App, width: u16, height: u16) -> Vec<String> {
     let backend = TestBackend::new(width, height);
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.draw(|frame| render(frame, app)).unwrap();
@@ -128,7 +152,7 @@ fn render_to_string(app: &App, width: u16, height: u16) -> String {
         .backend()
         .buffer()
         .content()
-        .iter()
-        .map(|cell| cell.symbol())
+        .chunks(width as usize)
+        .map(|row| row.iter().map(|cell| cell.symbol()).collect())
         .collect()
 }

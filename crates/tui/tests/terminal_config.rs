@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use chess_kit_tui::{ConfigError, TerminalConfig};
+use chess_kit_tui::{ConfigError, PieceSet, TerminalConfig};
 
 #[test]
 fn defaults_to_the_workspace_debug_engine() {
@@ -14,6 +14,27 @@ fn defaults_to_the_workspace_debug_engine() {
             .join(format!("chess-kit{}", std::env::consts::EXE_SUFFIX))
     );
     assert!(config.arguments().is_empty());
+    assert_eq!(config.piece_set(), PieceSet::Ascii);
+}
+
+#[test]
+fn selects_piece_assets_without_forwarding_them_to_the_engine() {
+    let config = TerminalConfig::from_args([
+        "--pieces",
+        "ascii",
+        "--engine",
+        "/usr/bin/stockfish",
+        "--",
+        "--threads",
+        "2",
+    ])
+    .unwrap();
+
+    assert_eq!(config.piece_set(), PieceSet::Ascii);
+    assert_eq!(
+        config.arguments(),
+        [OsStr::new("--threads"), OsStr::new("2")]
+    );
 }
 
 #[test]
@@ -42,13 +63,25 @@ fn forwards_arguments_after_the_separator() {
 
 #[test]
 fn reports_help_and_invalid_arguments() {
-    assert_eq!(
-        TerminalConfig::from_args(["--help"]).unwrap_err(),
-        ConfigError::Help
-    );
+    let help = TerminalConfig::from_args(["--help"]).unwrap_err();
+    assert_eq!(help, ConfigError::Help);
+    assert!(help.to_string().contains("--pieces <set>"));
+    assert!(help.to_string().contains("Piece sets: ascii"));
     assert_eq!(
         TerminalConfig::from_args(["--engine"]).unwrap_err(),
         ConfigError::MissingEnginePath
+    );
+    assert_eq!(
+        TerminalConfig::from_args(["--pieces"]).unwrap_err(),
+        ConfigError::MissingPieceSet
+    );
+    assert_eq!(
+        TerminalConfig::from_args(["--pieces", "unknown"]).unwrap_err(),
+        ConfigError::InvalidPieceSet("unknown".to_owned())
+    );
+    assert_eq!(
+        TerminalConfig::from_args(["--pieces", "ascii", "--pieces", "ascii"]).unwrap_err(),
+        ConfigError::DuplicatePieceSet
     );
     assert_eq!(
         TerminalConfig::from_args(["one", "two"]).unwrap_err(),
