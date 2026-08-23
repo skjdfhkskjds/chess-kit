@@ -6,14 +6,22 @@ mod help;
 mod history;
 mod protocol;
 mod status;
+mod text;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout};
+use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 
 use crate::App;
 
 /// WIDE_LAYOUT_MINIMUM is the width at which the sidebar fits beside the board.
 const WIDE_LAYOUT_MINIMUM: u16 = 76;
+
+/// MINIMUM_WIDTH is the smallest supported full interface width.
+const MINIMUM_WIDTH: u16 = 40;
+
+/// MINIMUM_HEIGHT is the smallest supported full interface height.
+const MINIMUM_HEIGHT: u16 = 18;
 
 /// render draws one complete application frame.
 ///
@@ -22,6 +30,18 @@ const WIDE_LAYOUT_MINIMUM: u16 = 76;
 /// @return: void
 /// @side-effects: writes widgets into the frame buffer
 pub fn render(frame: &mut Frame<'_>, app: &App) {
+    if frame.area().width < MINIMUM_WIDTH || frame.area().height < MINIMUM_HEIGHT {
+        frame.render_widget(
+            Paragraph::new(format!(
+                "Terminal too small. Resize to at least {MINIMUM_WIDTH}x{MINIMUM_HEIGHT}."
+            ))
+            .wrap(Wrap { trim: true })
+            .block(Block::default().title(" chess-kit ").borders(Borders::ALL)),
+            frame.area(),
+        );
+        return;
+    }
+
     let [header, content, footer] = Layout::vertical([
         Constraint::Length(3),
         Constraint::Min(10),

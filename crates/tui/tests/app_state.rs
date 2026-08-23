@@ -104,6 +104,11 @@ fn starts_stops_and_accumulates_streaming_analysis() {
     engine_line(&mut app, "bestmove e2e4 ponder e7e5");
     assert_eq!(app.connection(), ConnectionState::Ready);
     assert_eq!(app.analysis().best_move.as_deref(), Some("e2e4"));
+
+    app.update(Action::ToggleAnalysis);
+    assert_eq!(app.analysis().info.depth, None);
+    assert!(app.analysis().info.principal_variation.is_empty());
+    assert_eq!(app.analysis().best_move, None);
 }
 
 #[test]

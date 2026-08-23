@@ -8,7 +8,18 @@ use crate::{Action, App, Direction};
 /// @param: app - current application state
 /// @return: mapped action, or None for an unused key
 pub(super) fn action(key: KeyEvent, app: &App) -> Option<Action> {
-    if !matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let navigation = matches!(
+        key.code,
+        KeyCode::Up
+            | KeyCode::Down
+            | KeyCode::Left
+            | KeyCode::Right
+            | KeyCode::Char('h' | 'j' | 'k' | 'l')
+    );
+    if key.kind == KeyEventKind::Repeat && !navigation {
         return None;
     }
     if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {

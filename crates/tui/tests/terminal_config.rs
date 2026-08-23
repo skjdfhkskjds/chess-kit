@@ -7,7 +7,12 @@ use chess_kit_tui::{ConfigError, TerminalConfig};
 fn defaults_to_the_workspace_debug_engine() {
     let config = TerminalConfig::from_args(Vec::<String>::new()).unwrap();
 
-    assert_eq!(config.program(), Path::new("target/debug/chess-kit"));
+    assert_eq!(
+        config.program(),
+        Path::new("target")
+            .join("debug")
+            .join(format!("chess-kit{}", std::env::consts::EXE_SUFFIX))
+    );
     assert!(config.arguments().is_empty());
 }
 

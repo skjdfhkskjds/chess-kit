@@ -3,9 +3,6 @@ use std::ffi::OsString;
 use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
 
-/// DEFAULT_ENGINE_PATH is the workspace debug engine used when none is given.
-const DEFAULT_ENGINE_PATH: &str = "target/debug/chess-kit";
-
 /// USAGE describes the supported first-pass command-line interface.
 pub const USAGE: &str =
     "Usage: chess-kit-tui [--engine <path> | <path>] [-- <engine arguments...>]";
@@ -67,7 +64,7 @@ impl TerminalConfig {
         }
 
         Ok(Self {
-            program: program.unwrap_or_else(|| PathBuf::from(DEFAULT_ENGINE_PATH)),
+            program: program.unwrap_or_else(default_engine_path),
             arguments: engine_arguments,
         })
     }
@@ -85,6 +82,15 @@ impl TerminalConfig {
     pub fn arguments(&self) -> &[OsString] {
         &self.arguments
     }
+}
+
+/// default_engine_path returns the platform-specific workspace debug engine.
+///
+/// @return: default engine executable path
+fn default_engine_path() -> PathBuf {
+    Path::new("target")
+        .join("debug")
+        .join(format!("chess-kit{}", std::env::consts::EXE_SUFFIX))
 }
 
 /// `ConfigError` describes invalid terminal-client arguments.

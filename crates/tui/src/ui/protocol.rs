@@ -4,6 +4,7 @@ use ratatui::style::{Color, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 
+use super::text::sanitize;
 use crate::{App, ProtocolDirection};
 
 /// render draws the tail of the raw UCI protocol transcript.
@@ -26,7 +27,7 @@ pub(super) fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 ProtocolDirection::System => ("×", Color::Red),
             };
             Line::styled(
-                format!("{prefix} {}", entry.text),
+                format!("{prefix} {}", sanitize(&entry.text)),
                 Style::default().fg(color),
             )
         })

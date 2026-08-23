@@ -4,6 +4,7 @@ use ratatui::style::{Color, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 
+use super::text::sanitize;
 use crate::{App, Score, ScoreBound, ScoreValue};
 
 /// render draws the latest engine evaluation and principal variation.
@@ -28,11 +29,18 @@ pub(super) fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let elapsed = info
         .elapsed
         .map_or_else(|| "—".to_owned(), |value| format!("{value} ms"));
-    let best_move = analysis.best_move.as_deref().unwrap_or("—");
+    let best_move = analysis
+        .best_move
+        .as_deref()
+        .map_or_else(|| "—".to_owned(), sanitize);
     let principal_variation = if info.principal_variation.is_empty() {
         "—".to_owned()
     } else {
-        info.principal_variation.join(" ")
+        info.principal_variation
+            .iter()
+            .map(|chess_move| sanitize(chess_move))
+            .collect::<Vec<_>>()
+            .join(" ")
     };
     let lines = vec![
         Line::from(format!("Eval {evaluation}   Depth {depth}")),

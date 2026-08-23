@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use chess_kit_comm::uci::UciMove;
+
 use super::{
     EngineMessage, EngineMessageKind, IdentityField, Score, ScoreBound, ScoreValue, SearchInfo,
     UciOption,
@@ -136,11 +138,15 @@ fn parse_info(tokens: Vec<&str>) -> SearchInfo {
                 index = next;
             }
             "pv" => {
-                info.principal_variation = tokens[index + 1..]
+                let mut end = index + 1;
+                while end < tokens.len() && UciMove::from_str(tokens[end]).is_ok() {
+                    end += 1;
+                }
+                info.principal_variation = tokens[index + 1..end]
                     .iter()
                     .map(ToString::to_string)
                     .collect();
-                break;
+                index = end;
             }
             "string" => {
                 info.text = Some(tokens[index + 1..].join(" "));

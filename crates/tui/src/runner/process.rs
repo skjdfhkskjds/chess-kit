@@ -1,8 +1,8 @@
 use std::ffi::OsStr;
 use std::io::{self, BufRead, BufReader, Read, Write};
-use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, Stdio};
+use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, ExitStatus, Stdio};
 use std::str::FromStr;
-use std::sync::mpsc::{self, Receiver, Sender, TryRecvError};
+use std::sync::mpsc::{self, Receiver, SyncSender, TryRecvError};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -10,6 +10,9 @@ use crate::{EngineMessage, UciCommand, UciRunner};
 
 /// SHUTDOWN_GRACE_PERIOD is the time allowed for a clean UCI exit.
 const SHUTDOWN_GRACE_PERIOD: Duration = Duration::from_millis(500);
+
+/// EVENT_BUFFER_CAPACITY bounds unread engine output.
+const EVENT_BUFFER_CAPACITY: usize = 1024;
 
 /// `RunnerEvent` describes output and lifecycle changes from an engine.
 ///
@@ -22,6 +25,15 @@ pub enum RunnerEvent {
     Exited(Option<i32>),
 }
 
+/// `ReaderEvent` adds pipe lifecycle signals to public runner events.
+///
+/// @type
+enum ReaderEvent {
+    Event(RunnerEvent),
+    StandardOutputClosed,
+    StandardErrorClosed,
+}
+
 /// `ProcessRunner` communicates with a local UCI child process.
 ///
 /// Standard output and standard error are drained on dedicated threads so an
@@ -31,7 +43,9 @@ pub enum RunnerEvent {
 pub struct ProcessRunner {
     child: Child,
     input: Option<ChildStdin>,
-    events: Receiver<RunnerEvent>,
+    events: Receiver<ReaderEvent>,
+    exit_status: Option<ExitStatus>,
+    stdout_closed: bool,
     exit_reported: bool,
 }
 
@@ -72,7 +86,9 @@ impl ProcessRunner {
             .stderr
             .take()
             .ok_or_else(|| io::Error::other("engine stderr was not piped"))?;
-        let (sender, events) = mpsc::channel();
+        // Bound unread output so a noisy engine cannot consume memory without
+        // limit while the terminal is processing input and rendering.
+        let (sender, events) = mpsc::sync_channel(EVENT_BUFFER_CAPACITY);
         spawn_stdout_reader(output, sender.clone());
         spawn_stderr_reader(errors, sender);
 
@@ -80,6 +96,8 @@ impl ProcessRunner {
             child,
             input: Some(input),
             events,
+            exit_status: None,
+            stdout_closed: false,
             exit_reported: false,
         })
     }
@@ -91,7 +109,8 @@ impl ProcessRunner {
     fn wait_for_exit(&mut self) -> io::Result<()> {
         let deadline = Instant::now() + SHUTDOWN_GRACE_PERIOD;
         while Instant::now() < deadline {
-            if self.child.try_wait()?.is_some() {
+            if let Some(status) = self.child.try_wait()? {
+                self.exit_status = Some(status);
                 self.exit_reported = true;
                 return Ok(());
             }
@@ -99,7 +118,7 @@ impl ProcessRunner {
         }
 
         self.child.kill()?;
-        self.child.wait()?;
+        self.exit_status = Some(self.child.wait()?);
         self.exit_reported = true;
         Ok(())
     }
@@ -118,13 +137,23 @@ impl UciRunner for ProcessRunner {
 
     /// @impl: UciRunner::try_recv
     fn try_recv(&mut self) -> io::Result<Option<RunnerEvent>> {
-        match self.events.try_recv() {
-            Ok(event) => return Ok(Some(event)),
-            Err(TryRecvError::Empty | TryRecvError::Disconnected) => {}
+        loop {
+            match self.events.try_recv() {
+                Ok(ReaderEvent::Event(event)) => return Ok(Some(event)),
+                Ok(ReaderEvent::StandardOutputClosed) => self.stdout_closed = true,
+                Ok(ReaderEvent::StandardErrorClosed) => {}
+                Err(TryRecvError::Empty | TryRecvError::Disconnected) => break,
+            }
         }
 
+        if self.exit_status.is_none() {
+            self.exit_status = self.child.try_wait()?;
+        }
+        // EOF is queued after all stdout lines, preventing Exited from
+        // overtaking a final bestmove or info response.
         if !self.exit_reported
-            && let Some(status) = self.child.try_wait()?
+            && self.stdout_closed
+            && let Some(status) = self.exit_status
         {
             self.exit_reported = true;
             return Ok(Some(RunnerEvent::Exited(status.code())));
@@ -134,17 +163,20 @@ impl UciRunner for ProcessRunner {
 
     /// @impl: UciRunner::shutdown
     fn shutdown(&mut self) -> io::Result<()> {
-        if self.child.try_wait()?.is_some() {
+        if let Some(status) = self.child.try_wait()? {
             self.input.take();
+            self.exit_status = Some(status);
             self.exit_reported = true;
             return Ok(());
         }
 
-        if let Some(mut input) = self.input.take() {
+        let send_result = self.input.take().map_or(Ok(()), |mut input| {
             writeln!(input, "{}", UciCommand::Quit)?;
-            input.flush()?;
-        }
-        self.wait_for_exit()
+            input.flush()
+        });
+        // Always reap or terminate the child, even after a broken input pipe.
+        let exit_result = self.wait_for_exit();
+        exit_result.and(send_result)
     }
 }
 
@@ -166,7 +198,7 @@ impl Drop for ProcessRunner {
 /// @param: sender - event destination
 /// @return: void
 /// @side-effects: starts a detached reader thread
-fn spawn_stdout_reader(output: ChildStdout, sender: Sender<RunnerEvent>) {
+fn spawn_stdout_reader(output: ChildStdout, sender: SyncSender<ReaderEvent>) {
     thread::spawn(move || {
         read_lines(
             output,
@@ -175,6 +207,7 @@ fn spawn_stdout_reader(output: ChildStdout, sender: Sender<RunnerEvent>) {
                 RunnerEvent::Message(message)
             },
             &sender,
+            ReaderEvent::StandardOutputClosed,
         );
     });
 }
@@ -185,9 +218,14 @@ fn spawn_stdout_reader(output: ChildStdout, sender: Sender<RunnerEvent>) {
 /// @param: sender - event destination
 /// @return: void
 /// @side-effects: starts a detached reader thread
-fn spawn_stderr_reader(errors: ChildStderr, sender: Sender<RunnerEvent>) {
+fn spawn_stderr_reader(errors: ChildStderr, sender: SyncSender<ReaderEvent>) {
     thread::spawn(move || {
-        read_lines(errors, RunnerEvent::StandardError, &sender);
+        read_lines(
+            errors,
+            RunnerEvent::StandardError,
+            &sender,
+            ReaderEvent::StandardErrorClosed,
+        );
     });
 }
 
@@ -198,10 +236,15 @@ fn spawn_stderr_reader(errors: ChildStderr, sender: Sender<RunnerEvent>) {
 /// @param: reader - engine output pipe
 /// @param: map - successful line mapping
 /// @param: sender - event destination
+/// @param: closed - pipe closure signal
 /// @return: void
 /// @side-effects: reads the pipe and sends events
-fn read_lines<ReaderT, MapT>(reader: ReaderT, map: MapT, sender: &Sender<RunnerEvent>)
-where
+fn read_lines<ReaderT, MapT>(
+    reader: ReaderT,
+    map: MapT,
+    sender: &SyncSender<ReaderEvent>,
+    closed: ReaderEvent,
+) where
     ReaderT: Read,
     MapT: Fn(String) -> RunnerEvent,
 {
@@ -210,8 +253,9 @@ where
             Ok(line) => map(line),
             Err(error) => RunnerEvent::Error(error.to_string()),
         };
-        if sender.send(event).is_err() {
+        if sender.send(ReaderEvent::Event(event)).is_err() {
             break;
         }
     }
+    let _ = sender.send(closed);
 }

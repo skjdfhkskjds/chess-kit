@@ -24,8 +24,10 @@ cargo build
 cargo run -p chess-kit-tui
 ```
 
-The default engine path is `target/debug/chess-kit`. Any local UCI engine can
-be selected explicitly:
+The platform-specific default engine path is `target/debug/chess-kit` (with
+`.exe` on Windows) and assumes the TUI is launched from the workspace root.
+Any local UCI engine can be selected explicitly, which is required when
+running elsewhere:
 
 ```sh
 cargo run -p chess-kit-tui -- --engine /path/to/stockfish
@@ -46,6 +48,27 @@ Use `--` after the engine path to forward arguments to the engine process.
 | `p` | Toggle the protocol log |
 | `?` | Toggle help |
 | `q` | Quit |
+
+## First-pass scope
+
+- The implemented transport launches one local child process and speaks UCI
+  over standard input and output. The public runner boundary leaves room for
+  socket or RPC transports, but they are not implemented yet.
+- The client handles `id`, `option`, `uciok`, `readyok`, streaming
+  `info`, and `bestmove`; it sends new-game, position, infinite-search,
+  stop, readiness, option, and shutdown commands.
+- This is an analysis board, not a play-vs-engine mode. `bestmove` is shown
+  but is not automatically played. Moves entered on the board are validated
+  through the toolkit's engine boundary.
+- Promotion currently defaults to a queen. An underpromotion chooser is a
+  follow-up interaction.
+- The full interface requires at least a 40-column by 18-row terminal and uses
+  Unicode chess symbols and color. A too-small terminal receives a resize
+  message; an ASCII piece theme is not part of this POC.
+- UCI initialization/readiness waits are limited to five seconds, a stopped
+  search must return `bestmove` within two seconds, and shutdown allows 500
+  milliseconds before terminating the direct child process. Engines should
+  not daemonize or leave descendants holding inherited output pipes.
 
 ## Design
 

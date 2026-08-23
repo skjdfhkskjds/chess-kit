@@ -78,7 +78,11 @@ impl Display for UciCommand {
                 SearchRequest::Infinite => formatter.write_str("go infinite"),
                 SearchRequest::Depth(depth) => write!(formatter, "go depth {depth}"),
                 SearchRequest::MoveTime(duration) => {
-                    write!(formatter, "go movetime {}", duration.as_millis())
+                    // UCI movetime is an integer millisecond value. Preserve a
+                    // positive sub-millisecond request as the minimum search
+                    // time instead of serializing it as an accidental zero.
+                    let milliseconds = duration.as_millis().max(1);
+                    write!(formatter, "go movetime {milliseconds}")
                 }
             },
             Self::Stop => formatter.write_str("stop"),

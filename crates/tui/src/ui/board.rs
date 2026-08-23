@@ -61,8 +61,12 @@ pub(super) fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
     labels.extend(files);
     lines.push(Line::from(labels));
 
+    let title = app.selected().map_or_else(
+        || format!(" Board · cursor {} ", app.cursor()),
+        |selected| format!(" Board · cursor {} · sel {selected} ", app.cursor()),
+    );
     frame.render_widget(
-        Paragraph::new(lines).block(Block::default().title(" Board ").borders(Borders::ALL)),
+        Paragraph::new(lines).block(Block::default().title(title).borders(Borders::ALL)),
         area,
     );
 }
@@ -85,7 +89,10 @@ fn square_style(square: Square, app: &App, file: usize, rank: usize) -> Style {
         style = style.bg(Color::Blue).add_modifier(Modifier::BOLD);
     }
     if app.cursor() == square {
-        style = style.bg(Color::Yellow).fg(Color::Black);
+        style = style
+            .bg(Color::Yellow)
+            .fg(Color::Black)
+            .add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
     }
     style
 }

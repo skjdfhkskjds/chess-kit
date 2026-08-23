@@ -162,8 +162,7 @@ impl App {
             ConnectionState::Ready => {
                 self.connection = ConnectionState::Searching;
                 self.status = "Searching".to_owned();
-                self.analysis.best_move = None;
-                self.analysis.ponder = None;
+                self.analysis = Default::default();
                 vec![
                     self.sync_position(),
                     self.send(UciCommand::Go(SearchRequest::Infinite)),
@@ -261,6 +260,7 @@ impl App {
             Ok(()) => {
                 self.moves.push(UciMove::from(chess_move).to_string());
                 self.position = self.game.position();
+                self.analysis = Default::default();
                 self.selected = None;
                 self.error = None;
                 self.status = "Position updated".to_owned();

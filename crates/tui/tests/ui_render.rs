@@ -46,10 +46,14 @@ fn renders_board_identity_analysis_and_controls() {
 #[test]
 fn renders_a_narrow_fallback_without_panicking() {
     let app = populated_app();
-    let screen = render_to_string(&app, 42, 28);
+    let narrow = render_to_string(&app, 42, 28);
+    let below_breakpoint = render_to_string(&app, 75, 28);
+    let at_breakpoint = render_to_string(&app, 76, 28);
 
-    assert!(screen.contains("Board"));
-    assert!(screen.contains("Moves"));
+    assert!(narrow.contains("Board"));
+    assert!(narrow.contains("Moves"));
+    assert!(below_breakpoint.contains("Board"));
+    assert!(at_breakpoint.contains("Board"));
 }
 
 #[test]
@@ -62,6 +66,39 @@ fn renders_help_and_protocol_overlays() {
     assert!(screen.contains("UCI protocol"));
     assert!(screen.contains("Keyboard help"));
     assert!(screen.contains("Toggle raw protocol"));
+}
+
+#[test]
+fn escapes_engine_control_characters_before_rendering() {
+    let mut app = populated_app();
+    app.update(Action::Runner(RunnerEvent::Message(
+        EngineMessage::from_str("id name unsafe\u{1b}[2J\u{7}").unwrap(),
+    )));
+    app.update(Action::ToggleProtocol);
+
+    let screen = render_to_string(&app, 100, 30);
+
+    assert!(!screen.contains('\u{1b}'));
+    assert!(!screen.contains('\u{7}'));
+    assert!(screen.contains("\\x1b"));
+}
+
+#[test]
+fn renders_an_explicit_too_small_message() {
+    let app = populated_app();
+    let screen = render_to_string(&app, 30, 8);
+
+    assert!(screen.contains("Terminal too small"));
+    assert!(!screen.contains("Board"));
+}
+
+#[test]
+fn exposes_selection_without_relying_only_on_color() {
+    let mut app = populated_app();
+    app.update(Action::SelectSquare);
+    let screen = render_to_string(&app, 100, 30);
+
+    assert!(screen.contains("sel e2"));
 }
 
 fn populated_app() -> App {

@@ -36,6 +36,8 @@ adapters over that API:
 - **UCI** (`cargo run`): maps UCI text to `EngineApi` and prints UCI responses
 - **Interactive CLI** (`cargo run --example game`): prompts, board display, and
   human move UX over the same API
+- **Interactive TUI** (`cargo run -p chess-kit-tui`): runs an analysis board
+  against the workspace engine or another local UCI executable
 
 ## UCI
 

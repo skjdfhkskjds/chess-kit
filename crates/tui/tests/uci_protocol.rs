@@ -35,6 +35,10 @@ fn serializes_the_supported_command_set() {
             UciCommand::Go(SearchRequest::MoveTime(Duration::from_millis(250))),
             "go movetime 250",
         ),
+        (
+            UciCommand::Go(SearchRequest::MoveTime(Duration::from_nanos(1))),
+            "go movetime 1",
+        ),
         (UciCommand::Go(SearchRequest::Infinite), "go infinite"),
         (UciCommand::Stop, "stop"),
         (UciCommand::Quit, "quit"),
@@ -80,7 +84,7 @@ fn parses_identity_options_and_handshake_messages() {
 #[test]
 fn parses_reordered_search_information_and_best_move() {
     let message = EngineMessage::from_str(
-        "info nodes 4200 score mate -3 upperbound nps 210000 depth 18 hashfull 42 pv e2e4 e7e5",
+        "info nodes 4200 pv e2e4 e7e5 score mate -3 upperbound nps 210000 depth 18 hashfull 42",
     )
     .unwrap();
     let EngineMessageKind::Info(info) = message.kind() else {
