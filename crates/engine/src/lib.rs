@@ -6,14 +6,17 @@
 
 mod engine;
 mod error;
+mod threaded;
 mod types;
 
 pub use chess_kit_position::PositionSnapshot;
 pub use engine::DefaultEngine;
 pub use error::EngineError;
+pub use threaded::{AsyncEngine, SearchCompletion, SearchTaskId, ThreadedEngine};
 pub use types::{EngineConfig, PositionBase, SearchLimits, SearchOutcome};
 
 use chess_kit_primitives::Move;
+use chess_kit_search::SearchControl;
 
 /// `Engine` is the protocol-agnostic session surface used by presentation
 /// adapters
@@ -65,6 +68,25 @@ pub trait Engine {
     ///
     /// @return: true when at least one legal move exists
     fn has_legal_moves(&self) -> bool;
+}
+
+/// `ControllableEngine` extends synchronous search with external stop control.
+///
+/// The separate capability keeps simple synchronous adapters source-compatible
+/// while allowing [`ThreadedEngine`] to interrupt a worker-owned search.
+///
+/// @trait
+pub trait ControllableEngine: Engine {
+    /// search_with_control searches while observing caller-supplied stop state.
+    ///
+    /// @param: limits - depth and time constraints for the search
+    /// @param: control - external cancellation and deadline state
+    /// @return: completed outcome, or an engine error
+    fn search_with_control(
+        &mut self,
+        limits: &SearchLimits,
+        control: &SearchControl,
+    ) -> Result<SearchOutcome, EngineError>;
 }
 
 /// `PositionProvider` exposes an owned view of an engine's current position

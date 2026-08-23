@@ -7,11 +7,12 @@ use chess_kit_position::{
     DefaultPosition, Fen, PositionMoves, PositionSnapshot, PositionView, Setup,
 };
 use chess_kit_primitives::{Move, MoveList, MoveType, SearchDepth, Sides};
-use chess_kit_search::{Negamax, SearchNode, iterative_deepening_until};
+use chess_kit_search::{Negamax, SearchControl, SearchNode, iterative_deepening_with_control};
 use chess_kit_transposition::{DefaultTranspositionTable, TranspositionTable};
 
 use crate::{
-    Engine, EngineConfig, EngineError, PositionBase, PositionProvider, SearchLimits, SearchOutcome,
+    ControllableEngine, Engine, EngineConfig, EngineError, PositionBase, PositionProvider,
+    SearchLimits, SearchOutcome,
 };
 
 type EnginePosition = DefaultPosition<DefaultAttackTable>;
@@ -155,17 +156,34 @@ impl Engine for DefaultEngine {
 
     /// @impl: Engine::search
     fn search(&mut self, limits: &SearchLimits) -> Result<SearchOutcome, EngineError> {
+        self.search_with_control(limits, &SearchControl::new(None))
+    }
+
+    /// @impl: Engine::has_legal_moves
+    fn has_legal_moves(&self) -> bool {
+        !self.primitive_legal_moves().as_slice().is_empty()
+    }
+}
+
+impl ControllableEngine for DefaultEngine {
+    /// @impl: ControllableEngine::search_with_control
+    fn search_with_control(
+        &mut self,
+        limits: &SearchLimits,
+        control: &SearchControl,
+    ) -> Result<SearchOutcome, EngineError> {
         let started = Instant::now();
         let deadline = time_limit(limits, self.position.turn())
             .and_then(|time_limit| started.checked_add(time_limit));
-        let completed = iterative_deepening_until(
+        let control = control.with_deadline(deadline);
+        let completed = iterative_deepening_with_control(
             &mut self.search,
             &mut self.position,
             &self.move_generator,
             &mut self.transposition_table,
             &mut self.accumulator,
             limits.maximum_depth.get(),
-            deadline,
+            &control,
         );
         let depth = SearchDepth::new(completed.depth)
             .expect("iterative deepening always completes positive depth one");
@@ -175,11 +193,6 @@ impl Engine for DefaultEngine {
             depth,
             started.elapsed(),
         )))
-    }
-
-    /// @impl: Engine::has_legal_moves
-    fn has_legal_moves(&self) -> bool {
-        !self.primitive_legal_moves().as_slice().is_empty()
     }
 }
 
