@@ -97,6 +97,9 @@ pub trait UciEngine {
 
     /// set_position replaces the current engine position
     ///
+    /// An active search is cancelled and its completion discarded before this
+    /// method returns, including when the position is rejected.
+    ///
     /// @param: position - base position and move history to apply
     /// @return: Ok on success, or the engine error
     /// @side-effects: modifies the current engine position

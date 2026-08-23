@@ -30,10 +30,11 @@
 
 Toolkit crates (`position`, `search`, `eval`, …) stay focused on chess
 mechanics. The [`engine`](crates/engine) crate composes them into a single
-session API (`Engine`). Entry points are thin presentation
-adapters over that API:
+session API. Entry points are thin presentation adapters over its synchronous
+`Engine` or asynchronous `AsyncEngine` boundary:
 
-- **UCI** (`cargo run`): maps UCI text to `Engine` and prints UCI responses
+- **UCI** (`cargo run`): maps UCI text to a long-lived `ThreadedEngine` and
+  prints asynchronous UCI responses
 - **Interactive CLI** (`cargo run --example game`): prompts, board display, and
   human move UX over the same API
 - **Interactive TUI** (`cargo run -p chess-kit-tui`): plays as White against
@@ -51,11 +52,18 @@ cargo run --release
 
 It supports the minimum command set needed by common chess GUIs and SPRT
 runners: `uci`, `isready`, `ucinewgame`, `position startpos`, `position fen`,
-clock-based `go`, `go movetime`, `go depth`, and `quit`. Clock searches allocate
-time for the side to move, deepen until that deadline, and return the last fully
-completed iteration. An explicit depth is a maximum when combined with a time
-control. The synchronous protocol loop also parses `go nodes`, `stop`, and
-`ponderhit`, but does not yet interrupt a running search from a later command.
+clock-based `go`, `go movetime`, `go depth`, `go infinite`, `stop`, and `quit`.
+Clock searches allocate time for the side to move, deepen until that deadline,
+and return the last fully completed iteration. An explicit depth is a maximum
+when combined with a time control.
+
+UCI search runs on a long-lived worker thread. The protocol remains responsive
+while a search is active, so `isready` is answered immediately and `stop`
+requests cancellation without waiting for the worker's command queue. Every
+search completes depth one before observing its stop conditions, guaranteeing a
+legal fallback move even when it is cancelled immediately. The worker, task,
+and completion APIs live in the protocol-neutral `engine` crate and use only
+standard-library threads, channels, and atomics.
 
 See [docs/sprt.md](docs/sprt.md) for an initial local SPRT workflow.
 

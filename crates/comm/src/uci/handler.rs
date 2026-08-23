@@ -49,25 +49,34 @@ where
 
     /// poll_search writes a completed asynchronous search result when ready.
     ///
-    /// @return: Ok after polling the engine, or an I/O error
+    /// @return: true when polling wrote output, or an I/O error
     /// @side-effects: may consume engine completion state and write a response
-    pub(super) fn poll_search(&mut self) -> io::Result<()> {
+    pub(super) fn poll_search(&mut self) -> io::Result<bool> {
         if self.active_search.is_none() {
-            return Ok(());
+            return Ok(false);
         }
 
         match self.engine.poll_search() {
             Ok(Some(result)) => {
                 self.active_search = None;
-                self.write_search_result(&result)
+                self.write_search_result(&result)?;
+                Ok(true)
             }
-            Ok(None) => Ok(()),
+            Ok(None) => Ok(false),
             Err(error) => {
                 self.active_search = None;
                 self.write_error(error)?;
-                writeln!(self.writer, "bestmove 0000")
+                writeln!(self.writer, "bestmove 0000")?;
+                Ok(true)
             }
         }
+    }
+
+    /// has_active_search reports whether completion polling is required.
+    ///
+    /// @return: true while the handler is waiting for a search result
+    pub(super) const fn has_active_search(&self) -> bool {
+        self.active_search.is_some()
     }
 
     /// handle routes one parsed command to its command-specific adapter
@@ -137,8 +146,11 @@ where
     /// @return: Ok after handling the command, or an I/O error
     /// @side-effects: modifies engine state and may write an error response
     fn handle_position(&mut self, position: &PositionCommand) -> io::Result<()> {
-        self.cancel_active_search()?;
-        if let Err(error) = self.engine.set_position(position) {
+        let result = self.engine.set_position(position);
+        // Position updates own cancellation and discard through the engine
+        // boundary, including protocol conversion failures.
+        self.active_search = None;
+        if let Err(error) = result {
             self.write_error(error)?;
         }
         Ok(())

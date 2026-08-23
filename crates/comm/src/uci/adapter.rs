@@ -85,7 +85,16 @@ where
             .iter()
             .map(Move::try_from)
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|error| EngineError::new(error.to_string()))?;
+            .map_err(|error| EngineError::new(error.to_string()));
+        let moves = match moves {
+            Ok(moves) => moves,
+            Err(error) => {
+                if let Some(task_id) = self.active_search.take() {
+                    self.engine.discard_search(task_id)?;
+                }
+                return Err(error);
+            }
+        };
         self.active_search = None;
         self.engine.set_position(command.base.clone(), &moves)
     }
@@ -142,9 +151,11 @@ where
 #[cfg(test)]
 mod tests {
     use std::collections::VecDeque;
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
 
-    use chess_kit_engine::{PositionBase, SearchCompletion, SearchOutcome};
+    use chess_kit_engine::{
+        DefaultEngine, EngineConfig, PositionBase, SearchCompletion, SearchOutcome, ThreadedEngine,
+    };
     use chess_kit_primitives::{Pieces, Square};
 
     use super::*;
@@ -156,6 +167,7 @@ mod tests {
         completions: VecDeque<SearchCompletion>,
         next_task_id: u64,
         complete_on_start: bool,
+        discarded_tasks: Vec<SearchTaskId>,
     }
 
     impl Default for TestEngine {
@@ -166,6 +178,7 @@ mod tests {
                 completions: VecDeque::new(),
                 next_task_id: 0,
                 complete_on_start: true,
+                discarded_tasks: Vec::new(),
             }
         }
     }
@@ -217,6 +230,13 @@ mod tests {
 
         fn try_search_completion(&mut self) -> Result<Option<SearchCompletion>, EngineError> {
             Ok(self.completions.pop_front())
+        }
+
+        fn discard_search(&mut self, task_id: SearchTaskId) -> Result<bool, EngineError> {
+            self.discarded_tasks.push(task_id);
+            self.completions
+                .retain(|completion| completion.task_id != task_id);
+            Ok(true)
         }
 
         fn stop_search(&mut self, _task_id: SearchTaskId) -> Result<bool, EngineError> {
@@ -315,5 +335,80 @@ mod tests {
         let result = adapter.poll_search().unwrap().unwrap();
         assert_eq!(result.info.depth.map(SearchDepth::get), Some(2));
         assert!(adapter.poll_search().unwrap().is_none());
+    }
+
+    #[test]
+    fn position_conversion_failure_discards_the_active_search() {
+        let engine = TestEngine {
+            complete_on_start: false,
+            ..TestEngine::default()
+        };
+        let mut adapter = UciAdapter::new(engine, SearchDepth::new(4).unwrap());
+        let old_task = adapter.start_search(&SearchLimits::default()).unwrap();
+
+        assert!(
+            adapter
+                .set_position(&PositionCommand {
+                    base: PositionBase::StartPos,
+                    moves: vec![UciMove::null()],
+                })
+                .is_err()
+        );
+        assert_eq!(adapter.engine().discarded_tasks, [old_task]);
+        assert!(adapter.poll_search().unwrap().is_none());
+
+        adapter.engine_mut().complete_on_start = true;
+        adapter
+            .start_search(&SearchLimits {
+                depth: Some(SearchDepth::new(2).unwrap()),
+                ..SearchLimits::default()
+            })
+            .unwrap();
+        let result = adapter.poll_search().unwrap().unwrap();
+        assert_eq!(result.info.depth.map(SearchDepth::get), Some(2));
+    }
+
+    #[test]
+    fn threaded_engine_starts_again_after_invalid_position_discards_search() {
+        let engine = DefaultEngine::new(EngineConfig::new(1)).unwrap();
+        let engine = ThreadedEngine::new(engine).unwrap();
+        let mut adapter = UciAdapter::new(engine, SearchDepth::new(4).unwrap());
+        adapter
+            .start_search(&SearchLimits {
+                infinite: true,
+                ..SearchLimits::default()
+            })
+            .unwrap();
+
+        assert!(
+            adapter
+                .set_position(&PositionCommand {
+                    base: PositionBase::StartPos,
+                    moves: vec![UciMove::null()],
+                })
+                .is_err()
+        );
+        assert!(adapter.poll_search().unwrap().is_none());
+
+        adapter
+            .start_search(&SearchLimits {
+                depth: Some(SearchDepth::new(1).unwrap()),
+                ..SearchLimits::default()
+            })
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(2);
+        let result = loop {
+            if let Some(result) = adapter.poll_search().unwrap() {
+                break result;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "timed out waiting for replacement search"
+            );
+            std::thread::yield_now();
+        };
+
+        assert_eq!(result.info.depth.map(SearchDepth::get), Some(1));
+        adapter.into_inner().shutdown().unwrap();
     }
 }

@@ -126,30 +126,44 @@ where
 {
     let mut handler = UciHandler::new(engine, writer);
     loop {
-        handler.poll_search()?;
-        handler.flush()?;
+        if handler.poll_search()? {
+            handler.flush()?;
+        }
 
-        match inputs.recv_timeout(SEARCH_POLL_INTERVAL) {
-            Ok(ProtocolInput::Command(command)) => {
+        // Without an active search there is no asynchronous work to poll, so
+        // block until input arrives. While searching, bound the wait so a
+        // completion is published even when the GUI sends no later command.
+        let input = if handler.has_active_search() {
+            match inputs.recv_timeout(SEARCH_POLL_INTERVAL) {
+                Ok(input) => input,
+                Err(RecvTimeoutError::Timeout) => continue,
+                Err(RecvTimeoutError::Disconnected) => return Ok(()),
+            }
+        } else {
+            match inputs.recv() {
+                Ok(input) => input,
+                Err(_) => return Ok(()),
+            }
+        };
+
+        match input {
+            ProtocolInput::Command(command) => {
                 if handler.handle(command)? == CommandFlow::Quit {
                     return Ok(());
                 }
                 handler.flush()?;
             }
-            Ok(ProtocolInput::ParseError(error)) => {
+            ProtocolInput::ParseError(error) => {
                 handler.write_error(error)?;
                 handler.flush()?;
             }
-            Ok(ProtocolInput::EndOfInput) => return Ok(()),
-            Err(RecvTimeoutError::Timeout) => {}
-            Err(RecvTimeoutError::Disconnected) => return Ok(()),
+            ProtocolInput::EndOfInput => return Ok(()),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::convert::Infallible;
     use std::io::{Cursor, Read};
     use std::sync::{Arc, Condvar, Mutex};
 
@@ -165,9 +179,11 @@ mod tests {
         debug: Option<bool>,
         started_limits: Vec<SearchLimits>,
         stopped_tasks: Vec<usize>,
+        discarded_tasks: Vec<usize>,
         completion: Option<SearchResult>,
         complete_on_start: bool,
         completion_signal: Option<Arc<(Mutex<bool>, Condvar)>>,
+        active_search: Option<usize>,
         ponder_hits: usize,
     }
 
@@ -183,7 +199,7 @@ mod tests {
     }
 
     impl UciEngine for TestEngine {
-        type Error = Infallible;
+        type Error = String;
         type SearchTaskId = usize;
 
         fn name(&self) -> &str {
@@ -195,11 +211,22 @@ mod tests {
         }
 
         fn new_game(&mut self) -> Result<(), Self::Error> {
+            if let Some(task_id) = self.active_search.take() {
+                self.discarded_tasks.push(task_id);
+                self.completion = None;
+            }
             self.new_games += 1;
             Ok(())
         }
 
         fn set_position(&mut self, position: &PositionCommand) -> Result<(), Self::Error> {
+            if let Some(task_id) = self.active_search.take() {
+                self.discarded_tasks.push(task_id);
+                self.completion = None;
+            }
+            if position.moves.iter().any(|mv| matches!(mv, UciMove::Null)) {
+                return Err("invalid move: 0000".to_owned());
+            }
             self.positions.push(position.clone());
             Ok(())
         }
@@ -210,6 +237,7 @@ mod tests {
         ) -> Result<Self::SearchTaskId, Self::Error> {
             let task_id = self.started_limits.len();
             self.started_limits.push(limits.clone());
+            self.active_search = Some(task_id);
             if self.complete_on_start {
                 self.completion = Some(search_result());
             }
@@ -218,6 +246,9 @@ mod tests {
 
         fn poll_search(&mut self) -> Result<Option<SearchResult>, Self::Error> {
             let completion = self.completion.take();
+            if completion.is_some() {
+                self.active_search = None;
+            }
             if completion.is_some()
                 && let Some(signal) = &self.completion_signal
             {
@@ -229,6 +260,9 @@ mod tests {
         }
 
         fn stop_search(&mut self, task_id: Self::SearchTaskId) -> Result<bool, Self::Error> {
+            if self.active_search != Some(task_id) {
+                return Ok(false);
+            }
             self.stopped_tasks.push(task_id);
             self.completion = Some(search_result());
             Ok(true)
@@ -280,7 +314,7 @@ mod tests {
         let mut engine = TestEngine::default();
 
         {
-            let engine: &mut (dyn UciEngine<Error = Infallible, SearchTaskId = usize> + Send) =
+            let engine: &mut (dyn UciEngine<Error = String, SearchTaskId = usize> + Send) =
                 &mut engine;
             run_with_io(engine, input, &mut output).unwrap();
         }
@@ -320,6 +354,23 @@ mod tests {
                 .unwrap()
                 .contains("bestmove e2e4\n")
         );
+    }
+
+    #[test]
+    fn invalid_position_discards_search_before_starting_the_next() {
+        let input =
+            Cursor::new(b"go infinite\nposition startpos moves 0000\ngo depth 2\nstop\nquit\n");
+        let mut output = Vec::new();
+        let mut engine = TestEngine::default();
+
+        run_with_io(&mut engine, input, &mut output).unwrap();
+
+        assert_eq!(engine.started_limits.len(), 2);
+        assert_eq!(engine.discarded_tasks, [0]);
+        assert_eq!(engine.stopped_tasks, [1]);
+        let output = String::from_utf8(output).unwrap();
+        assert!(output.starts_with("info string error: invalid move: 0000\n"));
+        assert_eq!(output.matches("bestmove e2e4\n").count(), 1);
     }
 
     /// `WaitForCompletionReader` blocks EOF until the handler polls a result.

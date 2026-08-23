@@ -1,4 +1,5 @@
 use std::fmt::{self, Display};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender, TryRecvError};
 use std::thread::{self, JoinHandle};
 
@@ -7,15 +8,21 @@ use chess_kit_search::{SearchCancellation, SearchControl};
 
 use crate::{ControllableEngine, EngineError, PositionBase, SearchLimits, SearchOutcome};
 
+/// NEXT_ENGINE_SCOPE supplies process-local scopes for threaded task IDs.
+static NEXT_ENGINE_SCOPE: AtomicU64 = AtomicU64::new(1);
+
 /// `SearchTaskId` uniquely identifies a search submitted to a threaded engine.
 ///
-/// IDs are local to one [`ThreadedEngine`] instance. Keeping them opaque
-/// prevents callers from accidentally treating results from different engine
-/// sessions as interchangeable.
+/// IDs are local to the asynchronous engine that issued them. The distinct
+/// type prevents callers from accidentally substituting an unrelated integer;
+/// callers must still return an identifier to its originating engine.
 ///
 /// @type
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct SearchTaskId(u64);
+pub struct SearchTaskId {
+    scope: u64,
+    sequence: u64,
+}
 
 impl SearchTaskId {
     /// new creates a task identifier for an asynchronous engine implementation.
@@ -27,20 +34,31 @@ impl SearchTaskId {
     /// @param: value - identifier value scoped by the implementing engine
     /// @return: typed search task identifier
     pub const fn new(value: u64) -> Self {
-        Self(value)
+        Self {
+            scope: 0,
+            sequence: value,
+        }
     }
 
     /// get returns the task's numeric identifier.
     ///
     /// @return: task identifier local to one threaded engine
     pub const fn get(self) -> u64 {
-        self.0
+        self.sequence
+    }
+
+    const fn scoped(scope: u64, sequence: u64) -> Self {
+        Self { scope, sequence }
     }
 }
 
 impl Display for SearchTaskId {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(formatter)
+        if self.scope == 0 {
+            self.sequence.fmt(formatter)
+        } else {
+            write!(formatter, "{}:{}", self.scope, self.sequence)
+        }
     }
 }
 
@@ -107,8 +125,6 @@ pub trait AsyncEngine {
 
     /// start_search submits one search and returns immediately.
     ///
-    /// Only one task may be active in this first worker implementation.
-    ///
     /// @param: limits - depth and time constraints for the search
     /// @return: submitted task identifier, or the engine error
     /// @side-effects: queues search work on the worker thread
@@ -119,6 +135,16 @@ pub trait AsyncEngine {
     /// @return: ready completion, None when searching, or the engine error
     /// @side-effects: consumes a ready completion event
     fn try_search_completion(&mut self) -> Result<Option<SearchCompletion>, EngineError>;
+
+    /// discard_search cancels and consumes a matching active search.
+    ///
+    /// Unlike [`Self::stop_search`], discarding waits for the worker and removes
+    /// the completion so it cannot be published later.
+    ///
+    /// @param: task_id - active task to cancel and discard
+    /// @return: true when the matching task was discarded, or the engine error
+    /// @side-effects: may block until cancellation completes and consumes its result
+    fn discard_search(&mut self, task_id: SearchTaskId) -> Result<bool, EngineError>;
 
     /// stop_search requests cancellation for the matching active search.
     ///
@@ -133,7 +159,8 @@ pub trait AsyncEngine {
 /// Commands are serialized through a typed channel. Cancellation deliberately
 /// bypasses that channel because the worker cannot receive commands while it is
 /// inside a search; each task instead owns an independent atomic cancellation
-/// token.
+/// token. This first implementation accepts one active task at a time; the
+/// task and completion boundary leaves scheduling policy private.
 ///
 /// @marker: EngineT - controllable synchronous engine owned by the worker
 /// @type
@@ -146,6 +173,7 @@ where
     commands: Option<Sender<Command>>,
     completions: Receiver<SearchCompletion>,
     active: Option<ActiveSearch>,
+    task_scope: u64,
     next_task_id: u64,
     worker: Option<JoinHandle<EngineT>>,
 }
@@ -160,6 +188,8 @@ struct ActiveSearch {
 /// Keeping the task separate from the command transport leaves room for a
 /// future scheduler to queue or distribute tasks without reshaping the engine
 /// command protocol.
+///
+/// @type
 struct SearchTask {
     task_id: SearchTaskId,
     limits: SearchLimits,
@@ -187,6 +217,11 @@ where
     /// @return: threaded engine facade, or an engine error when spawning fails
     /// @side-effects: spawns one operating-system thread
     pub fn new(engine: EngineT) -> Result<Self, EngineError> {
+        let task_scope = NEXT_ENGINE_SCOPE
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |scope| {
+                scope.checked_add(1)
+            })
+            .map_err(|_| EngineError::new("engine search task scopes exhausted"))?;
         let name = engine.name().to_owned();
         let author = engine.author().to_owned();
         let (command_sender, command_receiver) = mpsc::channel();
@@ -202,6 +237,7 @@ where
             commands: Some(command_sender),
             completions,
             active: None,
+            task_scope,
             next_task_id: 1,
             worker: Some(worker),
         })
@@ -244,10 +280,24 @@ where
     }
 
     fn finish_active_search(&mut self) -> Result<(), EngineError> {
-        let Some(active) = self.active.take() else {
+        let Some(task_id) = self.active.as_ref().map(|active| active.task_id) else {
             return Ok(());
         };
+        self.finish_search(task_id).map(|_| ())
+    }
 
+    fn finish_search(&mut self, task_id: SearchTaskId) -> Result<bool, EngineError> {
+        let Some(active) = self.active.as_ref() else {
+            return Ok(false);
+        };
+        if active.task_id != task_id {
+            return Ok(false);
+        }
+
+        let active = self
+            .active
+            .take()
+            .expect("active search was checked immediately before it was taken");
         active.cancellation.cancel();
         let completion = self.completions.recv().map_err(|_| worker_stopped())?;
         if completion.task_id != active.task_id {
@@ -256,7 +306,7 @@ where
                 completion.task_id, active.task_id
             )));
         }
-        Ok(())
+        Ok(true)
     }
 
     fn send_shutdown(&mut self) {
@@ -278,19 +328,23 @@ impl<EngineT> AsyncEngine for ThreadedEngine<EngineT>
 where
     EngineT: ControllableEngine + Send + 'static,
 {
+    /// @impl: AsyncEngine::name
     fn name(&self) -> &str {
         &self.name
     }
 
+    /// @impl: AsyncEngine::author
     fn author(&self) -> &str {
         &self.author
     }
 
+    /// @impl: AsyncEngine::new_game
     fn new_game(&mut self) -> Result<(), EngineError> {
         self.finish_active_search()?;
         self.request(Command::NewGame)
     }
 
+    /// @impl: AsyncEngine::set_position
     fn set_position(&mut self, base: PositionBase, moves: &[Move]) -> Result<(), EngineError> {
         self.finish_active_search()?;
         self.request(|reply| Command::SetPosition {
@@ -300,12 +354,13 @@ where
         })
     }
 
+    /// @impl: AsyncEngine::start_search
     fn start_search(&mut self, limits: SearchLimits) -> Result<SearchTaskId, EngineError> {
         if self.active.is_some() {
             return Err(EngineError::new("an engine search is already active"));
         }
 
-        let task_id = SearchTaskId::new(self.next_task_id);
+        let task_id = SearchTaskId::scoped(self.task_scope, self.next_task_id);
         let next_task_id = self
             .next_task_id
             .checked_add(1)
@@ -326,6 +381,7 @@ where
         Ok(task_id)
     }
 
+    /// @impl: AsyncEngine::try_search_completion
     fn try_search_completion(&mut self) -> Result<Option<SearchCompletion>, EngineError> {
         match self.completions.try_recv() {
             Ok(completion) => {
@@ -343,6 +399,12 @@ where
         }
     }
 
+    /// @impl: AsyncEngine::discard_search
+    fn discard_search(&mut self, task_id: SearchTaskId) -> Result<bool, EngineError> {
+        self.finish_search(task_id)
+    }
+
+    /// @impl: AsyncEngine::stop_search
     fn stop_search(&mut self, task_id: SearchTaskId) -> Result<bool, EngineError> {
         let Some(active) = &self.active else {
             return Ok(false);
@@ -577,7 +639,7 @@ mod tests {
         assert!(threaded.start_search(limits).is_err());
         assert!(
             !threaded
-                .stop_search(SearchTaskId(task_id.get() + 1))
+                .stop_search(SearchTaskId::new(task_id.get() + 1))
                 .unwrap()
         );
         assert!(threaded.stop_search(task_id).unwrap());
@@ -588,6 +650,50 @@ mod tests {
         started.recv_timeout(Duration::from_secs(1)).unwrap();
         assert!(threaded.stop_search(next_task_id).unwrap());
         receive_completion(&mut threaded);
+    }
+
+    #[test]
+    fn task_ids_do_not_cancel_searches_owned_by_another_worker() {
+        let (first_engine, first_started, _first_dropped) = TestEngine::new();
+        let (second_engine, second_started, _second_dropped) = TestEngine::new();
+        let mut first = ThreadedEngine::new(first_engine).unwrap();
+        let mut second = ThreadedEngine::new(second_engine).unwrap();
+        let limits = SearchLimits::depth(SearchDepth::new(2).unwrap());
+
+        let first_task = first.start_search(limits).unwrap();
+        let second_task = second.start_search(limits).unwrap();
+        first_started.recv_timeout(Duration::from_secs(1)).unwrap();
+        second_started.recv_timeout(Duration::from_secs(1)).unwrap();
+
+        assert_ne!(first_task, second_task);
+        assert!(!first.stop_search(second_task).unwrap());
+        assert!(!second.stop_search(first_task).unwrap());
+        assert!(first.stop_search(first_task).unwrap());
+        assert!(second.stop_search(second_task).unwrap());
+        receive_completion(&mut first);
+        receive_completion(&mut second);
+    }
+
+    #[test]
+    fn discarding_search_consumes_only_the_matching_completion() {
+        let (engine, started, _dropped) = TestEngine::new();
+        let mut threaded = ThreadedEngine::new(engine).unwrap();
+        let limits = SearchLimits::depth(SearchDepth::new(2).unwrap());
+        let first_task = threaded.start_search(limits).unwrap();
+        started.recv_timeout(Duration::from_secs(1)).unwrap();
+
+        assert!(
+            !threaded
+                .discard_search(SearchTaskId::new(first_task.get()))
+                .unwrap()
+        );
+        assert!(threaded.discard_search(first_task).unwrap());
+        assert!(threaded.try_search_completion().unwrap().is_none());
+
+        let second_task = threaded.start_search(limits).unwrap();
+        started.recv_timeout(Duration::from_secs(1)).unwrap();
+        assert!(threaded.stop_search(second_task).unwrap());
+        assert_eq!(receive_completion(&mut threaded).task_id, second_task);
     }
 
     #[test]

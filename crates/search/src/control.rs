@@ -94,14 +94,21 @@ impl SearchControl {
                 .is_some_and(|deadline| Instant::now() >= deadline)
     }
 
-    /// `with_deadline` replaces the deadline while retaining cancellation.
+    /// `with_deadline` adds a deadline while retaining stricter existing control.
     ///
     /// This supports layers that independently contribute time allocation and
-    /// explicit task cancellation without exposing either internal field.
+    /// explicit task cancellation without exposing either internal field. A
+    /// missing deadline preserves the existing one, while two deadlines retain
+    /// the earlier instant so an outer layer cannot extend an existing limit.
     ///
-    /// @param: deadline - replacement instant at which search should stop
-    /// @return: cloned search control with the replacement deadline
+    /// @param: deadline - additional instant at which search should stop
+    /// @return: cloned search control with the earliest configured deadline
     pub fn with_deadline(&self, deadline: Option<Instant>) -> Self {
+        let deadline = match (self.deadline, deadline) {
+            (Some(existing), Some(additional)) => Some(existing.min(additional)),
+            (Some(existing), None) => Some(existing),
+            (None, additional) => additional,
+        };
         Self {
             deadline,
             cancellation: self.cancellation.clone(),
@@ -142,7 +149,7 @@ mod tests {
     }
 
     #[test]
-    fn replacing_deadline_preserves_explicit_cancellation() {
+    fn adding_deadline_preserves_explicit_cancellation() {
         let cancellation = SearchCancellation::new();
         let control = SearchControl::with_cancellation(None, cancellation.clone());
         let expired = control.with_deadline(Some(Instant::now()));
@@ -152,5 +159,31 @@ mod tests {
 
         cancellation.cancel();
         assert!(control.should_stop());
+    }
+
+    #[test]
+    fn missing_additional_deadline_preserves_existing_deadline() {
+        let existing = Instant::now() + std::time::Duration::from_secs(1);
+        let control = SearchControl::new(Some(existing)).with_deadline(None);
+
+        assert_eq!(control.deadline, Some(existing));
+    }
+
+    #[test]
+    fn earlier_additional_deadline_wins() {
+        let earlier = Instant::now() + std::time::Duration::from_secs(1);
+        let later = earlier + std::time::Duration::from_secs(1);
+        let control = SearchControl::new(Some(later)).with_deadline(Some(earlier));
+
+        assert_eq!(control.deadline, Some(earlier));
+    }
+
+    #[test]
+    fn later_additional_deadline_does_not_extend_existing_deadline() {
+        let earlier = Instant::now() + std::time::Duration::from_secs(1);
+        let later = earlier + std::time::Duration::from_secs(1);
+        let control = SearchControl::new(Some(earlier)).with_deadline(Some(later));
+
+        assert_eq!(control.deadline, Some(earlier));
     }
 }

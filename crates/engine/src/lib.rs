@@ -9,14 +9,15 @@ mod error;
 mod threaded;
 mod types;
 
+use chess_kit_primitives::Move;
+use chess_kit_search::SearchControl;
+
 pub use chess_kit_position::PositionSnapshot;
 pub use engine::DefaultEngine;
 pub use error::EngineError;
-pub use threaded::{AsyncEngine, SearchCompletion, SearchTaskId, ThreadedEngine};
+pub use threaded::ThreadedEngine;
+pub use threaded::{AsyncEngine, SearchCompletion, SearchTaskId};
 pub use types::{EngineConfig, PositionBase, SearchLimits, SearchOutcome};
-
-use chess_kit_primitives::Move;
-use chess_kit_search::SearchControl;
 
 /// `Engine` is the protocol-agnostic session surface used by presentation
 /// adapters
