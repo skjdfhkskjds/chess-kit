@@ -7,6 +7,7 @@
 mod app;
 mod runner;
 mod uci;
+mod ui;
 
 use std::io;
 
@@ -22,6 +23,7 @@ pub use uci::{
     EngineMessage, EngineMessageKind, IdentityField, Score, ScoreBound, ScoreValue, SearchInfo,
     SearchRequest, UciCommand, UciOption, UciPosition,
 };
+pub use ui::render;
 
 /// `GameSession` defines the local rules boundary used by the presentation.
 ///
