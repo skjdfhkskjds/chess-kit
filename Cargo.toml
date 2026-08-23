@@ -12,6 +12,7 @@ members = [
     "crates/eval",
     "crates/search",
     "crates/engine",
+    "crates/tui",
 ]
 
 [package]

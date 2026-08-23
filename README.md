@@ -24,6 +24,7 @@
 - [primitives](crates/primitives): core types used as the building blocks for other modules
 - [search](crates/search): chess position search algorithms
 - [transposition](crates/transposition): transposition table support
+- [tui](crates/tui): interactive terminal client for UCI engines
 
 ## Architecture
 
