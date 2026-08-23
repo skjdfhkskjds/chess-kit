@@ -4,7 +4,7 @@ use std::fmt::Display;
 use std::io::{self, BufRead, Write};
 use std::str::FromStr;
 
-use chess_kit_engine::{Engine, PositionProvider, PositionSnapshot, SearchOutcome};
+use chess_kit_engine::{Engine, PositionProvider, PositionSnapshot, SearchLimits, SearchOutcome};
 use chess_kit_primitives::{Move, Pieces, SearchDepth, Sides, Square, call_as};
 
 use crate::uci::UciMove;
@@ -133,7 +133,7 @@ where
 
             let outcome = self
                 .engine
-                .search(self.search_depth)
+                .search(&SearchLimits::depth(self.search_depth))
                 .map_err(engine_error)?;
             let Some(engine_move) = outcome.best_move else {
                 write_position(&mut writer, &self.engine.position())?;
@@ -268,9 +268,9 @@ mod tests {
             Ok(())
         }
 
-        fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError> {
+        fn search(&mut self, limits: &SearchLimits) -> Result<SearchOutcome, EngineError> {
             self.searches += 1;
-            self.search_depths.push(depth);
+            self.search_depths.push(limits.maximum_depth);
             let best_move = match self.searches {
                 1 => Some(Move::new(Square::E7, Square::E5)),
                 _ => None,
@@ -280,7 +280,7 @@ mod tests {
             }
             Ok(SearchOutcome {
                 best_move,
-                depth,
+                depth: limits.maximum_depth,
                 score: 10,
                 nodes: 20,
                 elapsed: Duration::default(),

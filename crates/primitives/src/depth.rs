@@ -14,6 +14,9 @@ pub type Depth = i8;
 pub struct SearchDepth(Depth);
 
 impl SearchDepth {
+    /// `MAX` is the greatest depth representable by recursive search.
+    pub const MAX: Self = Self(Depth::MAX);
+
     /// new validates a requested engine search depth.
     pub const fn new(depth: Depth) -> Result<Self, InvalidSearchDepth> {
         if depth > 0 {

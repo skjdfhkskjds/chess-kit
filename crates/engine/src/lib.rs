@@ -11,9 +11,9 @@ mod types;
 pub use chess_kit_position::PositionSnapshot;
 pub use engine::DefaultEngine;
 pub use error::EngineError;
-pub use types::{EngineConfig, PositionBase, SearchOutcome};
+pub use types::{EngineConfig, PositionBase, SearchLimits, SearchOutcome};
 
-use chess_kit_primitives::{Move, SearchDepth};
+use chess_kit_primitives::Move;
 
 /// `Engine` is the protocol-agnostic session surface used by presentation
 /// adapters
@@ -54,12 +54,12 @@ pub trait Engine {
     /// @side-effects: updates the current position when the move is legal
     fn play(&mut self, mv: Move) -> Result<(), EngineError>;
 
-    /// search searches the current position to the requested depth
+    /// search searches the current position within the requested limits
     ///
-    /// @param: depth - maximum search depth in plies
+    /// @param: limits - depth and time constraints for the search
     /// @return: completed search outcome, or the engine error
     /// @side-effects: may modify engine search state
-    fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError>;
+    fn search(&mut self, limits: &SearchLimits) -> Result<SearchOutcome, EngineError>;
 
     /// has_legal_moves reports whether the side to move has any legal reply
     ///

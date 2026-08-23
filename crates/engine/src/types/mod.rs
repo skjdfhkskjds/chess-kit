@@ -32,6 +32,60 @@ pub enum PositionBase {
     Fen(String),
 }
 
+/// `SearchLimits` describes the depth and clock constraints for one engine
+/// search.
+///
+/// A clock-limited search normally uses [`SearchDepth::MAX`] as its maximum
+/// depth. Supplying a lower value combines both constraints and stops at
+/// whichever limit is reached first.
+///
+/// @type
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SearchLimits {
+    pub maximum_depth: SearchDepth,
+    pub move_time: Option<Duration>,
+    pub white_time: Option<Duration>,
+    pub black_time: Option<Duration>,
+    pub white_increment: Option<Duration>,
+    pub black_increment: Option<Duration>,
+    pub moves_to_go: Option<u32>,
+}
+
+impl SearchLimits {
+    /// `depth` creates an untimed fixed-maximum-depth search.
+    ///
+    /// @param: maximum_depth - greatest depth to search in plies
+    /// @return: fixed-maximum-depth search limits
+    pub const fn depth(maximum_depth: SearchDepth) -> Self {
+        Self {
+            maximum_depth,
+            move_time: None,
+            white_time: None,
+            black_time: None,
+            white_increment: None,
+            black_increment: None,
+            moves_to_go: None,
+        }
+    }
+
+    /// `move_time` creates a search with a fixed time allocation and the
+    /// greatest supported depth.
+    ///
+    /// @param: move_time - time allocated to this move
+    /// @return: time-limited search limits
+    pub const fn move_time(move_time: Duration) -> Self {
+        Self {
+            maximum_depth: SearchDepth::MAX,
+            move_time: Some(move_time),
+            white_time: None,
+            black_time: None,
+            white_increment: None,
+            black_increment: None,
+            moves_to_go: None,
+        }
+    }
+}
+
 /// `SearchOutcome` is the result of a completed engine search
 ///
 /// @type

@@ -4,6 +4,6 @@ mod negamax;
 mod quiescence;
 pub mod types;
 
-pub use iterative_deepening::iterative_deepening;
+pub use iterative_deepening::{iterative_deepening, iterative_deepening_until};
 pub use negamax::Negamax;
 pub use types::*;

@@ -1,14 +1,18 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use chess_kit_attack_table::DefaultAttackTable;
 use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, PSQTEvalState};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
-use chess_kit_position::{DefaultPosition, Fen, PositionMoves, PositionSnapshot, Setup};
-use chess_kit_primitives::{Move, MoveList, MoveType, SearchDepth};
-use chess_kit_search::{Negamax, SearchNode, iterative_deepening};
+use chess_kit_position::{
+    DefaultPosition, Fen, PositionMoves, PositionSnapshot, PositionView, Setup,
+};
+use chess_kit_primitives::{Move, MoveList, MoveType, SearchDepth, Sides};
+use chess_kit_search::{Negamax, SearchNode, iterative_deepening_until};
 use chess_kit_transposition::{DefaultTranspositionTable, TranspositionTable};
 
-use crate::{Engine, EngineConfig, EngineError, PositionBase, PositionProvider, SearchOutcome};
+use crate::{
+    Engine, EngineConfig, EngineError, PositionBase, PositionProvider, SearchLimits, SearchOutcome,
+};
 
 type EnginePosition = DefaultPosition<DefaultAttackTable>;
 type EngineMoveGenerator = DefaultMoveGenerator<DefaultAttackTable>;
@@ -150,24 +154,64 @@ impl Engine for DefaultEngine {
     }
 
     /// @impl: Engine::search
-    fn search(&mut self, depth: SearchDepth) -> Result<SearchOutcome, EngineError> {
+    fn search(&mut self, limits: &SearchLimits) -> Result<SearchOutcome, EngineError> {
         let started = Instant::now();
-        let result = iterative_deepening(
+        let deadline = time_limit(limits, self.position.turn())
+            .and_then(|time_limit| started.checked_add(time_limit));
+        let completed = iterative_deepening_until(
             &mut self.search,
             &mut self.position,
             &self.move_generator,
             &mut self.transposition_table,
             &mut self.accumulator,
-            depth.get(),
+            limits.maximum_depth.get(),
+            deadline,
         );
+        let depth = SearchDepth::new(completed.depth)
+            .expect("iterative deepening always completes positive depth one");
 
-        Ok(SearchOutcome::from((result, depth, started.elapsed())))
+        Ok(SearchOutcome::from((
+            completed.result,
+            depth,
+            started.elapsed(),
+        )))
     }
 
     /// @impl: Engine::has_legal_moves
     fn has_legal_moves(&self) -> bool {
         !self.primitive_legal_moves().as_slice().is_empty()
     }
+}
+
+/// `time_limit` allocates thinking time from fixed move time or the active
+/// side's game clock.
+///
+/// Clock allocation spends one equal share of the remaining control plus the
+/// increment, while retaining a small reserve for scheduling and protocol
+/// overhead.
+///
+/// @param: limits - caller-supplied search constraints
+/// @param: side - side whose clock is currently running
+/// @return: allocated thinking time, or None for an untimed search
+fn time_limit(limits: &SearchLimits, side: Sides) -> Option<Duration> {
+    if let Some(move_time) = limits.move_time {
+        return Some(move_time);
+    }
+
+    let (remaining, increment) = match side {
+        Sides::White => (
+            limits.white_time?,
+            limits.white_increment.unwrap_or_default(),
+        ),
+        Sides::Black => (
+            limits.black_time?,
+            limits.black_increment.unwrap_or_default(),
+        ),
+    };
+    let moves_to_go = limits.moves_to_go.unwrap_or(30).max(1);
+    let desired = remaining / moves_to_go + increment;
+    let reserve = Duration::from_millis(10).min(remaining / 2);
+    Some(desired.min(remaining.saturating_sub(reserve)))
 }
 
 impl PositionProvider for DefaultEngine {
@@ -255,7 +299,9 @@ mod tests {
     #[test]
     fn search_returns_a_legal_move() {
         let mut engine = engine();
-        let outcome = engine.search(SearchDepth::new(1).unwrap()).unwrap();
+        let outcome = engine
+            .search(&SearchLimits::depth(SearchDepth::new(1).unwrap()))
+            .unwrap();
 
         assert!(outcome.best_move.is_some());
         assert_eq!(outcome.depth.get(), 1);
@@ -292,6 +338,39 @@ mod tests {
     fn search_depth_rejects_non_positive_values() {
         assert!(SearchDepth::new(0).is_err());
         assert!(SearchDepth::new(-1).is_err());
+    }
+
+    #[test]
+    fn expired_time_limit_returns_the_completed_depth_one_fallback() {
+        let mut engine = engine();
+        let outcome = engine
+            .search(&SearchLimits::move_time(Duration::ZERO))
+            .unwrap();
+
+        assert!(outcome.best_move.is_some());
+        assert_eq!(outcome.depth.get(), 1);
+    }
+
+    #[test]
+    fn clock_allocation_uses_the_active_sides_time_and_increment() {
+        let limits = SearchLimits {
+            maximum_depth: SearchDepth::MAX,
+            move_time: None,
+            white_time: Some(Duration::from_secs(90)),
+            black_time: Some(Duration::from_secs(60)),
+            white_increment: Some(Duration::from_secs(1)),
+            black_increment: Some(Duration::from_secs(2)),
+            moves_to_go: Some(30),
+        };
+
+        assert_eq!(
+            time_limit(&limits, Sides::White),
+            Some(Duration::from_secs(4))
+        );
+        assert_eq!(
+            time_limit(&limits, Sides::Black),
+            Some(Duration::from_secs(4))
+        );
     }
 
     #[test]

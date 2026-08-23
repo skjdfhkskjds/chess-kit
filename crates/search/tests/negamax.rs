@@ -1,10 +1,14 @@
+use std::time::Instant;
+
 use chess_kit_attack_table::DefaultAttackTable;
 use chess_kit_collections::Copyable;
 use chess_kit_eval::{Accumulator, DefaultAccumulator, EvalState, Score};
 use chess_kit_movegen::{DefaultMoveGenerator, MoveGenerator};
 use chess_kit_position::{DefaultPosition, Fen, PositionView, Setup};
 use chess_kit_primitives::{Move, MoveDelta, PieceDeltaKind, Pieces, Sides, Square};
-use chess_kit_search::{Bound, Negamax, SearchNode, iterative_deepening};
+use chess_kit_search::{
+    Bound, Negamax, SearchNode, iterative_deepening, iterative_deepening_until,
+};
 use chess_kit_transposition::{DefaultTranspositionTable, TranspositionTable};
 
 type TestPosition = DefaultPosition<DefaultAttackTable>;
@@ -284,6 +288,32 @@ fn iterative_deepening_visits_each_depth_and_stores_the_final_root() {
     assert_eq!(root.depth(), 3);
     assert_eq!(root.bound(), Bound::Exact);
     assert_eq!(root.best_move(), None);
+}
+
+#[test]
+fn timed_iterative_deepening_keeps_the_last_completed_iteration() {
+    let (mut position, move_generator, mut transposition_table, mut accumulator) =
+        load("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    let original_key = position.key();
+    let original_score = accumulator.latest_mut().score();
+
+    let result = iterative_deepening_until(
+        &mut Negamax::new(),
+        &mut position,
+        &move_generator,
+        &mut transposition_table,
+        &mut accumulator,
+        4,
+        Some(Instant::now()),
+    );
+
+    assert_eq!(result.depth, 1);
+    assert!(result.result.best_move.is_some());
+    assert_eq!(position.key(), original_key);
+    assert_eq!(accumulator.latest_mut().score(), original_score);
+
+    let root = transposition_table.probe(original_key).copied().unwrap();
+    assert_eq!(root.depth(), 1);
 }
 
 #[test]

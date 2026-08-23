@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use chess_kit_eval::{Accumulator, EvalState, Score};
 use chess_kit_movegen::{MoveGenerationStrategy, MoveGenerator};
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
@@ -5,33 +7,57 @@ use chess_kit_primitives::{Depth, MoveList, call_as};
 
 use crate::{Negamax, move_ordering};
 
+/// `SearchControl` groups the mutable work count with the optional deadline.
+pub(crate) struct SearchControl<'a> {
+    nodes: &'a mut u64,
+    deadline: Option<Instant>,
+}
+
+impl<'a> SearchControl<'a> {
+    /// `new` creates quiescence search control state.
+    ///
+    /// @param: nodes - mutable reference to the search node count
+    /// @param: deadline - optional instant at which search should stop
+    /// @return: quiescence search control state
+    pub(crate) const fn new(nodes: &'a mut u64, deadline: Option<Instant>) -> Self {
+        Self { nodes, deadline }
+    }
+}
+
 /// search continues through tactical moves until the position is quiet
 ///
 /// @param: position - mutable reference to the current position
 /// @param: move_generator - immutable reference to the move generator
 /// @param: accumulator - mutable reference to the evaluation accumulator
-/// @param: nodes - mutable reference to the search node count
+/// @param: control - mutable node count and optional deadline
 /// @param: ply - distance of the current node from the root
 /// @param: alpha - lower bound of the search window
 /// @param: beta - upper bound of the search window
-/// @return: best score found for the current node
+/// @return: best score found, or None when interrupted
 /// @side-effects: updates the internal node count
 pub(crate) fn search<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT>(
     position: &mut PositionT,
     move_generator: &MoveGeneratorT,
     accumulator: &mut AccumulatorT,
-    nodes: &mut u64,
+    control: &mut SearchControl<'_>,
     ply: Depth,
     mut alpha: Score,
     beta: Score,
-) -> Score
+) -> Option<Score>
 where
     MoveGeneratorT: MoveGenerator,
     PositionT: PositionView + PositionAttacks + PositionMoves,
     AccumulatorT: Accumulator<EvalStateT>,
     EvalStateT: EvalState,
 {
-    *nodes += 1;
+    if control
+        .deadline
+        .is_some_and(|deadline| Instant::now() >= deadline)
+    {
+        return None;
+    }
+
+    *control.nodes += 1;
 
     let in_check = position.checkers().not_empty();
     let mut moves = MoveList::new();
@@ -41,7 +67,7 @@ where
         // part of the quiescence search.
         move_generator.generate_legal_moves(position, &mut moves);
         if moves.is_empty() {
-            return -Negamax::CHECKMATE_SCORE + Score::from(ply);
+            return Some(-Negamax::CHECKMATE_SCORE + Score::from(ply));
         }
     } else {
         move_generator.generate_moves(position, &mut moves, MoveGenerationStrategy::Capture);
@@ -53,7 +79,7 @@ where
             let mut legal_moves = MoveList::new();
             move_generator.generate_legal_moves(position, &mut legal_moves);
             if legal_moves.is_empty() {
-                return 0;
+                return Some(0);
             }
         }
     }
@@ -61,7 +87,7 @@ where
     // Depth uses the full i8 range. Stop before incrementing past its maximum
     // in pathological checking sequences.
     if ply == i8::MAX {
-        return Negamax::evaluate(position, accumulator);
+        return Some(Negamax::evaluate(position, accumulator));
     }
 
     let mut best_score = -Negamax::INFINITY;
@@ -70,7 +96,7 @@ where
         best_score = stand_pat;
 
         if stand_pat >= beta {
-            return stand_pat;
+            return Some(stand_pat);
         }
         alpha = alpha.max(stand_pat);
     }
@@ -82,11 +108,11 @@ where
         let delta = position.play_unchecked(mv);
         eval.apply(delta);
 
-        let score = -search(
+        let child_score = search(
             position,
             move_generator,
             accumulator,
-            nodes,
+            control,
             ply + 1,
             -beta,
             -alpha,
@@ -95,6 +121,8 @@ where
         position.undo(mv);
         accumulator.pop();
 
+        let score = -child_score?;
+
         best_score = best_score.max(score);
         alpha = alpha.max(score);
         if alpha >= beta {
@@ -102,7 +130,7 @@ where
         }
     }
 
-    best_score
+    Some(best_score)
 }
 
 /// retain_legal_moves removes pseudo-legal tactical moves that expose the king

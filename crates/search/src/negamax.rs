@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use chess_kit_eval::{Accumulator, EvalState, Score};
 use chess_kit_movegen::MoveGenerator;
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
@@ -21,6 +23,14 @@ struct SearchContext<'a, MoveGeneratorT, TranspositionTableT, AccumulatorT> {
     move_generator: &'a MoveGeneratorT,
     transposition_table: &'a mut TranspositionTableT,
     accumulator: &'a mut AccumulatorT,
+    deadline: Option<Instant>,
+}
+
+/// `SearchStatus` distinguishes a fully completed fixed-depth search from one
+/// interrupted at its deadline.
+pub(crate) enum SearchStatus {
+    Complete(SearchResult),
+    Stopped(u64),
 }
 
 impl Negamax {
@@ -71,13 +81,61 @@ impl Negamax {
     {
         assert!(depth >= 0, "search depth must be non-negative");
 
+        match self.search_until(
+            position,
+            move_generator,
+            transposition_table,
+            accumulator,
+            depth,
+            None,
+        ) {
+            SearchStatus::Complete(result) => result,
+            SearchStatus::Stopped(_) => unreachable!("a search without a deadline cannot stop"),
+        }
+    }
+
+    /// `search_until` searches to a fixed depth unless its deadline is reached.
+    ///
+    /// @param: position - mutable reference to the root position
+    /// @param: move_generator - immutable reference to the move generator
+    /// @param: transposition_table - mutable reference to the transposition table
+    /// @param: accumulator - mutable reference to the evaluation accumulator
+    /// @param: depth - fixed depth to search
+    /// @param: deadline - optional instant at which search should stop
+    /// @return: completed result or the nodes visited before interruption
+    /// @side-effects: updates the transposition table and internal node count
+    pub(crate) fn search_until<
+        MoveGeneratorT,
+        PositionT,
+        AccumulatorT,
+        EvalStateT,
+        TranspositionTableT,
+    >(
+        &mut self,
+        position: &mut PositionT,
+        move_generator: &MoveGeneratorT,
+        transposition_table: &mut TranspositionTableT,
+        accumulator: &mut AccumulatorT,
+        depth: Depth,
+        deadline: Option<Instant>,
+    ) -> SearchStatus
+    where
+        MoveGeneratorT: MoveGenerator,
+        PositionT: PositionView + PositionAttacks + PositionMoves,
+        AccumulatorT: Accumulator<EvalStateT>,
+        EvalStateT: EvalState,
+        TranspositionTableT: TranspositionTable<SearchNode>,
+    {
+        assert!(depth >= 0, "search depth must be non-negative");
+
         self.nodes = 0;
         let mut context = SearchContext {
             move_generator,
             transposition_table,
             accumulator,
+            deadline,
         };
-        let (score, best_move) = self.negamax(
+        let result = self.negamax(
             position,
             &mut context,
             depth,
@@ -86,7 +144,12 @@ impl Negamax {
             Self::INFINITY,
         );
 
-        SearchResult::new(best_move, score, self.nodes)
+        match result {
+            Some((score, best_move)) => {
+                SearchStatus::Complete(SearchResult::new(best_move, score, self.nodes))
+            }
+            None => SearchStatus::Stopped(self.nodes),
+        }
     }
 
     /// negamax recursively searches a position with an alpha-beta window
@@ -107,7 +170,7 @@ impl Negamax {
         ply: Depth,
         mut alpha: Score,
         beta: Score,
-    ) -> (Score, Option<Move>)
+    ) -> Option<(Score, Option<Move>)>
     where
         MoveGeneratorT: MoveGenerator,
         PositionT: PositionView + PositionAttacks + PositionMoves,
@@ -115,17 +178,25 @@ impl Negamax {
         EvalStateT: EvalState,
         TranspositionTableT: TranspositionTable<SearchNode>,
     {
+        if context
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+        {
+            return None;
+        }
+
         if depth == 0 {
+            let mut control = quiescence::SearchControl::new(&mut self.nodes, context.deadline);
             let score = quiescence::search(
                 position,
                 context.move_generator,
                 context.accumulator,
-                &mut self.nodes,
+                &mut control,
                 ply,
                 alpha,
                 beta,
             );
-            return (score, None);
+            return score.map(|score| (score, None));
         }
 
         self.nodes += 1;
@@ -144,7 +215,7 @@ impl Negamax {
             };
 
             if cutoff {
-                return (score, node.best_move());
+                return Some((score, node.best_move()));
             }
         }
 
@@ -164,7 +235,7 @@ impl Negamax {
                 key,
                 SearchNode::new(depth, Self::score_to_tt(score, ply), Bound::Exact, None),
             );
-            return (score, None);
+            return Some((score, None));
         }
 
         move_ordering::order_moves(position, &mut moves, hash_move);
@@ -178,12 +249,13 @@ impl Negamax {
             let delta = position.play_unchecked(mv);
             eval.apply(delta);
 
-            let (child_score, _) =
-                self.negamax(position, context, depth - 1, ply + 1, -beta, -alpha);
-            let score = -child_score;
+            let child = self.negamax(position, context, depth - 1, ply + 1, -beta, -alpha);
 
             position.undo(mv);
             context.accumulator.pop();
+
+            let (child_score, _) = child?;
+            let score = -child_score;
 
             if score > best_score {
                 best_score = score;
@@ -209,7 +281,7 @@ impl Negamax {
             SearchNode::new(depth, Self::score_to_tt(best_score, ply), bound, best_move),
         );
 
-        (best_score, best_move)
+        Some((best_score, best_move))
     }
 
     /// store caches a search node unless a deeper entry already exists for the
