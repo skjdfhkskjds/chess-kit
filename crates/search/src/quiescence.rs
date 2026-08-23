@@ -1,26 +1,24 @@
-use std::time::Instant;
-
 use chess_kit_eval::{Accumulator, EvalState, Score};
 use chess_kit_movegen::{MoveGenerationStrategy, MoveGenerator};
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 use chess_kit_primitives::{Depth, MoveList, call_as};
 
-use crate::{Negamax, move_ordering};
+use crate::{Negamax, SearchControl, move_ordering};
 
-/// `SearchControl` groups the mutable work count with the optional deadline.
-pub(crate) struct SearchControl<'a> {
+/// `SearchState` groups quiescence work state with shared search control.
+pub(crate) struct SearchState<'a> {
     nodes: &'a mut u64,
-    deadline: Option<Instant>,
+    control: &'a SearchControl,
 }
 
-impl<'a> SearchControl<'a> {
-    /// `new` creates quiescence search control state.
+impl<'a> SearchState<'a> {
+    /// `new` creates quiescence search state.
     ///
     /// @param: nodes - mutable reference to the search node count
-    /// @param: deadline - optional instant at which search should stop
-    /// @return: quiescence search control state
-    pub(crate) const fn new(nodes: &'a mut u64, deadline: Option<Instant>) -> Self {
-        Self { nodes, deadline }
+    /// @param: control - stopping conditions for the search
+    /// @return: quiescence search state
+    pub(crate) const fn new(nodes: &'a mut u64, control: &'a SearchControl) -> Self {
+        Self { nodes, control }
     }
 }
 
@@ -29,7 +27,7 @@ impl<'a> SearchControl<'a> {
 /// @param: position - mutable reference to the current position
 /// @param: move_generator - immutable reference to the move generator
 /// @param: accumulator - mutable reference to the evaluation accumulator
-/// @param: control - mutable node count and optional deadline
+/// @param: state - mutable node count and shared stopping conditions
 /// @param: ply - distance of the current node from the root
 /// @param: alpha - lower bound of the search window
 /// @param: beta - upper bound of the search window
@@ -39,7 +37,7 @@ pub(crate) fn search<MoveGeneratorT, PositionT, AccumulatorT, EvalStateT>(
     position: &mut PositionT,
     move_generator: &MoveGeneratorT,
     accumulator: &mut AccumulatorT,
-    control: &mut SearchControl<'_>,
+    state: &mut SearchState<'_>,
     ply: Depth,
     mut alpha: Score,
     beta: Score,
@@ -50,14 +48,11 @@ where
     AccumulatorT: Accumulator<EvalStateT>,
     EvalStateT: EvalState,
 {
-    if control
-        .deadline
-        .is_some_and(|deadline| Instant::now() >= deadline)
-    {
+    if state.control.should_stop() {
         return None;
     }
 
-    *control.nodes += 1;
+    *state.nodes += 1;
 
     let in_check = position.checkers().not_empty();
     let mut moves = MoveList::new();
@@ -112,7 +107,7 @@ where
             position,
             move_generator,
             accumulator,
-            control,
+            state,
             ply + 1,
             -beta,
             -alpha,

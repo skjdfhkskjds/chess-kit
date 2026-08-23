@@ -1,12 +1,10 @@
-use std::time::Instant;
-
 use chess_kit_eval::{Accumulator, EvalState, Score};
 use chess_kit_movegen::MoveGenerator;
 use chess_kit_position::{PositionAttacks, PositionMoves, PositionView};
 use chess_kit_primitives::{Depth, Move, MoveList, Sides, ZobristKey};
 use chess_kit_transposition::TranspositionTable;
 
-use crate::{Bound, SearchNode, SearchResult, move_ordering, quiescence};
+use crate::{Bound, SearchControl, SearchNode, SearchResult, move_ordering, quiescence};
 
 /// Negamax is a fixed-depth negamax search with alpha-beta pruning
 ///
@@ -23,7 +21,7 @@ struct SearchContext<'a, MoveGeneratorT, TranspositionTableT, AccumulatorT> {
     move_generator: &'a MoveGeneratorT,
     transposition_table: &'a mut TranspositionTableT,
     accumulator: &'a mut AccumulatorT,
-    deadline: Option<Instant>,
+    control: &'a SearchControl,
 }
 
 /// `SearchStatus` distinguishes a fully completed fixed-depth search from one
@@ -87,7 +85,7 @@ impl Negamax {
             transposition_table,
             accumulator,
             depth,
-            None,
+            &SearchControl::new(None),
         ) {
             SearchStatus::Complete(result) => result,
             SearchStatus::Stopped(_) => unreachable!("a search without a deadline cannot stop"),
@@ -101,7 +99,7 @@ impl Negamax {
     /// @param: transposition_table - mutable reference to the transposition table
     /// @param: accumulator - mutable reference to the evaluation accumulator
     /// @param: depth - fixed depth to search
-    /// @param: deadline - optional instant at which search should stop
+    /// @param: control - stopping conditions for the search
     /// @return: completed result or the nodes visited before interruption
     /// @side-effects: updates the transposition table and internal node count
     pub(crate) fn search_until<
@@ -117,7 +115,7 @@ impl Negamax {
         transposition_table: &mut TranspositionTableT,
         accumulator: &mut AccumulatorT,
         depth: Depth,
-        deadline: Option<Instant>,
+        control: &SearchControl,
     ) -> SearchStatus
     where
         MoveGeneratorT: MoveGenerator,
@@ -133,7 +131,7 @@ impl Negamax {
             move_generator,
             transposition_table,
             accumulator,
-            deadline,
+            control,
         };
         let result = self.negamax(
             position,
@@ -178,20 +176,17 @@ impl Negamax {
         EvalStateT: EvalState,
         TranspositionTableT: TranspositionTable<SearchNode>,
     {
-        if context
-            .deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
-        {
+        if context.control.should_stop() {
             return None;
         }
 
         if depth == 0 {
-            let mut control = quiescence::SearchControl::new(&mut self.nodes, context.deadline);
+            let mut state = quiescence::SearchState::new(&mut self.nodes, context.control);
             let score = quiescence::search(
                 position,
                 context.move_generator,
                 context.accumulator,
-                &mut control,
+                &mut state,
                 ply,
                 alpha,
                 beta,

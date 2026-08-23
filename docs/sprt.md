@@ -1,9 +1,11 @@
 # Local SPRT testing
 
 The engine now implements the minimum UCI command set needed to start running
-automated matches. The current search is synchronous and iteratively deepens to
-a fixed target depth, so clock, node, and stop-aware search remain follow-up
-work before results should be treated as representative strength measurements.
+automated matches. Search runs asynchronously on a long-lived worker, observes
+clock and fixed-move time controls, and responds to `stop` with the last fully
+completed iterative-deepening result. Node limits are parsed but are not yet a
+search stopping condition, so results should still be treated as early strength
+measurements.
 
 ## Prepare two engine versions
 

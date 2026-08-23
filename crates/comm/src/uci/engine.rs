@@ -76,6 +76,9 @@ pub trait UciEngine {
     /// Error is the displayable error returned by fallible engine operations
     type Error: Display;
 
+    /// SearchTaskId identifies one asynchronous search owned by the engine.
+    type SearchTaskId: Copy + Eq;
+
     /// name returns the name advertised by the engine during UCI initialization
     ///
     /// @return: engine name
@@ -94,27 +97,35 @@ pub trait UciEngine {
 
     /// set_position replaces the current engine position
     ///
+    /// An active search is cancelled and its completion discarded before this
+    /// method returns, including when the position is rejected.
+    ///
     /// @param: position - base position and move history to apply
     /// @return: Ok on success, or the engine error
     /// @side-effects: modifies the current engine position
     fn set_position(&mut self, position: &PositionCommand) -> Result<(), Self::Error>;
 
-    /// search searches the current position using the given limits
+    /// start_search starts searching the current position using the given limits
     ///
     /// @param: limits - constraints to apply to the search
-    /// @return: completed search result, or the engine error
-    /// @side-effects: may modify engine search state
-    fn search(&mut self, limits: &SearchLimits) -> Result<SearchResult, Self::Error>;
+    /// @return: identifier for the started search, or the engine error
+    /// @side-effects: starts an asynchronous search
+    fn start_search(&mut self, limits: &SearchLimits) -> Result<Self::SearchTaskId, Self::Error>;
 
-    /// stop stops an active search
+    /// poll_search returns a completed search result without blocking.
     ///
-    /// note: synchronous engines may keep the default no-op implementation
+    /// @return: completed result when one is ready, or the engine error
+    /// @side-effects: consumes a ready search result
+    fn poll_search(&mut self) -> Result<Option<SearchResult>, Self::Error>;
+
+    /// stop_search requests cancellation of an active search.
     ///
-    /// @return: final search result if one is available, or the engine error
-    /// @side-effects: may stop or finalize an active search
-    fn stop(&mut self) -> Result<Option<SearchResult>, Self::Error> {
-        Ok(None)
-    }
+    /// The final result remains available through [`Self::poll_search`].
+    ///
+    /// @param: task_id - active search to cancel
+    /// @return: true when cancellation was requested, or the engine error
+    /// @side-effects: may request interruption of the active search
+    fn stop_search(&mut self, task_id: Self::SearchTaskId) -> Result<bool, Self::Error>;
 
     /// ponder_hit notifies a pondering engine that its expected move was played
     ///

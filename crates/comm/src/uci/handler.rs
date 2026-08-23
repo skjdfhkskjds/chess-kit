@@ -26,6 +26,7 @@ where
 {
     engine: &'a mut EngineT,
     writer: &'a mut WriterT,
+    active_search: Option<EngineT::SearchTaskId>,
 }
 
 impl<'a, EngineT, WriterT> UciHandler<'a, EngineT, WriterT>
@@ -39,7 +40,43 @@ where
     /// @param: writer - stream that receives command responses
     /// @return: new UCI handler
     pub(super) fn new(engine: &'a mut EngineT, writer: &'a mut WriterT) -> Self {
-        Self { engine, writer }
+        Self {
+            engine,
+            writer,
+            active_search: None,
+        }
+    }
+
+    /// poll_search writes a completed asynchronous search result when ready.
+    ///
+    /// @return: true when polling wrote output, or an I/O error
+    /// @side-effects: may consume engine completion state and write a response
+    pub(super) fn poll_search(&mut self) -> io::Result<bool> {
+        if self.active_search.is_none() {
+            return Ok(false);
+        }
+
+        match self.engine.poll_search() {
+            Ok(Some(result)) => {
+                self.active_search = None;
+                self.write_search_result(&result)?;
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(error) => {
+                self.active_search = None;
+                self.write_error(error)?;
+                writeln!(self.writer, "bestmove 0000")?;
+                Ok(true)
+            }
+        }
+    }
+
+    /// has_active_search reports whether completion polling is required.
+    ///
+    /// @return: true while the handler is waiting for a search result
+    pub(super) const fn has_active_search(&self) -> bool {
+        self.active_search.is_some()
     }
 
     /// handle routes one parsed command to its command-specific adapter
@@ -96,6 +133,7 @@ where
     /// @return: Ok after handling the command, or an I/O error
     /// @side-effects: resets engine state and may write an error response
     fn handle_uci_new_game(&mut self) -> io::Result<()> {
+        self.cancel_active_search()?;
         if let Err(error) = self.engine.new_game() {
             self.write_error(error)?;
         }
@@ -108,20 +146,31 @@ where
     /// @return: Ok after handling the command, or an I/O error
     /// @side-effects: modifies engine state and may write an error response
     fn handle_position(&mut self, position: &PositionCommand) -> io::Result<()> {
-        if let Err(error) = self.engine.set_position(position) {
+        let result = self.engine.set_position(position);
+        // Position updates own cancellation and discard through the engine
+        // boundary, including protocol conversion failures.
+        self.active_search = None;
+        if let Err(error) = result {
             self.write_error(error)?;
         }
         Ok(())
     }
 
-    /// handle_go starts a search and writes its result
+    /// handle_go starts an asynchronous search.
     ///
     /// @param: limits - constraints to apply to the search
     /// @return: Ok after handling the command, or an I/O error
-    /// @side-effects: searches with the engine and writes the search response
+    /// @side-effects: may start engine search state and write an error response
     fn handle_go(&mut self, limits: &SearchLimits) -> io::Result<()> {
-        match self.engine.search(limits) {
-            Ok(result) => self.write_search_result(&result),
+        if self.active_search.is_some() {
+            return self.write_error("cannot start a search while another search is active");
+        }
+
+        match self.engine.start_search(limits) {
+            Ok(task_id) => {
+                self.active_search = Some(task_id);
+                Ok(())
+            }
             Err(error) => {
                 self.write_error(error)?;
                 writeln!(self.writer, "bestmove 0000")
@@ -129,15 +178,22 @@ where
         }
     }
 
-    /// handle_stop stops an active search and writes a result when one is ready
+    /// handle_stop requests cancellation of the active search.
     ///
     /// @return: Ok after handling the command, or an I/O error
-    /// @side-effects: may stop engine search state and write a search response
+    /// @side-effects: may request interruption and write an error response
     fn handle_stop(&mut self) -> io::Result<()> {
-        match self.engine.stop() {
-            Ok(Some(result)) => self.write_search_result(&result),
-            Ok(None) => Ok(()),
-            Err(error) => self.write_error(error),
+        let Some(task_id) = self.active_search else {
+            return Ok(());
+        };
+
+        match self.engine.stop_search(task_id) {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                self.active_search = None;
+                self.write_error(error)?;
+                writeln!(self.writer, "bestmove 0000")
+            }
         }
     }
 
@@ -153,7 +209,25 @@ where
     ///
     /// @return: protocol flow requesting that the loop exit
     fn handle_quit(&mut self) -> CommandFlow {
+        let _ = self.cancel_active_search();
         CommandFlow::Quit
+    }
+
+    /// cancel_active_search requests cancellation and forgets the old task.
+    ///
+    /// State-changing commands use this path so a stale completion cannot emit
+    /// a `bestmove` for the position that they replace.
+    ///
+    /// @return: Ok after requesting cancellation, or an I/O error
+    /// @side-effects: may request interruption and write an error response
+    fn cancel_active_search(&mut self) -> io::Result<()> {
+        let Some(task_id) = self.active_search.take() else {
+            return Ok(());
+        };
+        if let Err(error) = self.engine.stop_search(task_id) {
+            self.write_error(error)?;
+        }
+        Ok(())
     }
 
     /// handle_unknown intentionally ignores commands outside the supported subset
