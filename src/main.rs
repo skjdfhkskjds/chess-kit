@@ -1,5 +1,5 @@
 use chess_kit::comm::uci::UciAdapter;
-use chess_kit::engine::{DefaultEngine, EngineConfig};
+use chess_kit::engine::{DefaultEngine, EngineConfig, ThreadedEngine};
 use chess_kit::primitives::SearchDepth;
 
 /// DEFAULT_UCI_SEARCH_DEPTH is the fallback depth for an unconstrained UCI search
@@ -21,6 +21,7 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let engine = DefaultEngine::new(EngineConfig::new(UCI_TRANSPOSITION_TABLE_SIZE_MB))?;
+    let engine = ThreadedEngine::new(engine)?;
     let mut adapter = UciAdapter::new(engine, DEFAULT_UCI_SEARCH_DEPTH);
     chess_kit::comm::uci::run(&mut adapter)?;
     Ok(())
