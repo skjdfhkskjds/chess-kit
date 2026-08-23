@@ -24,6 +24,7 @@
 - [primitives](crates/primitives): core types used as the building blocks for other modules
 - [search](crates/search): chess position search algorithms
 - [transposition](crates/transposition): transposition table support
+- [tui](crates/tui): interactive terminal client for UCI engines
 
 ## Architecture
 
@@ -35,6 +36,9 @@ adapters over that API:
 - **UCI** (`cargo run`): maps UCI text to `EngineApi` and prints UCI responses
 - **Interactive CLI** (`cargo run --example game`): prompts, board display, and
   human move UX over the same API
+- **Interactive TUI** (`cargo run -p chess-kit-tui`): plays as White against
+  automatic fixed-depth-6 replies from the workspace engine or another local
+  UCI executable; pass `-- --mode analysis` for the analysis board
 
 ## UCI
 
@@ -73,6 +77,25 @@ cargo run --release --example game -- --depth 4
 You play White. Enter one move at a time in UCI notation, such as `e2e4` or
 `e7e8q`; enter `quit` to stop. This interactive façade is an example target and
 is not included in the library crates.
+
+### Play in the TUI
+
+Build the engine and launch the full-screen terminal interface:
+
+```sh
+cargo build
+cargo run -p chess-kit-tui
+```
+
+You play White and the engine replies automatically at a fixed search depth of
+6. To move either side and control analysis manually, use:
+
+```sh
+cargo run -p chess-kit-tui -- --mode analysis
+```
+
+See the [TUI README](crates/tui/README.md) for controls, custom engine paths,
+and current limitations.
 
 ## Testing
 

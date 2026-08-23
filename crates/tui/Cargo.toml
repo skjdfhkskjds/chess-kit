@@ -1,0 +1,12 @@
+[package]
+name = "chess-kit-tui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chess-kit-comm = { path = "../comm" }
+chess-kit-engine = { path = "../engine" }
+chess-kit-primitives = { path = "../primitives" }
+crossterm = "0.29.0"
+ratatui = "0.30.2"
+
