@@ -2,7 +2,9 @@ use std::str::FromStr;
 
 use chess_kit_engine::{EngineError, PositionSnapshot};
 use chess_kit_primitives::{Black, Move, Pieces, Square, White};
-use chess_kit_tui::{Action, App, EngineMessage, GameSession, RunnerEvent, render};
+use chess_kit_tui::{
+    Action, App, EngineMessage, GameSession, PieceSet, RunnerEvent, render, render_with_piece_set,
+};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 
@@ -77,6 +79,36 @@ fn scales_pieces_when_board_cells_are_large_enough() {
 }
 
 #[test]
+fn renders_the_alternative_braille_piece_set() {
+    let app = populated_app();
+    let screen = render_to_string_with_piece_set(&app, PieceSet::Braille, 240, 54);
+
+    assert!(
+        screen
+            .chars()
+            .any(|character| ('\u{2801}'..='\u{28ff}').contains(&character))
+    );
+    assert!(!screen.contains(['▀', '▄', '█']));
+}
+
+#[test]
+fn renders_the_opaque_quadrant_piece_set() {
+    let app = populated_app();
+    let screen = render_to_string_with_piece_set(&app, PieceSet::Quadrant, 240, 54);
+
+    assert!(
+        screen
+            .chars()
+            .any(|character| ('\u{2580}'..='\u{259f}').contains(&character))
+    );
+    assert!(
+        !screen
+            .chars()
+            .any(|character| ('\u{2801}'..='\u{28ff}').contains(&character))
+    );
+}
+
+#[test]
 fn renders_help_and_protocol_overlays() {
     let mut app = populated_app();
     app.update(Action::ToggleProtocol);
@@ -142,6 +174,26 @@ fn populated_app() -> App {
 
 fn render_to_string(app: &App, width: u16, height: u16) -> String {
     render_to_lines(app, width, height).concat()
+}
+
+fn render_to_string_with_piece_set(
+    app: &App,
+    piece_set: PieceSet,
+    width: u16,
+    height: u16,
+) -> String {
+    let backend = TestBackend::new(width, height);
+    let mut terminal = Terminal::new(backend).unwrap();
+    terminal
+        .draw(|frame| render_with_piece_set(frame, app, piece_set))
+        .unwrap();
+    terminal
+        .backend()
+        .buffer()
+        .content()
+        .iter()
+        .map(|cell| cell.symbol())
+        .collect()
 }
 
 fn render_to_lines(app: &App, width: u16, height: u16) -> Vec<String> {

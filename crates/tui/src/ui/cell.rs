@@ -56,7 +56,7 @@ impl Cell {
         );
         let style = occupant.map_or_else(
             || self.square_style(app),
-            |(side, _)| self.piece_style(app, side),
+            |(side, _)| self.piece_style(app, side, piece_set),
         );
         Span::styled(contents, style)
     }
@@ -88,12 +88,15 @@ impl Cell {
     ///
     /// @param: app - application state containing cursor and selection
     /// @param: side - side that owns the occupying piece
+    /// @param: piece_set - assets controlling piece-specific emphasis
     /// @return: cell style with a side-specific foreground
-    fn piece_style(self, app: &App, side: Sides) -> Style {
+    fn piece_style(self, app: &App, side: Sides, piece_set: PieceSet) -> Style {
         let foreground = match side {
             Sides::White => Color::Rgb(238, 238, 210),
             Sides::Black => Color::Rgb(30, 30, 30),
         };
-        self.square_style(app).fg(foreground)
+        self.square_style(app)
+            .fg(foreground)
+            .add_modifier(piece_set.style_modifier())
     }
 }

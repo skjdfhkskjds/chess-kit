@@ -1,4 +1,6 @@
-use chess_kit_primitives::{Pieces, Sides, call_as};
+use chess_kit_primitives::{Pieces, Sides};
+
+use super::symbol;
 
 const PATTERN_WIDTH: usize = 8;
 const PATTERN_HEIGHT: usize = 10;
@@ -99,10 +101,7 @@ pub(super) fn render_row(piece: Pieces, side: Sides, width: u16, height: u16, ro
     if height >= 3 {
         return large_piece_row(piece, width, height, row);
     }
-    if row == height / 2 {
-        return centered(piece_symbol(side, piece), width);
-    }
-    " ".repeat(width as usize)
+    symbol::render_row(piece, side, width, height, row)
 }
 
 /// `large_piece_row` rasterizes one row of a piece at 75% of its cell width.
@@ -174,33 +173,4 @@ fn pattern(piece: Pieces) -> &'static [&'static str; PATTERN_HEIGHT] {
         Pieces::King => &KING,
         Pieces::None => unreachable!("empty squares do not have piece silhouettes"),
     }
-}
-
-/// `piece_symbol` returns the side-aware Unicode fallback symbol.
-///
-/// @param: side - side that owns the piece
-/// @param: piece - piece type to draw
-/// @return: Unicode chess symbol
-fn piece_symbol(side: Sides, piece: Pieces) -> char {
-    let display = call_as!(side, |SideT| piece.display::<SideT>().to_string());
-    display
-        .chars()
-        .next()
-        .expect("primitive piece displays are never empty")
-}
-
-/// `centered` places one character in the middle of a fixed-width cell.
-///
-/// @param: symbol - character to center
-/// @param: width - cell width in terminal columns
-/// @return: padded cell contents
-fn centered(symbol: char, width: u16) -> String {
-    let left = width.saturating_sub(1) / 2;
-    let right = width.saturating_sub(left + 1);
-    format!(
-        "{}{}{}",
-        " ".repeat(left as usize),
-        symbol,
-        " ".repeat(right as usize)
-    )
 }
