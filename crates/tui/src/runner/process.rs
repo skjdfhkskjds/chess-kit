@@ -123,7 +123,9 @@ impl UciRunner for ProcessRunner {
             Err(TryRecvError::Empty | TryRecvError::Disconnected) => {}
         }
 
-        if !self.exit_reported && let Some(status) = self.child.try_wait()? {
+        if !self.exit_reported
+            && let Some(status) = self.child.try_wait()?
+        {
             self.exit_reported = true;
             return Ok(Some(RunnerEvent::Exited(status.code())));
         }
