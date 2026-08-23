@@ -15,7 +15,25 @@ The interface follows familiar chess analysis layouts:
   board; and
 - a compact footer advertises the active keyboard controls.
 
-## Planned first-pass controls
+## Run
+
+Build the repository engine, then launch the TUI from the workspace root:
+
+```sh
+cargo build
+cargo run -p chess-kit-tui
+```
+
+The default engine path is `target/debug/chess-kit`. Any local UCI engine can
+be selected explicitly:
+
+```sh
+cargo run -p chess-kit-tui -- --engine /path/to/stockfish
+```
+
+Use `--` after the engine path to forward arguments to the engine process.
+
+## Controls
 
 | Key | Action |
 | --- | --- |

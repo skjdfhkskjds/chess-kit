@@ -6,6 +6,7 @@
 
 mod app;
 mod runner;
+mod terminal;
 mod uci;
 mod ui;
 
@@ -19,6 +20,7 @@ pub use app::{
     ProtocolEntry,
 };
 pub use runner::{ProcessRunner, RunnerEvent};
+pub use terminal::{ConfigError, TerminalConfig, run_terminal};
 pub use uci::{
     EngineMessage, EngineMessageKind, IdentityField, Score, ScoreBound, ScoreValue, SearchInfo,
     SearchRequest, UciCommand, UciOption, UciPosition,
