@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use chess_kit_tui::{ConfigError, PieceSet, TerminalConfig};
+use chess_kit_tui::{ConfigError, GameMode, PieceSet, TerminalConfig};
 
 #[test]
 fn defaults_to_the_workspace_debug_engine() {
@@ -15,6 +15,20 @@ fn defaults_to_the_workspace_debug_engine() {
     );
     assert!(config.arguments().is_empty());
     assert_eq!(config.piece_set(), PieceSet::Ascii);
+    assert_eq!(config.mode(), GameMode::PlayVsEngine);
+}
+
+#[test]
+fn selects_analysis_mode_without_forwarding_it_to_the_engine() {
+    let config =
+        TerminalConfig::from_args(["--mode", "analysis", "--engine", "/usr/bin/stockfish"])
+            .unwrap();
+
+    assert_eq!(config.mode(), GameMode::Analysis);
+    assert!(config.arguments().is_empty());
+
+    let play = TerminalConfig::from_args(["--mode", "play"]).unwrap();
+    assert_eq!(play.mode(), GameMode::PlayVsEngine);
 }
 
 #[test]
@@ -66,6 +80,8 @@ fn reports_help_and_invalid_arguments() {
     let help = TerminalConfig::from_args(["--help"]).unwrap_err();
     assert_eq!(help, ConfigError::Help);
     assert!(help.to_string().contains("--pieces <set>"));
+    assert!(help.to_string().contains("--mode <play|analysis>"));
+    assert!(help.to_string().contains("Modes: play (default), analysis"));
     assert!(help.to_string().contains("Piece sets: ascii"));
     assert_eq!(
         TerminalConfig::from_args(["--engine"]).unwrap_err(),
@@ -76,12 +92,24 @@ fn reports_help_and_invalid_arguments() {
         ConfigError::MissingPieceSet
     );
     assert_eq!(
+        TerminalConfig::from_args(["--mode"]).unwrap_err(),
+        ConfigError::MissingMode
+    );
+    assert_eq!(
         TerminalConfig::from_args(["--pieces", "unknown"]).unwrap_err(),
         ConfigError::InvalidPieceSet("unknown".to_owned())
     );
     assert_eq!(
         TerminalConfig::from_args(["--pieces", "ascii", "--pieces", "ascii"]).unwrap_err(),
         ConfigError::DuplicatePieceSet
+    );
+    assert_eq!(
+        TerminalConfig::from_args(["--mode", "play", "--mode", "analysis"]).unwrap_err(),
+        ConfigError::DuplicateMode
+    );
+    assert_eq!(
+        TerminalConfig::from_args(["--mode", "spectate"]).unwrap_err(),
+        ConfigError::InvalidMode("spectate".to_owned())
     );
     assert_eq!(
         TerminalConfig::from_args(["one", "two"]).unwrap_err(),

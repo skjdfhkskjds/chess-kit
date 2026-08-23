@@ -5,4 +5,6 @@ mod state;
 mod update;
 
 pub use action::{Action, Direction, Effect};
-pub use state::{Analysis, App, ConnectionState, EngineIdentity, ProtocolDirection, ProtocolEntry};
+pub use state::{
+    Analysis, App, ConnectionState, EngineIdentity, GameMode, ProtocolDirection, ProtocolEntry,
+};

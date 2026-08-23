@@ -21,6 +21,26 @@ pub enum ConnectionState {
     Failed,
 }
 
+/// `GameMode` selects whether engine search is advisory or plays Black.
+///
+/// @type
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GameMode {
+    /// User moves update the board while engine analysis is display-only.
+    Analysis,
+    /// The human plays White and the connected engine automatically plays Black.
+    PlayVsEngine,
+}
+
+/// `SearchPurpose` records how the result of the active search may be used.
+///
+/// @type
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum SearchPurpose {
+    Analysis,
+    EngineMove,
+}
+
 /// `EngineIdentity` contains the engine's advertised identity.
 ///
 /// @type
@@ -65,6 +85,7 @@ pub struct ProtocolEntry {
 /// @type
 pub struct App {
     pub(super) game: Box<dyn GameSession>,
+    pub(super) mode: GameMode,
     pub(super) position: PositionSnapshot,
     pub(super) connection: ConnectionState,
     pub(super) identity: EngineIdentity,
@@ -80,6 +101,7 @@ pub struct App {
     pub(super) error: Option<String>,
     pub(super) protocol: Vec<ProtocolEntry>,
     pub(super) pending_new_game: bool,
+    pub(super) search_purpose: Option<SearchPurpose>,
     pub(super) should_quit: bool,
 }
 
@@ -89,9 +111,19 @@ impl App {
     /// @param: game - local session used for validation and board snapshots
     /// @return: initialized disconnected application
     pub fn new(game: Box<dyn GameSession>) -> Self {
+        Self::with_mode(game, GameMode::Analysis)
+    }
+
+    /// with_mode creates an application using the requested interaction mode.
+    ///
+    /// @param: game - local session used for validation and board snapshots
+    /// @param: mode - analysis-only or play-against-engine behavior
+    /// @return: initialized disconnected application
+    pub fn with_mode(game: Box<dyn GameSession>, mode: GameMode) -> Self {
         let position = game.position();
         Self {
             game,
+            mode,
             position,
             connection: ConnectionState::Disconnected,
             identity: EngineIdentity::default(),
@@ -107,8 +139,16 @@ impl App {
             error: None,
             protocol: Vec::new(),
             pending_new_game: false,
+            search_purpose: None,
             should_quit: false,
         }
+    }
+
+    /// mode returns the configured interaction mode.
+    ///
+    /// @return: current game mode
+    pub const fn mode(&self) -> GameMode {
+        self.mode
     }
 
     /// position returns the board snapshot displayed by the application.

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use chess_kit_engine::{EngineError, PositionSnapshot};
 use chess_kit_primitives::{Black, Move, Pieces, Square, White};
-use chess_kit_tui::{Action, App, EngineMessage, GameSession, RunnerEvent, render};
+use chess_kit_tui::{Action, App, EngineMessage, GameMode, GameSession, RunnerEvent, render};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 
@@ -21,6 +21,10 @@ impl GameSession for RenderGame {
 
     fn position(&self) -> PositionSnapshot {
         self.position.clone()
+    }
+
+    fn has_legal_moves(&self) -> bool {
+        true
     }
 }
 
@@ -41,6 +45,22 @@ fn renders_board_identity_analysis_and_controls() {
     assert!(screen.contains("Eval +0.34"));
     assert!(screen.contains("♙"));
     assert!(screen.contains("space analyze"));
+}
+
+#[test]
+fn renders_play_mode_and_only_its_relevant_controls() {
+    let mut app = populated_app_with_mode(GameMode::PlayVsEngine);
+    let screen = render_to_string(&app, 100, 30);
+
+    assert!(screen.contains("Play vs engine"));
+    assert!(screen.contains("enter play"));
+    assert!(!screen.contains("space analyze"));
+
+    app.update(Action::ToggleHelp);
+    let help = render_to_string(&app, 100, 30);
+    assert!(help.contains("Keyboard help: Play vs engine"));
+    assert!(help.contains("Engine replies automatically at depth 6"));
+    assert!(!help.contains("Start or stop analysis"));
 }
 
 #[test]
@@ -122,11 +142,15 @@ fn exposes_selection_without_relying_only_on_color() {
 }
 
 fn populated_app() -> App {
+    populated_app_with_mode(GameMode::Analysis)
+}
+
+fn populated_app_with_mode(mode: GameMode) -> App {
     let position = PositionSnapshot::empty::<White>()
         .with_piece::<White>(Square::E1, Pieces::King)
         .with_piece::<White>(Square::E2, Pieces::Pawn)
         .with_piece::<Black>(Square::E8, Pieces::King);
-    let mut app = App::new(Box::new(RenderGame { position }));
+    let mut app = App::with_mode(Box::new(RenderGame { position }), mode);
     app.update(Action::Connect);
     app.update(Action::Runner(RunnerEvent::Message(
         EngineMessage::from_str("id name Fixture Engine").unwrap(),

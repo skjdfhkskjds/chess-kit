@@ -1,8 +1,8 @@
 # chess-kit-tui
 
-`chess-kit-tui` is an interactive terminal client for a local UCI chess
-engine. The first pass deliberately uses a child process because UCI is a
-newline-delimited standard-input/standard-output protocol. A transport
+`chess-kit-tui` is an interactive terminal client for playing against or
+analyzing with a local UCI chess engine. It uses a child process because UCI is
+a newline-delimited standard-input/standard-output protocol. A transport
 boundary keeps room for socket or RPC-backed engines later.
 
 The interface follows familiar chess analysis layouts:
@@ -22,6 +22,15 @@ Build the repository engine, then launch the TUI from the workspace root:
 ```sh
 cargo build
 cargo run -p chess-kit-tui
+```
+
+The default mode is a game against the engine. You play White and the engine
+automatically replies after each legal move with a fixed search depth of 6.
+To move pieces for either side and start or stop analysis manually, launch in
+analysis mode:
+
+```sh
+cargo run -p chess-kit-tui -- --mode analysis
 ```
 
 The platform-specific default engine path is `target/debug/chess-kit` (with
@@ -59,6 +68,11 @@ documented in `assets/pieces/ascii/SOURCE.md`.
 | `?` | Toggle help |
 | `q` | Quit |
 
+`Space` applies only in analysis mode. In the default play mode, entering a
+legal White move starts the engine reply automatically. The current mode is
+always shown in the header; select it at launch with `--mode play` or
+`--mode analysis`.
+
 ## First-pass scope
 
 - The implemented transport launches one local child process and speaks UCI
@@ -67,9 +81,11 @@ documented in `assets/pieces/ascii/SOURCE.md`.
 - The client handles `id`, `option`, `uciok`, `readyok`, streaming
   `info`, and `bestmove`; it sends new-game, position, infinite-search,
   stop, readiness, option, and shutdown commands.
-- This is an analysis board, not a play-vs-engine mode. `bestmove` is shown
-  but is not automatically played. Moves entered on the board are validated
-  through the toolkit's engine boundary.
+- Play mode supports a human playing White against automatic fixed-depth-6
+  engine replies. Color choice and adjustable engine strength are not yet
+  implemented. Analysis mode remains available for moving either side and
+  manually starting or stopping an infinite search. Moves entered on the board
+  and engine replies are validated through the toolkit's engine boundary.
 - Promotion currently defaults to a queen. An underpromotion chooser is a
   follow-up interaction.
 - The full interface requires at least a 40-column by 18-row terminal and uses

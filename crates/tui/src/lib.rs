@@ -16,8 +16,8 @@ use chess_kit_engine::{Engine, EngineError, PositionProvider, PositionSnapshot};
 use chess_kit_primitives::Move;
 
 pub use app::{
-    Action, Analysis, App, ConnectionState, Direction, Effect, EngineIdentity, ProtocolDirection,
-    ProtocolEntry,
+    Action, Analysis, App, ConnectionState, Direction, Effect, EngineIdentity, GameMode,
+    ProtocolDirection, ProtocolEntry,
 };
 pub use runner::{ProcessRunner, RunnerEvent};
 pub use terminal::{ConfigError, TerminalConfig, run_terminal, run_terminal_with_piece_set};
@@ -29,8 +29,9 @@ pub use ui::{PieceSet, render, render_with_piece_set};
 
 /// `GameSession` defines the local rules boundary used by the presentation.
 ///
-/// The UCI engine remains the source of analysis. This session only validates
-/// user moves and provides a protocol-neutral board snapshot for rendering.
+/// The UCI engine remains the source of analysis and automatic replies. This
+/// session validates every applied move and provides a protocol-neutral board
+/// snapshot for rendering.
 ///
 /// @trait
 pub trait GameSession {
@@ -51,6 +52,11 @@ pub trait GameSession {
     ///
     /// @return: current position snapshot
     fn position(&self) -> PositionSnapshot;
+
+    /// has_legal_moves reports whether the side to move can make a legal move.
+    ///
+    /// @return: true when at least one legal move is available
+    fn has_legal_moves(&self) -> bool;
 }
 
 impl<EngineT> GameSession for EngineT
@@ -70,6 +76,11 @@ where
     /// @impl: GameSession::position
     fn position(&self) -> PositionSnapshot {
         PositionProvider::position(self)
+    }
+
+    /// @impl: GameSession::has_legal_moves
+    fn has_legal_moves(&self) -> bool {
+        Engine::has_legal_moves(self)
     }
 }
 

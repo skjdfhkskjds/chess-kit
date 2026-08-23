@@ -1,11 +1,17 @@
-use chess_kit_comm::uci::UciMove;
-use chess_kit_primitives::{File, Move, Pieces, Rank, Square};
+use std::str::FromStr;
 
-use super::{Action, App, ConnectionState, Direction, Effect, ProtocolDirection};
+use chess_kit_comm::uci::UciMove;
+use chess_kit_primitives::{File, Move, Pieces, Rank, Sides, Square};
+
+use super::state::SearchPurpose;
+use super::{Action, App, ConnectionState, Direction, Effect, GameMode, ProtocolDirection};
 use crate::{
     EngineMessageKind, IdentityField, RunnerEvent, SearchInfo, SearchRequest, UciCommand,
     UciPosition,
 };
+
+/// ENGINE_PLAY_DEPTH is the fixed search depth for automatic Black replies.
+const ENGINE_PLAY_DEPTH: u16 = 6;
 
 impl App {
     /// update consumes one action and returns its requested runtime effects.
@@ -86,6 +92,7 @@ impl App {
             }
             RunnerEvent::Exited(code) => {
                 self.connection = ConnectionState::Exited;
+                self.search_purpose = None;
                 self.status = match code {
                     Some(code) => format!("Engine exited with status {code}"),
                     None => "Engine exited".to_owned(),
@@ -123,8 +130,12 @@ impl App {
             }
             EngineMessageKind::ReadyOk if self.connection == ConnectionState::AwaitingReady => {
                 self.connection = ConnectionState::Ready;
-                self.status = "Ready".to_owned();
+                self.status = match self.mode {
+                    GameMode::Analysis => "Ready".to_owned(),
+                    GameMode::PlayVsEngine => "Your move".to_owned(),
+                };
                 self.pending_new_game = false;
+                self.search_purpose = None;
                 vec![self.sync_position()]
             }
             EngineMessageKind::Info(info) => {
@@ -132,8 +143,7 @@ impl App {
                 Vec::new()
             }
             EngineMessageKind::BestMove { best_move, ponder } => {
-                self.analysis.best_move = best_move;
-                self.analysis.ponder = ponder;
+                let purpose = self.search_purpose.take();
                 if matches!(
                     self.connection,
                     ConnectionState::Searching | ConnectionState::Stopping
@@ -144,7 +154,17 @@ impl App {
                 if self.pending_new_game {
                     self.reset_game()
                 } else {
-                    Vec::new()
+                    match purpose {
+                        Some(SearchPurpose::Analysis) => {
+                            self.analysis.best_move = best_move;
+                            self.analysis.ponder = ponder;
+                            Vec::new()
+                        }
+                        Some(SearchPurpose::EngineMove) => {
+                            self.apply_engine_move(best_move, ponder)
+                        }
+                        None => Vec::new(),
+                    }
                 }
             }
             EngineMessageKind::UciOk | EngineMessageKind::ReadyOk | EngineMessageKind::Unknown => {
@@ -158,9 +178,13 @@ impl App {
     /// @return: search effects
     /// @side-effects: updates connection and analysis state
     fn toggle_analysis(&mut self) -> Vec<Effect> {
+        if self.mode != GameMode::Analysis {
+            return Vec::new();
+        }
         match self.connection {
             ConnectionState::Ready => {
                 self.connection = ConnectionState::Searching;
+                self.search_purpose = Some(SearchPurpose::Analysis);
                 self.status = "Searching".to_owned();
                 self.analysis = Default::default();
                 vec![
@@ -212,6 +236,7 @@ impl App {
         self.selected = None;
         self.analysis = Default::default();
         self.pending_new_game = false;
+        self.search_purpose = None;
         self.connection = ConnectionState::AwaitingReady;
         self.status = "Starting new game".to_owned();
         vec![
@@ -225,7 +250,9 @@ impl App {
     /// @return: position synchronization effect after a legal move
     /// @side-effects: may update local game, board, history, and selection
     fn select_square(&mut self) -> Vec<Effect> {
-        if self.connection != ConnectionState::Ready {
+        if self.connection != ConnectionState::Ready
+            || (self.mode == GameMode::PlayVsEngine && self.position.side_to_move() != Sides::White)
+        {
             return Vec::new();
         }
         let Some(from) = self.selected else {
@@ -263,14 +290,93 @@ impl App {
                 self.analysis = Default::default();
                 self.selected = None;
                 self.error = None;
-                self.status = "Position updated".to_owned();
-                vec![self.sync_position()]
+                if self.mode == GameMode::PlayVsEngine {
+                    self.connection = ConnectionState::Searching;
+                    self.search_purpose = Some(SearchPurpose::EngineMove);
+                    self.status = "Engine is thinking".to_owned();
+                    vec![
+                        self.sync_position(),
+                        self.send(UciCommand::Go(SearchRequest::Depth(ENGINE_PLAY_DEPTH))),
+                    ]
+                } else {
+                    self.status = "Position updated".to_owned();
+                    vec![self.sync_position()]
+                }
             }
             Err(error) => {
                 self.error = Some(error.to_string());
                 Vec::new()
             }
         }
+    }
+
+    /// apply_engine_move validates and applies the Black reply from a play search.
+    ///
+    /// @param: best_move - parsed protocol text, or None for a null move
+    /// @param: ponder - optional engine ponder move for display
+    /// @return: position synchronization after a valid reply
+    /// @side-effects: may update local game, board, history, analysis, and error state
+    fn apply_engine_move(
+        &mut self,
+        best_move: Option<String>,
+        ponder: Option<String>,
+    ) -> Vec<Effect> {
+        self.analysis.best_move = best_move.clone();
+        self.analysis.ponder = ponder;
+
+        let Some(best_move) = best_move else {
+            if self.game.has_legal_moves() {
+                self.error =
+                    Some("Engine returned no move in a position with legal moves".to_owned());
+                self.status = "Invalid engine response".to_owned();
+            } else {
+                self.error = None;
+                self.status = "Game over".to_owned();
+            }
+            return Vec::new();
+        };
+
+        let uci_move = match UciMove::from_str(&best_move) {
+            Ok(uci_move) => uci_move,
+            Err(error) => {
+                self.error = Some(format!(
+                    "Engine returned malformed move {best_move}: {error}"
+                ));
+                self.status = "Invalid engine response".to_owned();
+                return Vec::new();
+            }
+        };
+        let chess_move = match Move::try_from(&uci_move) {
+            Ok(chess_move) => chess_move,
+            Err(_) => {
+                if self.game.has_legal_moves() {
+                    self.error =
+                        Some("Engine returned no move in a position with legal moves".to_owned());
+                    self.status = "Invalid engine response".to_owned();
+                } else {
+                    self.error = None;
+                    self.status = "Game over".to_owned();
+                }
+                return Vec::new();
+            }
+        };
+
+        if let Err(error) = self.game.play(chess_move) {
+            self.error = Some(format!("Engine returned illegal move {best_move}: {error}"));
+            self.status = "Invalid engine response".to_owned();
+            return Vec::new();
+        }
+
+        self.moves.push(UciMove::from(chess_move).to_string());
+        self.position = self.game.position();
+        self.selected = None;
+        self.error = None;
+        self.status = if self.game.has_legal_moves() {
+            "Your move".to_owned()
+        } else {
+            "Game over".to_owned()
+        };
+        vec![self.sync_position()]
     }
 
     /// move_cursor moves the logical cursor using screen-relative direction.
@@ -322,6 +428,7 @@ impl App {
     fn fail(&mut self, error: String) {
         self.push_protocol(ProtocolDirection::System, error.clone());
         self.connection = ConnectionState::Failed;
+        self.search_purpose = None;
         self.status = "Engine connection failed".to_owned();
         self.error = Some(error);
     }

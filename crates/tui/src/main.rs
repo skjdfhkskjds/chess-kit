@@ -34,7 +34,7 @@ fn main() {
 fn run(config: &TerminalConfig) -> Result<(), Box<dyn Error>> {
     let local_engine = DefaultEngine::new(EngineConfig::new(LOCAL_TRANSPOSITION_TABLE_SIZE_MB))?;
     let mut runner = ProcessRunner::spawn(config.program(), config.arguments())?;
-    let mut app = App::new(Box::new(local_engine));
+    let mut app = App::with_mode(Box::new(local_engine), config.mode());
     run_terminal_with_piece_set(&mut app, &mut runner, config.piece_set())?;
     Ok(())
 }

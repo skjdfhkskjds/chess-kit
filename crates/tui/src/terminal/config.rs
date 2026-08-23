@@ -3,11 +3,11 @@ use std::ffi::OsString;
 use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
 
-use crate::PieceSet;
+use crate::{GameMode, PieceSet};
 
 /// USAGE describes the supported first-pass command-line interface.
 pub const USAGE: &str = "Usage: chess-kit-tui [--engine <path> | <path>] [--pieces <set>] \
-                         [-- <engine arguments...>]";
+                         [--mode <play|analysis>] [-- <engine arguments...>]";
 
 /// `TerminalConfig` describes the local UCI process to launch.
 ///
@@ -17,6 +17,7 @@ pub struct TerminalConfig {
     program: PathBuf,
     arguments: Vec<OsString>,
     piece_set: PieceSet,
+    mode: GameMode,
 }
 
 impl TerminalConfig {
@@ -37,6 +38,7 @@ impl TerminalConfig {
         let arguments = arguments.into_iter().map(Into::into).collect::<Vec<_>>();
         let mut program = None;
         let mut piece_set = None;
+        let mut mode = None;
         let mut engine_arguments = Vec::new();
         let mut index = 0;
         while index < arguments.len() {
@@ -64,6 +66,19 @@ impl TerminalConfig {
                     }
                     index += 2;
                 }
+                Some("--mode") => {
+                    let value = arguments.get(index + 1).ok_or(ConfigError::MissingMode)?;
+                    let name = value.to_string_lossy();
+                    let parsed = match name.as_ref() {
+                        "play" => GameMode::PlayVsEngine,
+                        "analysis" => GameMode::Analysis,
+                        _ => return Err(ConfigError::InvalidMode(name.to_string())),
+                    };
+                    if mode.replace(parsed).is_some() {
+                        return Err(ConfigError::DuplicateMode);
+                    }
+                    index += 2;
+                }
                 Some("--") => {
                     engine_arguments.extend(arguments[index + 1..].iter().cloned());
                     break;
@@ -84,6 +99,7 @@ impl TerminalConfig {
             program: program.unwrap_or_else(default_engine_path),
             arguments: engine_arguments,
             piece_set: piece_set.unwrap_or_default(),
+            mode: mode.unwrap_or(GameMode::PlayVsEngine),
         })
     }
 
@@ -107,6 +123,13 @@ impl TerminalConfig {
     pub const fn piece_set(&self) -> PieceSet {
         self.piece_set
     }
+
+    /// mode returns the configured application interaction mode.
+    ///
+    /// @return: play-vs-engine or analysis mode
+    pub const fn mode(&self) -> GameMode {
+        self.mode
+    }
 }
 
 /// default_engine_path returns the platform-specific workspace debug engine.
@@ -126,9 +149,12 @@ pub enum ConfigError {
     Help,
     MissingEnginePath,
     MissingPieceSet,
+    MissingMode,
     DuplicateEnginePath,
     DuplicatePieceSet,
+    DuplicateMode,
     InvalidPieceSet(String),
+    InvalidMode(String),
     UnexpectedArgument(String),
 }
 
@@ -150,18 +176,25 @@ impl Display for ConfigError {
             Self::Help => {}
             Self::MissingEnginePath => formatter.write_str("missing path after --engine\n")?,
             Self::MissingPieceSet => formatter.write_str("missing set name after --pieces\n")?,
+            Self::MissingMode => formatter.write_str("missing value after --mode\n")?,
             Self::DuplicateEnginePath => {
                 formatter.write_str("engine path was provided more than once\n")?;
             }
             Self::DuplicatePieceSet => {
                 formatter.write_str("piece set was provided more than once\n")?;
             }
+            Self::DuplicateMode => formatter.write_str("mode was provided more than once\n")?,
             Self::InvalidPieceSet(name) => writeln!(formatter, "unknown piece set: {name}")?,
+            Self::InvalidMode(name) => writeln!(formatter, "unknown mode: {name}")?,
             Self::UnexpectedArgument(argument) => {
                 writeln!(formatter, "unexpected argument: {argument}")?;
             }
         }
-        write!(formatter, "{USAGE}\nPiece sets: {}", PieceSet::NAMES)
+        write!(
+            formatter,
+            "{USAGE}\nModes: play (default), analysis\nPiece sets: {}",
+            PieceSet::NAMES
+        )
     }
 }
 

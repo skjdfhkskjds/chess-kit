@@ -91,7 +91,7 @@ pub fn render_with_piece_set(frame: &mut Frame<'_>, app: &App, piece_set: PieceS
     }
 
     if app.show_help() {
-        help::render(frame);
+        help::render(frame, app);
     }
 }
 
